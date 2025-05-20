@@ -82,18 +82,18 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 2 * * ? *)  # 2:00 UTC = 5:00 by Kyiv (summer)
+#            Schedule: rate(5 minutes)
             Enabled: true
       Policies:
         - AWSLambdaBasicExecutionRole
         - Statement:
             Effect: Allow
             Action:
-              - dynamodb:Scan
               - dynamodb:Query
-              - dynamodb:GetItem
-              - dynamodb:BatchGetItem
-              - dynamodb:DeleteItem
-            Resource: !GetAtt Ka4TodayUsersTable.Arn
+              - dynamodb:UpdateItem
+            Resource:
+              - !GetAtt Ka4TodayUsersTable.Arn
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
 
   ##         Storage          ##
   Ka4TodayUsersTable:
