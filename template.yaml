@@ -37,6 +37,7 @@ Parameters:
     Description: Default prompt that will be sent to OpenAI thread
 
 Resources:
+  ##         Functions          ##
   Ka4TodayTelegramWebhook:
     Type: AWS::Serverless::Function
     Properties:
@@ -63,7 +64,62 @@ Resources:
       CodeUri: .
       Policies:
         - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+            Resource: !GetAtt Ka4TodayUsersTable.Arn
 
+  Ka4TodayCronDailyMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-cron-daily-message
+      Handler: src/handlers/cronDailyMessage.handler
+      CodeUri: .
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 2 * * ? *)  # 2:00 UTC = 5:00 by Kyiv (summer)
+            Enabled: true
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:Scan
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:BatchGetItem
+              - dynamodb:DeleteItem
+            Resource: !GetAtt Ka4TodayUsersTable.Arn
+
+  ##         Storage          ##
+  Ka4TodayUsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ka4-today-users
+      BillingMode: PAY_PER_REQUEST  # on-demand
+      AttributeDefinitions:
+        - AttributeName: chat_id
+          AttributeType: N
+        - AttributeName: is_active
+          AttributeType: N
+      KeySchema:
+        - AttributeName: chat_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ActiveUsersIndex
+          KeySchema:
+            - AttributeName: is_active
+              KeyType: HASH
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes:
+              - chat_id
+
+  ##         LogGroups          ##
   TelegramWebhookLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -74,21 +130,8 @@ Resources:
     Properties:
       LogGroupName: /aws/lambda/ka4today-async-telegram-processor
       RetentionInDays: 7
-
-# Uncomment to enable scheduled daily messages
-#  CronDailyMessageFunction:
-#    Type: AWS::Serverless::Function
-#    Properties:
-#      Handler: src/handlers/cronDailyMessage.handler
-#      Events:
-#        DailySchedule:
-#          Type: Schedule
-#          Properties:
-#            Schedule: cron(0 8 * * ? *)  # 08:00 UTC
-#            Enabled: true
-#
-#  CronDailyMessageLogGroup:
-#    Type: AWS::Logs::LogGroup
-#    Properties:
-#      LogGroupName: !Sub /aws/lambda/${CronDailyMessageFunction}
-#      RetentionInDays: 1
+  CronDailyMessageLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: ka4today-cron-daily-message
+        RetentionInDays: 7

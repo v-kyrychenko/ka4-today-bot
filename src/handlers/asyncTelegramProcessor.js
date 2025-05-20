@@ -1,4 +1,4 @@
-import { webhookProcessor } from '../services/webhookProcessor.js';
+import { mainProcessor } from '../services/mainProcessor.js';
 import { logError } from '../utils/logger.js';
 
 /**
@@ -8,7 +8,7 @@ import { logError } from '../utils/logger.js';
 export const handler = async (event) => {
     try {
         const body = extractBody(event.request);
-        await webhookProcessor.execute(body);
+        await mainProcessor.execute(body);
         return buildResponse(200, 'OK');
     } catch (err) {
         logError('webhook execution failed', err);

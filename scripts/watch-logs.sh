@@ -2,6 +2,7 @@
 
 # Usage: sh scripts/watch-logs.sh ka4today
 # Streams all CloudWatch logs for Lambda functions with given prefix.
+pkill -f "aws logs tail"
 
 PREFIX=$1
 REGION="eu-central-1"

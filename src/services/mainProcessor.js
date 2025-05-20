@@ -1,5 +1,6 @@
 import {openAiService} from './openAiService.js';
 import {telegramService} from './telegramService.js';
+import {ensureUserExists} from './userService.js';
 import {BadRequestError, OpenAIError} from '../utils/errors.js';
 import {EXPECTED_MESSAGE} from "../config/constants.js";
 import {OPENAI_ASSISTANT_ID, OPENAI_DEFAULT_PROMPT} from '../config/env.js';
@@ -11,33 +12,48 @@ import {log} from "../utils/logger.js";
  * @returns {Promise<void>}
  * @throws {BadRequestError|OpenAIError}
  */
-export const webhookProcessor = {
+export const mainProcessor = {
     execute: async (inRequest) => {
         const {chatId, text, userId, username} = extractTelegramContext(inRequest);
+
         log(`Incoming message from ${username || userId}: ${text}`);
+        await ensureUserExists(inRequest.message)
+
         if (text !== EXPECTED_MESSAGE) {
-            throw new BadRequestError('Invalid message content');
+            log(`Skipped. Invalid message content: ${text}`);
+            return
         }
 
         try {
-            const threadId = await openAiService.createThread();
-            await openAiService.addMessageToThread(threadId, OPENAI_DEFAULT_PROMPT);
-            const runId = await openAiService.run(OPENAI_ASSISTANT_ID, threadId);
-
-            const completed = await openAiService.waitForRun(threadId, runId);
-            if (!completed) {
-                throw new OpenAIError(`Run ${runId} did not complete successfully`);
-            }
-
-            const messages = await openAiService.getMessages(threadId);
-            const assistantReply = extractAssistantReply(messages);
-
+            const assistantReply = await fetchOpenAiReply()
             await telegramService.sendMessage(chatId, assistantReply);
         } catch (e) {
             await telegramService.sendMessage(chatId, "🧠💥🪄🐞");
             throw e;
         }
     },
+}
+
+/**
+ * Runs the OpenAI Assistant on a new thread and extracts the final assistant reply.
+ *
+ * @returns {Promise<string>} - The extracted assistant reply as plain text.
+ * @throws {OpenAIError} If the run did not complete successfully or no reply is found.
+ */
+export async function fetchOpenAiReply() {
+    const threadId = await openAiService.createThread();
+
+    await openAiService.addMessageToThread(threadId, OPENAI_DEFAULT_PROMPT);
+
+    const runId = await openAiService.run(OPENAI_ASSISTANT_ID, threadId);
+
+    const completed = await openAiService.waitForRun(threadId, runId);
+    if (!completed) {
+        throw new OpenAIError(`Run ${runId} did not complete successfully`);
+    }
+
+    const messages = await openAiService.getMessages(threadId);
+    return extractAssistantReply(messages);
 }
 
 /**

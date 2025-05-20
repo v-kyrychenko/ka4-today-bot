@@ -8,19 +8,27 @@ const TELEGRAM_HEADERS = {
     'Content-Type': 'application/json',
 };
 
+/**
+ * Send a message to a Telegram chat.
+ * @param {string|number} chatId - The Telegram chat ID.
+ * @param {string} message - The message to send.
+ * @returns {Promise<void>}
+ */
+export async function sendMessage(chatId, message) {
+    await httpRequest({
+        method: 'POST',
+        path: `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        endpointUrl: TELEGRAM_BASE_URL,
+        headers: TELEGRAM_HEADERS,
+        body: {
+            chat_id: chatId,
+            text: message,
+        },
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+}
+
 export const telegramService = {
-    sendMessage: async (chatId, message) => {
-        await httpRequest({
-            method: 'POST',
-            path: `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
-            endpointUrl: TELEGRAM_BASE_URL,
-            headers: TELEGRAM_HEADERS,
-            body: {
-                chat_id: chatId,
-                text: message,
-            },
-            label: TELEGRAM_API_LABEL,
-            errorClass: TelegramError,
-        });
-    },
+    sendMessage,
 };
