@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ka4-today-bot – Telegram + OpenAI notification Lambda bot
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 120
+    MemorySize: 512
+    Environment:
+      Variables:
+        TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+        TELEGRAM_SECURITY_TOKEN: !Ref TelegramSecurityToken
+        OPENAI_API_KEY: !Ref OpenAiToken
+        OPENAI_PROJECT_ID: !Ref OpenAiProjectId
+        OPENAI_ASSISTANT_ID: !Ref OpenAiAssistantId
+        OPENAI_DEFAULT_PROMPT: !Ref OpenAiDefaultPrompt
+
+Parameters:
+  TelegramBotToken:
+    Type: String
+    Description: Telegram bot token from BotFather
+  TelegramSecurityToken:
+    Type: String
+    Description: Token used to validate incoming webhook requests
+  OpenAiToken:
+    Type: String
+    Description: OpenAI API key (starts with sk-...)
+  OpenAiProjectId:
+    Type: String
+    Description: Project ID from OpenAI (starts with proj-...)
+  OpenAiAssistantId:
+    Type: String
+    Description: Assistant ID from OpenAI (starts with asst-...)
+  OpenAiDefaultPrompt:
+    Type: String
+    Description: Default prompt that will be sent to OpenAI thread
+
+Resources:
+  Ka4TodayTelegramWebhook:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-telegram-webhook-handler
+      Handler: src/handlers/ka4TodayTelegramWebhook.handler
+      CodeUri: .
+      Events:
+        Webhook:
+          Type: HttpApi
+          Properties:
+            Path: /ka4-today-webhook
+            Method: POST
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource: !GetAtt Ka4TodayAsyncTelegramProcessor.Arn
+  Ka4TodayAsyncTelegramProcessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-async-telegram-processor
+      Handler: src/handlers/asyncTelegramProcessor.handler
+      CodeUri: .
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+  TelegramWebhookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-telegram-webhook-handler
+      RetentionInDays: 7
+  Ka4TodayAsyncTelegramProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-async-telegram-processor
+      RetentionInDays: 7
+
+# Uncomment to enable scheduled daily messages
+#  CronDailyMessageFunction:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      Handler: src/handlers/cronDailyMessage.handler
+#      Events:
+#        DailySchedule:
+#          Type: Schedule
+#          Properties:
+#            Schedule: cron(0 8 * * ? *)  # 08:00 UTC
+#            Enabled: true
+#
+#  CronDailyMessageLogGroup:
+#    Type: AWS::Logs::LogGroup
+#    Properties:
+#      LogGroupName: !Sub /aws/lambda/${CronDailyMessageFunction}
+#      RetentionInDays: 1
