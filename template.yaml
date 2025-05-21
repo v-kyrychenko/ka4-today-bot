@@ -82,7 +82,7 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 2 * * ? *)  # 2:00 UTC = 5:00 by Kyiv (summer)
-#            Schedule: rate(5 minutes)
+            #Schedule: rate(5 minutes)
             Enabled: true
       Policies:
         - AWSLambdaBasicExecutionRole
