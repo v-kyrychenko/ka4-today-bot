@@ -5,6 +5,26 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 
 ---
 
+## 📐 Architecture
+- **Telegram Webhook** via **API Gateway (HTTP API) → Lambda**
+- **Asynchronous processing** via a second Lambda (asyncProcessor) invoked with InvokeFunction
+- **Integration with OpenAI Assistants API v2** (threads, runs, messages)
+- **Structured logging** with ### LABEL:start/stop, distinguishing api-level and low-level errors
+- **Custom HTTP client** with timeouts, hidden responses, and semantic errorClass
+- **DynamoDB** for storing Telegram users (chat_id, username, etc.) + GSI ActiveUsersIndex
+- **CloudWatch** Logs and Dashboards with key metrics like Invocations, Errors
+
+---
+
+## ⭐ Features
+- **Secure webhook** with x-telegram-bot-api-secret-token validation
+- Handles /start command and registers user in DB
+- Auto-deletes users after receiving Telegram 403 errors (e.g., bot blocked)
+- **Daily cron-based message broadcast** via ka4today-cron-daily-message Lambda
+- **Cleans OpenAI assistant output** by stripping source annotations
+
+---
+
 ## 🧩 Project Structure
 
 ```
