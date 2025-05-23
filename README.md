@@ -41,7 +41,7 @@ template.yaml            # AWS SAM template
 
 ## 🚀 Running Locally
 
-> Requires Node.js 18+
+> Requires Node.js 22+
 
 1. Clone the repo
 2. Copy a `.env.sample` file and rename it to `.env` :
@@ -104,7 +104,7 @@ aws cloudformation delete-stack --stack-name ka4-today-bot
 
 ## 🛠️ Environment Requirements
 
-- Node.js 18.x
+- Node.js 22.x
 - AWS CLI + AWS SAM CLI
 - AWS account with permissions to:
   - Deploy Lambda functions

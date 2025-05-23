@@ -17,7 +17,7 @@ export const mainProcessor = {
         const {chatId, text, userId, username} = extractTelegramContext(inRequest);
 
         log(`Incoming message from ${username || userId}: ${text}`);
-        await ensureUserExists(inRequest.message)
+       // await ensureUserExists(inRequest.message)
 
         if (text !== EXPECTED_MESSAGE) {
             log(`Skipped. Invalid message content: ${text}`);
