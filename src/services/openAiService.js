@@ -93,4 +93,47 @@ export const openAiService = {
             errorClass: OpenAIError,
         });
     },
+
+    /**
+     * @param {{ data: Array<{ role: string, created_at: number, content: any[] }> }} messages
+     */
+    extractAssistantReply: async (messages) => {
+        if (!Array.isArray(messages?.data)) {
+            throw new OpenAIError('Invalid messages format: expected data[] array');
+        }
+
+        const assistantMessages = messages.data
+            .filter(m => m.role === 'assistant')
+            .sort((a, b) => b.created_at - a.created_at);
+
+        if (!assistantMessages.length) {
+            throw new OpenAIError('No assistant messages found in thread');
+        }
+
+        const last = assistantMessages[0];
+
+        const textPart = last.content.find(part => part.type === 'text');
+
+        if (!textPart || !textPart.text?.value) {
+            throw new OpenAIError('Assistant message does not contain valid text content');
+        }
+
+        return postProcessText(textPart.text);
+    },
+}
+
+/**
+ * Delete all text annotations (example: 4:10†source) from assistant response.
+ * @param {{ value: string, annotations?: Array<{ text: string }> }} text
+ * @returns {string}
+ */
+function postProcessText({value, annotations = []}) {
+    let result = value;
+
+    for (const annotation of annotations) {
+        if (!annotation.text) continue;
+        result = result.replaceAll(annotation.text, '');
+    }
+
+    return result.trim();
 }

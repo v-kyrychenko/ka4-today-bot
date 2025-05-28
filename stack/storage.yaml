@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB tables for Ka4 Today
+
+Resources:
+  Ka4TodayUsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ka4-today-users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: chat_id
+          AttributeType: N
+        - AttributeName: is_active
+          AttributeType: N
+      KeySchema:
+        - AttributeName: chat_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ActiveUsersIndex
+          KeySchema:
+            - AttributeName: is_active
+              KeyType: HASH
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes:
+              - chat_id
+
+  UserTrainingScheduleTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ka4-today-users-training-schedule
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: chat_id
+          AttributeType: N
+        - AttributeName: day_of_week
+          AttributeType: S
+      KeySchema:
+        - AttributeName: chat_id
+          KeyType: HASH
+        - AttributeName: day_of_week
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ScheduleByDay
+          KeySchema:
+            - AttributeName: day_of_week
+              KeyType: HASH
+            - AttributeName: chat_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  Ka4TodayPromptsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ka4-today-prompts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: prompt_id
+          AttributeType: S
+        - AttributeName: version
+          AttributeType: N
+      KeySchema:
+        - AttributeName: prompt_id
+          KeyType: HASH
+        - AttributeName: version
+          KeyType: RANGE
+
+    Ka4TodayTrainersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ka4-today-trainers
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: trainer_id
+            AttributeType: N
+        KeySchema:
+          - AttributeName: trainer_id
+            KeyType: HASH

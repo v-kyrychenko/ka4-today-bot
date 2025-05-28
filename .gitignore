@@ -2,6 +2,7 @@
 node_modules/
 dist/
 build/
+docker/dynamodb-data/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -29,5 +30,5 @@ out/
 function.zip
 *.lambda.zip
 
-# 🔸 Event mocks / test files (опціонально)
+# 🔸 Event mocks / test files
 event-samples/*.json

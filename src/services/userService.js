@@ -2,19 +2,29 @@ import {
     DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import {log} from "../utils/logger.js";
+import {DYNAMODB_ENDPOINT} from "../config/env.js";
 
 const DYNAMO_USER_TABLE = "ka4-today-users";
 const ACTIVE_USERS_INDEX = 'ActiveUsersIndex';
 
-const dynamo = new DynamoDBClient();
+const DYNAMO_USERS_SCHEDULE_TABLE = "ka4-today-users-training-schedule";
+const USERS_SCHEDULE_INDEX = "ScheduleByDay";
+
+const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
+
+export const userService = {
+    ensureUserExists,
+    getActiveUsers,
+    markUserInactive,
+    getUsersScheduledForDay
+};
 
 /**
  * Ensures the Telegram user is present in DynamoDB.
- * @param {object} message - Telegram message object
+ * @param {object} context - command context
  */
-export async function ensureUserExists(message) {
-    const chatId = message.chat?.id;
-    if (!chatId || !isStartCommand(message)) return;
+export async function ensureUserExists(context) {
+    const chatId = context.chatId;
 
     const get = new GetItemCommand({
         TableName: DYNAMO_USER_TABLE,
@@ -27,8 +37,8 @@ export async function ensureUserExists(message) {
         return;
     }
 
-    const user = message.from || {};
-    const chat = message.chat || {};
+    const user = context.message.from || {};
+    const chat = context.message.chat || {};
 
     const put = new PutItemCommand({
         TableName: DYNAMO_USER_TABLE,
@@ -90,10 +100,31 @@ export async function markUserInactive(chatId) {
     await dynamo.send(command);
 }
 
-export function isStartCommand(message) {
-    return message?.text?.trim() === '/start';
+/**
+ * Retrieves users who have scheduled training on a specific day of the week.
+ * @returns {Promise<Array>} - An array of matching records from the table.
+ */
+export async function getUsersScheduledForDay() {
+    const dayOfWeek = getCurrentDayCode()
+    const command = new QueryCommand({
+        TableName: DYNAMO_USERS_SCHEDULE_TABLE,
+        IndexName: USERS_SCHEDULE_INDEX,
+        KeyConditionExpression: "day_of_week = :day",
+        ExpressionAttributeValues: {
+            ":day": {S: dayOfWeek},
+        },
+    });
+
+    const result = await dynamo.send(command);
+    return result.Items || [];
 }
 
-export const userService = {
-    ensureUserExists, getActiveUsers, markUserInactive
-};
+/**
+ * Returns the current day of the week as a 3-letter uppercase code.
+ * @returns {string} Day of the week, e.g., "MON", "TUE", "WED"
+ */
+function getCurrentDayCode() {
+    const DAYS_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const today = new Date().getDay(); // 0 (Sunday) to 6 (Saturday)
+    return DAYS_SHORT[today];
+}
