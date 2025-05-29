@@ -87,7 +87,18 @@ Resources:
               - dynamodb:PutItem
             Resource:
               - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource:
               - !GetAtt StorageStack.Outputs.Ka4TodayLogTableArn
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:GetItem
+            Resource:
+              - !GetAtt StorageStack.Outputs.Ka4TodayPromptsTableArn
 
   Ka4TodayCronDailyMessageFunction:
     Type: AWS::Serverless::Function
@@ -100,20 +111,25 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 2 ? * 2-7 *)  # 2:00 UTC = 5:00 by Kyiv (summer)
-            #Schedule: rate(5 minutes)
+            #Schedule: rate(3 minutes)
             Enabled: true
       Policies:
         - AWSLambdaBasicExecutionRole
         - Statement:
             Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource: !GetAtt Ka4TodayAsyncTelegramProcessor.Arn
+        - Statement:
+            Effect: Allow
             Action:
-              - lambda:InvokeFunction
               - dynamodb:Query
               - dynamodb:BatchGetItem
               - dynamodb:GetItem
             Resource:
               - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
+              - !GetAtt StorageStack.Outputs.UserTrainingScheduleTableArn
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users-training-schedule/index/ScheduleByDay
 
   #####################################################################
   ##                         LogGroups                               ##

@@ -187,7 +187,6 @@ function getCurrentDayCode() {
     return DAYS_SHORT[today];
 }
 
-
 /**
  * Fetches items from a DynamoDB table in batches of 100 by primary key.
  * Optionally filters and maps the unmarshalled items.

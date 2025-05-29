@@ -105,3 +105,13 @@ Outputs:
     Value: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Ka4TodayLogTable}
     Export:
       Name: Ka4TodayLogTableArn
+  Ka4TodayPromptsTableArn:
+    Description: "ARN of Ka4TodayPromptsTable DynamoDB table"
+    Value: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Ka4TodayPromptsTable}
+    Export:
+      Name: Ka4TodayPromptsTableArn
+  UserTrainingScheduleTableArn:
+    Description: "ARN of UserTrainingScheduleTable DynamoDB table"
+    Value: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${UserTrainingScheduleTable}
+    Export:
+      Name: UserTrainingScheduleTableArn
