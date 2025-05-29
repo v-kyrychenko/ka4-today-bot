@@ -100,3 +100,8 @@ Outputs:
     Value: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Ka4TodayUsersTable}
     Export:
       Name: Ka4TodayUsersTableArn
+  Ka4TodayLogTableArn:
+    Description: "ARN of Ka4TodayLogTable DynamoDB table"
+    Value: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Ka4TodayLogTable}
+    Export:
+      Name: Ka4TodayLogTableArn

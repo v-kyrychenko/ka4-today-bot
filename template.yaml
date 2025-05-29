@@ -81,9 +81,13 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
+              - dynamodb:Query
               - dynamodb:GetItem
+              - dynamodb:UpdateItem
               - dynamodb:PutItem
-            Resource: !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
+            Resource:
+              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
+              - !GetAtt StorageStack.Outputs.Ka4TodayLogTableArn
 
   Ka4TodayCronDailyMessageFunction:
     Type: AWS::Serverless::Function
@@ -103,8 +107,10 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
+              - lambda:InvokeFunction
               - dynamodb:Query
-              - dynamodb:UpdateItem
+              - dynamodb:BatchGetItem
+              - dynamodb:GetItem
             Resource:
               - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
