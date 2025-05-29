@@ -39,6 +39,7 @@ Parameters:
   DynamoDbEndpoint:
     Type: String
     Description: DynamoDb endpoint address
+    Default: ""
 
 Resources:
   #####################################################################
@@ -75,7 +76,7 @@ Resources:
             Action:
               - dynamodb:GetItem
               - dynamodb:PutItem
-            Resource: !GetAtt Ka4TodayUsersTable.Arn
+            Resource: !ImportValue Ka4TodayUsersTableName
 
   Ka4TodayCronDailyMessageFunction:
     Type: AWS::Serverless::Function
@@ -98,7 +99,7 @@ Resources:
               - dynamodb:Query
               - dynamodb:UpdateItem
             Resource:
-              - !GetAtt Ka4TodayUsersTable.Arn
+              - !ImportValue Ka4TodayUsersTableName
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
 
   #####################################################################

@@ -66,14 +66,21 @@ Resources:
         - AttributeName: version
           KeyType: RANGE
 
-    Ka4TodayTrainersTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ka4-today-trainers
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: trainer_id
-            AttributeType: N
-        KeySchema:
-          - AttributeName: trainer_id
-            KeyType: HASH
+  Ka4TodayTrainersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ka4-today-trainers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: trainer_id
+          AttributeType: N
+      KeySchema:
+        - AttributeName: trainer_id
+          KeyType: HASH
+
+Outputs:
+  Ka4TodayUsersTableName:
+    Description: "Name of Ka4TodayUsers DynamoDB table"
+    Value: !Ref Ka4TodayUsersTable
+    Export:
+      Name: Ka4TodayUsersTableName

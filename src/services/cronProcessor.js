@@ -2,13 +2,13 @@ import {dynamoDbService} from './dynamoDbService.js';
 import {telegramService} from './telegramService.js';
 import {fetchOpenAiReply} from './mainProcessor.js';
 import {log, logError} from '../utils/logger.js';
-import {MAX_DAILY_USERS} from '../config/constants.js';
+import {DEFAULT_BATCH_SIZE} from '../config/constants.js';
 
 export async function cronProcessor() {
     try {
         const users = await dynamoDbService.getUsersScheduledForDay();
 
-        log(`📬 Will attempt to send message to ${users.length} users (max limit: ${MAX_DAILY_USERS})`);
+        log(`📬 Will attempt to send message to ${users.length} users (max limit: ${DEFAULT_BATCH_SIZE})`);
     //     let sent = 0;
     //
     //     for (const user of users) {

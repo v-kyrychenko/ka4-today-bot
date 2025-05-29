@@ -1,15 +1,14 @@
 import {
+    BatchGetItemCommand,
     DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import {unmarshall} from "@aws-sdk/util-dynamodb";
 import {log} from "../utils/logger.js";
 import {DYNAMODB_ENDPOINT, OPENAI_DEFAULT_PROMPT} from "../config/env.js";
 import {BadRequestError} from "../utils/errors.js";
-import {DEFAULT_PROMPT_VERSION} from "../config/constants.js";
+import {DEFAULT_BATCH_SIZE, DEFAULT_PROMPT_VERSION} from "../config/constants.js";
 
 const DYNAMO_USER_TABLE = "ka4-today-users";
-const ACTIVE_USERS_INDEX = 'ActiveUsersIndex';
-
 const DYNAMO_USERS_SCHEDULE_TABLE = "ka4-today-users-training-schedule";
 const USERS_SCHEDULE_INDEX = "ScheduleByDay";
 
@@ -20,7 +19,6 @@ const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 export const dynamoDbService = {
     getUser,
     ensureUserExists,
-    getActiveUsers,
     markUserInactive,
     getUsersScheduledForDay,
     getPrompt
@@ -66,28 +64,6 @@ export async function ensureUserExists(context) {
 }
 
 /**
- * Fetch all active users using GSI.
- * Limits results if provided.
- * @param {number} [limit] - Optional maximum number of users to return
- * @returns {Promise<Array<Object>>}
- */
-export async function getActiveUsers(limit) {
-    const command = new QueryCommand({
-        TableName: DYNAMO_USER_TABLE,
-        IndexName: ACTIVE_USERS_INDEX,
-        KeyConditionExpression: 'is_active = :true',
-        ExpressionAttributeValues: {
-            ':true': {N: '1'},
-        },
-        ProjectionExpression: 'chat_id',
-        Limit: limit,
-    });
-
-    const response = await dynamo.send(command);
-    return response.Items || [];
-}
-
-/**
  * Mark a user as inactive.
  * @param {string|number} chatId - Telegram chat ID to mark inactive.
  * @returns {Promise<void>}
@@ -108,7 +84,7 @@ export async function markUserInactive(chatId) {
 }
 
 /**
- * Retrieves users who have scheduled training on a specific day of the week.
+ * Retrieves active users who have scheduled training on a specific day of the week.
  * @returns {Promise<Array>} - An array of matching records from the table.
  */
 export async function getUsersScheduledForDay() {
@@ -122,8 +98,31 @@ export async function getUsersScheduledForDay() {
         },
     });
 
-    const result = await dynamo.send(command);
-    return result.Items || [];
+    const scheduleResult = await dynamo.send(command);
+    const scheduleItems = (scheduleResult.Items || []).map(unmarshall);
+
+    const chatIds = (scheduleResult.Items || []).map(
+        (item) => item.chat_id.N
+    );
+
+    if (chatIds.length === 0) return [];
+
+    const keys = chatIds.map((id) => ({chat_id: {N: id}}));
+
+    const users = await batchGetItems(
+        DYNAMO_USER_TABLE,
+        keys,
+        "chat_id, is_active, username, language_code",
+        (user) => user.is_active === 1 || user.is_active === "1"
+    );
+    const userMap = Object.fromEntries(users.map((u) => [String(u.chat_id), u]));
+    return scheduleItems
+        .map((item) => {
+            const user = userMap[String(item.chat_id)];
+            if (!user) return null;
+            return {...item, user};
+        })
+        .filter(Boolean);
 }
 
 /**
@@ -184,4 +183,45 @@ function getCurrentDayCode() {
     const DAYS_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
     const today = new Date().getDay(); // 0 (Sunday) to 6 (Saturday)
     return DAYS_SHORT[today];
+}
+
+
+/**
+ * Fetches items from a DynamoDB table in batches of 100 by primary key.
+ * Optionally filters and maps the unmarshalled items.
+ *
+ * @param {string} tableName - The name of the DynamoDB table.
+ * @param {Array<Object>} keys - Array of primary key objects (e.g., [{ chat_id: { N: "123" }}]).
+ * @param {string} projection - Optional ProjectionExpression.
+ * @param {(item: any) => boolean} [filterFn] - Optional filter function.
+ * @returns {Promise<Array>} - Array of unmarshalled (and optionally filtered) items.
+ */
+async function batchGetItems(tableName, keys, projection, filterFn) {
+    const result = [];
+
+    for (let i = 0; i < keys.length; i += DEFAULT_BATCH_SIZE) {
+        const chunk = keys.slice(i, i + DEFAULT_BATCH_SIZE);
+
+        const batchResult = await dynamo.send(
+            new BatchGetItemCommand({
+                RequestItems: {
+                    [tableName]: {
+                        Keys: chunk,
+                        ...(projection && {ProjectionExpression: projection}),
+                    },
+                },
+            })
+        );
+
+        const items = batchResult.Responses?.[tableName] || [];
+
+        for (const raw of items) {
+            const item = unmarshall(raw);
+            if (!filterFn || filterFn(item)) {
+                result.push(item);
+            }
+        }
+    }
+
+    return result;
 }
