@@ -32,7 +32,7 @@ export const mainProcessor = {
         try {
             await command.execute(context);
         } catch (e) {
-            await telegramService.sendMessage(chatId, "🧠💥🪄🐞");
+            await telegramService.sendMessage({chatId: chatId}, "🧠💥🪄🐞");
             throw e;
         }
     },

@@ -43,6 +43,13 @@ Parameters:
 
 Resources:
   #####################################################################
+  ##                         Storage                                 ##
+  #####################################################################
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stack/storage.yaml
+  #####################################################################
   ##                         Functions                               ##
   #####################################################################
   Ka4TodayTelegramWebhook:
@@ -76,7 +83,7 @@ Resources:
             Action:
               - dynamodb:GetItem
               - dynamodb:PutItem
-            Resource: !ImportValue Ka4TodayUsersTableName
+            Resource: !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
 
   Ka4TodayCronDailyMessageFunction:
     Type: AWS::Serverless::Function
@@ -99,7 +106,7 @@ Resources:
               - dynamodb:Query
               - dynamodb:UpdateItem
             Resource:
-              - !ImportValue Ka4TodayUsersTableName
+              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
 
   #####################################################################
@@ -121,10 +128,3 @@ Resources:
       LogGroupName: ka4today-cron-daily-message
       RetentionInDays: 7
 
-  #####################################################################
-  ##                         Storage                                 ##
-  #####################################################################
-  StorageStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stack/storage.yaml

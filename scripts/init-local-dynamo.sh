@@ -79,3 +79,18 @@ aws dynamodb create-table \
     AttributeName=trainer_id,KeyType=HASH \
   --endpoint-url http://localhost:8000
 echo "✅ Table '$TABLE_NAME_TRAINERS' created successfully."
+
+TABLE_NAME_LOG="ka4-today-log"
+echo "🧱 Creating table: $TABLE_NAME_LOG"
+aws dynamodb create-table \
+  --table-name $TABLE_NAME_LOG \
+  --billing-mode PAY_PER_REQUEST \
+  --attribute-definitions \
+    AttributeName=chat_id,AttributeType=N \
+    AttributeName=timestamp,AttributeType=S \
+  --key-schema \
+    AttributeName=chat_id,KeyType=HASH \
+    AttributeName=timestamp,KeyType=RANGE \
+  --endpoint-url http://localhost:8000
+
+echo "✅ Table '$TABLE_NAME_LOG' created successfully."

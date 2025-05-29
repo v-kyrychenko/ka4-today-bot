@@ -78,9 +78,25 @@ Resources:
         - AttributeName: trainer_id
           KeyType: HASH
 
+  Ka4TodayLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ka4-today-log
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: chat_id
+          AttributeType: N
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: chat_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+
 Outputs:
-  Ka4TodayUsersTableName:
-    Description: "Name of Ka4TodayUsers DynamoDB table"
-    Value: !Ref Ka4TodayUsersTable
+  Ka4TodayUsersTableArn:
+    Description: "ARN of Ka4TodayUsers DynamoDB table"
+    Value: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Ka4TodayUsersTable}
     Export:
-      Name: Ka4TodayUsersTableName
+      Name: Ka4TodayUsersTableArn

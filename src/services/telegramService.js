@@ -12,11 +12,12 @@ const TELEGRAM_HEADERS = {
 
 /**
  * Send a message to a Telegram chat.
- * @param {string|number} chatId - The Telegram chat ID.
+ * @param {object} context - context with the Telegram chat ID.
  * @param {string} message - The message to send.
  * @returns {Promise<void>}
  */
-export async function sendMessage(chatId, message) {
+export async function sendMessage(context, message) {
+    const chatId = context.chatId
     try {
         await httpRequest({
             method: 'POST',
@@ -37,6 +38,12 @@ export async function sendMessage(chatId, message) {
         } else {
             logError(`❌ Failed to send message to ${chatId}`, e);
         }
+    } finally {
+        await dynamoDbService.logSentMessage({
+            chatId,
+            promptRef: context?.message?.promptRef ?? null,
+            text: message,
+        });
     }
 }
 

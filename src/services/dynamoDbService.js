@@ -3,7 +3,7 @@ import {
     DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import {unmarshall} from "@aws-sdk/util-dynamodb";
-import {log} from "../utils/logger.js";
+import {log, logError} from "../utils/logger.js";
 import {DYNAMODB_ENDPOINT, OPENAI_DEFAULT_PROMPT} from "../config/env.js";
 import {BadRequestError} from "../utils/errors.js";
 import {DEFAULT_BATCH_SIZE, DEFAULT_PROMPT_VERSION} from "../config/constants.js";
@@ -13,6 +13,7 @@ const DYNAMO_USERS_SCHEDULE_TABLE = "ka4-today-users-training-schedule";
 const USERS_SCHEDULE_INDEX = "ScheduleByDay";
 
 const DYNAMO_PROMPT_TABLE = "ka4-today-prompts";
+const DYNAMO_MESSAGE_LOG_TABLE = "ka4-today-log";
 
 const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
@@ -21,7 +22,8 @@ export const dynamoDbService = {
     ensureUserExists,
     markUserInactive,
     getUsersScheduledForDay,
-    getPrompt
+    getPrompt,
+    logSentMessage
 };
 
 /**
@@ -224,4 +226,33 @@ async function batchGetItems(tableName, keys, projection, filterFn) {
     }
 
     return result;
+}
+
+/**
+ * Logs a sent message to DynamoDB for auditing and traceability purposes.
+ *
+ * @param {Object} params - The message details to log.
+ * @param {number} params.chatId - The Telegram chat ID of the user.
+ * @param {string} params.text - The message text that was sent.
+ * @param {string} [params.promptRef] - Reference ID of the prompt used (if any).
+ * @returns {Promise<void>} Resolves after logging the message or logs error on failure.
+ */
+export async function logSentMessage({chatId, text, promptRef}) {
+    const timestamp = new Date().toISOString();
+
+    const command = new PutItemCommand({
+        TableName: DYNAMO_MESSAGE_LOG_TABLE,
+        Item: {
+            chat_id: {N: String(chatId)},
+            timestamp: {S: timestamp},
+            text: {S: text},
+            prompt_ref: {S: promptRef || "unknown"}
+        },
+    });
+
+    try {
+        await dynamo.send(command);
+    } catch (err) {
+        logError("❌ Failed to log message:", err);
+    }
 }

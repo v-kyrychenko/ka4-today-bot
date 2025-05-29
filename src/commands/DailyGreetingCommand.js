@@ -24,7 +24,7 @@ export class DailyGreetingCommand extends BaseCommand {
         const assistantReply = await openAiService
             .fetchOpenAiReply({lang: lang, promptRef: promptRef})
 
-        await telegramService.sendMessage(context.chatId, assistantReply);
+        await telegramService.sendMessage(context, assistantReply);
     }
 }
 
