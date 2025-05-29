@@ -1,7 +1,7 @@
 import {log} from '../utils/logger.js';
 import {InvokeCommand, LambdaClient} from "@aws-sdk/client-lambda";
 import {ASYNC_TELEGRAM_PROCESSOR} from "../config/constants.js";
-import {userService} from "../services/userService.js";
+import {dynamoDbService} from "../services/dynamoDbService.js";
 
 const lambdaClient = new LambdaClient();
 /**
@@ -12,7 +12,7 @@ export const handler = async () => {
     log('🕐 Daily cron started');
     try {
         const request = {}
-        const users = await userService.getUsersScheduledForDay();
+        const users = await dynamoDbService.getUsersScheduledForDay();
 
         for (const user of users) {
             const command = new InvokeCommand({

@@ -1,13 +1,7 @@
 import {telegramService} from './telegramService.js';
 import {BadRequestError, OpenAIError} from '../utils/errors.js';
 import {log} from "../utils/logger.js";
-import {StartCommand} from "../commands/StartCommand.js";
-import {DefaultCommand} from "../commands/DefaultCommand.js";
-
-export const commandHandlers = [
-    new StartCommand(),
-    new DefaultCommand(),
-];
+import {commandRegistry} from "../commands/registry.js";
 
 /**
  * Telegram webhook handler.
@@ -25,8 +19,7 @@ export const mainProcessor = {
         log(`Incoming message from ${username || userId}: ${text}`);
         const context = {chatId, text, userId, username, message: inRequest.message};
 
-        const command =
-            commandHandlers.find(cmd => cmd.canHandle(text, context));
+        const command = commandRegistry.find(cmd => cmd.canHandle(text, context));
 
         if (!command) {
             log(`Skipped. No command found for: ${text}`);
@@ -34,7 +27,7 @@ export const mainProcessor = {
         }
 
         const commandName = command.constructor?.name ?? "AnonymousCommand";
-        log(`Executing handler: ${commandName}`);
+        log(`Executing: ${commandName}`);
 
         try {
             await command.execute(context);

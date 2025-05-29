@@ -1,8 +1,11 @@
 import {
     DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
+import {unmarshall} from "@aws-sdk/util-dynamodb";
 import {log} from "../utils/logger.js";
-import {DYNAMODB_ENDPOINT} from "../config/env.js";
+import {DYNAMODB_ENDPOINT, OPENAI_DEFAULT_PROMPT} from "../config/env.js";
+import {BadRequestError} from "../utils/errors.js";
+import {DEFAULT_PROMPT_VERSION} from "../config/constants.js";
 
 const DYNAMO_USER_TABLE = "ka4-today-users";
 const ACTIVE_USERS_INDEX = 'ActiveUsersIndex';
@@ -10,13 +13,17 @@ const ACTIVE_USERS_INDEX = 'ActiveUsersIndex';
 const DYNAMO_USERS_SCHEDULE_TABLE = "ka4-today-users-training-schedule";
 const USERS_SCHEDULE_INDEX = "ScheduleByDay";
 
+const DYNAMO_PROMPT_TABLE = "ka4-today-prompts";
+
 const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
-export const userService = {
+export const dynamoDbService = {
+    getUser,
     ensureUserExists,
     getActiveUsers,
     markUserInactive,
-    getUsersScheduledForDay
+    getUsersScheduledForDay,
+    getPrompt
 };
 
 /**
@@ -117,6 +124,56 @@ export async function getUsersScheduledForDay() {
 
     const result = await dynamo.send(command);
     return result.Items || [];
+}
+
+/**
+ * Get user from DynamoDB.
+ * @param {Number} chatId - user chat id
+ */
+export async function getUser(chatId) {
+    const get = new GetItemCommand({
+        TableName: DYNAMO_USER_TABLE,
+        Key: {chat_id: {N: String(chatId)}},
+    });
+
+    const result = await dynamo.send(get);
+    if (!result.Item) {
+        throw new BadRequestError(`User for chat id: ${chatId} not found in db`)
+    }
+    return unmarshall(result.Item);
+}
+
+/**
+ * Get prompt from DynamoDB.
+ * @param {String} lang - prompt language
+ * @param {String} promptId - get prompt by reference
+ */
+export async function getPrompt(lang, promptId) {
+    if (!promptId) {
+        log("🟡 Prompt ID is not provided — using default prompt.");
+        return OPENAI_DEFAULT_PROMPT
+    }
+
+    const get = new GetItemCommand({
+        TableName: DYNAMO_PROMPT_TABLE,
+        Key: {
+            prompt_id: {S: promptId},
+            version: {N: DEFAULT_PROMPT_VERSION},
+        },
+    });
+
+    const result = await dynamo.send(get);
+    if (!result.Item) {
+        throw new BadRequestError(`Prompt: ${promptId} not found in db`)
+    }
+
+    const item = unmarshall(result.Item);
+
+    if (!item.prompts || !item.prompts[lang]) {
+        throw new BadRequestError(`Prompt '${promptId}' has no translation for language '${lang}'.`);
+    }
+
+    return item.prompts[lang];
 }
 
 /**

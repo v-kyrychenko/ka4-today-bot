@@ -1,4 +1,4 @@
-import {userService} from './userService.js';
+import {dynamoDbService} from './dynamoDbService.js';
 import {telegramService} from './telegramService.js';
 import {fetchOpenAiReply} from './mainProcessor.js';
 import {log, logError} from '../utils/logger.js';
@@ -6,7 +6,7 @@ import {MAX_DAILY_USERS} from '../config/constants.js';
 
 export async function cronProcessor() {
     try {
-        const users = await userService.getUsersScheduledForDay();
+        const users = await dynamoDbService.getUsersScheduledForDay();
 
         log(`📬 Will attempt to send message to ${users.length} users (max limit: ${MAX_DAILY_USERS})`);
     //     let sent = 0;
@@ -18,7 +18,7 @@ export async function cronProcessor() {
     //             sent++;
     //         } catch (e) {
     //             if (e.message.includes('Forbidden') || e.message.includes('user is deactivated')) {
-    //                 await userService.markUserInactive(user.chat_id.N);
+    //                 await dynamoDbService.markUserInactive(user.chat_id.N);
     //                 log(`🗑️ Removed user ${user.chat_id.N} (no longer reachable)`);
     //             } else {
     //                 logError(`❌ Failed to send message to ${user.chat_id.N}`, e);
