@@ -22,6 +22,9 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 - Auto-deletes users after receiving Telegram 403 errors (e.g., bot blocked)
 - **Daily cron-based message broadcast** via ka4today-cron-daily-message Lambda
 - **Cleans OpenAI assistant output** by stripping source annotations
+- **Personalized messages** based on the day of the week
+- **Localization support** for messages (multi-language)
+- **Prompt dictionary** stored in DynamoDB for consistent responses
 
 ---
 
@@ -60,7 +63,7 @@ npm run local -- Ka4TodayTelegramWebhook event-samples/telegram-event.json
 
 Run async processor
 ```bash
-npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/async-event.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
 ```
 
 ---
@@ -118,3 +121,4 @@ aws cloudformation delete-stack --stack-name ka4-today-bot
 ## License
 
 MIT – use it freely, improve it boldly.
+

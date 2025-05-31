@@ -1,8 +1,9 @@
 import {pollUntil} from '../utils/poller.js';
 import {httpRequest} from "./httpClient.js";
 import {OpenAIError} from '../utils/errors.js';
-import {POLLING} from '../config/constants.js';
-import {OPENAI_API_KEY, OPENAI_PROJECT_ID} from '../config/env.js';
+import {DEFAULT_LANG, POLLING} from '../config/constants.js';
+import {OPENAI_API_KEY, OPENAI_ASSISTANT_ID, OPENAI_PROJECT_ID} from '../config/env.js';
+import {dynamoDbService} from "./dynamoDbService.js";
 
 const OPEN_AI_API_LABEL = 'OPEN-AI';
 const OPEN_AI_BASE_URL = 'https://api.openai.com/v1';
@@ -93,4 +94,72 @@ export const openAiService = {
             errorClass: OpenAIError,
         });
     },
+
+    /**
+     * Runs the OpenAI Assistant on a new thread and extracts the final assistant reply.
+     *
+     * @param lang - language that should be used for prompt
+     * @param promptRef - reference to prompt that will be used for assistant
+     * @returns {Promise<string>} - The extracted assistant reply as plain text.
+     * @throws {OpenAIError} If the run did not complete successfully or no reply is found.
+     */
+    fetchOpenAiReply: async ({lang = DEFAULT_LANG, promptRef}) => {
+        const prompt = await dynamoDbService.getPrompt(lang, promptRef)
+
+        const threadId = await openAiService.createThread();
+        await openAiService.addMessageToThread(threadId, prompt);
+
+        const runId = await openAiService.run(OPENAI_ASSISTANT_ID, threadId);
+
+        const completed = await openAiService.waitForRun(threadId, runId);
+        if (!completed) {
+            throw new OpenAIError(`Run ${runId} did not complete successfully`);
+        }
+
+        const messages = await openAiService.getMessages(threadId);
+        return extractAssistantReply(messages);
+    },
+}
+
+/**
+ * @param {{ data: Array<{ role: string, created_at: number, content: any[] }> }} messages
+ */
+function extractAssistantReply(messages) {
+    if (!Array.isArray(messages?.data)) {
+        throw new OpenAIError('Invalid messages format: expected data[] array');
+    }
+
+    const assistantMessages = messages.data
+        .filter(m => m.role === 'assistant')
+        .sort((a, b) => b.created_at - a.created_at);
+
+    if (!assistantMessages.length) {
+        throw new OpenAIError('No assistant messages found in thread');
+    }
+
+    const last = assistantMessages[0];
+
+    const textPart = last.content.find(part => part.type === 'text');
+
+    if (!textPart || !textPart.text?.value) {
+        throw new OpenAIError('Assistant message does not contain valid text content');
+    }
+
+    return postProcessText(textPart.text);
+}
+
+/**
+ * Delete all text annotations (example: 4:10†source) from assistant response.
+ * @param {{ value: string, annotations?: Array<{ text: string }> }} text
+ * @returns {string}
+ */
+function postProcessText({value, annotations = []}) {
+    let result = value;
+
+    for (const annotation of annotations) {
+        if (!annotation.text) continue;
+        result = result.replaceAll(annotation.text, '');
+    }
+
+    return result.trim();
 }
