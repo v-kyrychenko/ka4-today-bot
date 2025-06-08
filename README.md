@@ -63,7 +63,7 @@ npm run local -- Ka4TodayTelegramWebhook event-samples/telegram-event.json
 
 Run async processor
 ```bash
-npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-workout.json
 ```
 
 ---

@@ -12,7 +12,6 @@ export class DailyGreetingCommand extends BaseCommand {
     }
 
     async execute(context) {
-        //TODO think about retrieving language_code from context (user available in cron)
         const user = await dynamoDbService.getUser(context.chatId)
         const lang = user.language_code || DEFAULT_LANG
         const promptRef = context.message.promptRef
