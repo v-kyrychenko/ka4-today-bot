@@ -118,3 +118,10 @@ aws cloudformation delete-stack --stack-name ka4-today-bot
 
 ---
 
+## License
+All Rights Reserved.
+© [2025] [Vitalii Kyrychenko]
+
+This code and associated content may not be copied, modified, or distributed without explicit written permission.
+This project is intended as a personal exploration and demonstration only.
+
