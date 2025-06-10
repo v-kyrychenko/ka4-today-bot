@@ -70,7 +70,19 @@ export const openAiService = {
         return resp.id;
     },
 
-    waitForRun: async (threadId, runId) => {
+    /**
+     * Polls the status of a run until it is completed or a maximum number of retries is reached.
+     * If the run requires a tool output action (requires_action: submit_tool_outputs),
+     * it calls the `processRequiredAction` handler with the provided context.
+     *
+     * @param {string} threadId - The unique identifier of the thread.
+     * @param {string} runId - The unique identifier of the run.
+     * @param {Object} context - A context object containing data for dynamic argument overrides
+     *                           and other runtime information.
+     * @returns {Promise<boolean>} - Resolves to `true` if the run is completed successfully,
+     *                               otherwise `false` if the maximum polling attempts are reached.
+     */
+    waitForRun: async (threadId, runId, context) => {
         return pollUntil(
             async () => {
                 const runInfo = await openAiService.getRunInfo(threadId, runId);
@@ -82,10 +94,6 @@ export const openAiService = {
 
                 if (runInfo.status === 'requires_action' &&
                     runInfo.required_action.type === 'submit_tool_outputs') {
-
-                    //TODO
-                    const chatId = 7074512472
-                    const context = {chatId}
                     await processRequiredAction(context, runInfo);
                 }
 
@@ -123,13 +131,14 @@ export const openAiService = {
     /**
      * Runs the OpenAI Assistant on a new thread and extracts the final assistant reply.
      *
-     * @param lang - language that should be used for prompt
+     * @param context - main execution context
      * @param promptRef - reference to prompt that will be used for assistant
      * @param functions - list of openAi functions definitions
      * @returns {Promise<string>} - The extracted assistant reply as plain text.
      * @throws {OpenAIError} If the run did not complete successfully or no reply is found.
      */
-    fetchOpenAiReply: async ({lang = DEFAULT_LANG, promptRef, functions = []}) => {
+    fetchOpenAiReply: async ({context, promptRef, functions = []}) => {
+        const lang = context.user.language_code || DEFAULT_LANG
         const prompt = await dynamoDbService.getPrompt(lang, promptRef)
 
         const threadId = await openAiService.createThread();
@@ -137,7 +146,7 @@ export const openAiService = {
 
         const runId = await openAiService.run(threadId, functions);
 
-        const completed = await openAiService.waitForRun(threadId, runId);
+        const completed = await openAiService.waitForRun(threadId, runId, context);
         if (!completed) {
             throw new OpenAIError(`Run ${runId} did not complete successfully`);
         }

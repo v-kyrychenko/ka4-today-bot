@@ -19,10 +19,9 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ## ⭐ Features
 - **Secure webhook** with x-telegram-bot-api-secret-token validation
 - Handles /start command and registers user in DB
-- Auto-deletes users after receiving Telegram 403 errors (e.g., bot blocked)
+- Mark users as inactive users after receiving Telegram 403 errors (e.g., bot blocked)
 - **Daily cron-based message broadcast** via ka4today-cron-daily-message Lambda
-- **Cleans OpenAI assistant output** by stripping source annotations
-- **Personalized messages** based on the day of the week
+- **Personalized messages** based on OpenAI assistant and the day of the week
 - **Localization support** for messages (multi-language)
 - **Prompt dictionary** stored in DynamoDB for consistent responses
 

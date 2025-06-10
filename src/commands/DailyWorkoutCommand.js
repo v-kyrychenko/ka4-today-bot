@@ -3,8 +3,6 @@ import {DAILY_WORKOUT_COMMAND} from "./registry.js";
 import {openAiService} from "../services/openAiService.js";
 import {telegramService} from "../services/telegramService.js";
 import {BadRequestError} from "../utils/errors.js";
-import {dynamoDbService} from "../services/dynamoDbService.js";
-import {DEFAULT_LANG} from "../config/constants.js";
 
 export class DailyWorkoutCommand extends BaseCommand {
 
@@ -13,8 +11,6 @@ export class DailyWorkoutCommand extends BaseCommand {
     }
 
     async execute(context) {
-        const user = await dynamoDbService.getUser(context.chatId)
-        const lang = user.language_code || DEFAULT_LANG
         const promptRef = "daily_workout_default"
 
         if (!promptRef) {
@@ -22,7 +18,7 @@ export class DailyWorkoutCommand extends BaseCommand {
         }
 
         const assistantReply = await openAiService
-            .fetchOpenAiReply({lang, promptRef, FUNC_GET_AVAILABLE_EXERCISES})
+            .fetchOpenAiReply({context, promptRef, FUNC_GET_AVAILABLE_EXERCISES})
 
         await telegramService.sendMessage(context, assistantReply);
     }
