@@ -6,6 +6,9 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ---
 
 ## 📐 Architecture
+
+<img src="assets/ka4-today.arch.png">
+
 - **Telegram Webhook** via **API Gateway (HTTP API) → Lambda**
 - **Asynchronous processing** via a second Lambda (asyncProcessor) invoked with InvokeFunction
 - **Integration with OpenAI Assistants API v2** (threads, runs, messages, functions)
