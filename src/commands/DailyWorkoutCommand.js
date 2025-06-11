@@ -13,10 +13,6 @@ export class DailyWorkoutCommand extends BaseCommand {
     async execute(context) {
         const promptRef = "daily_workout_default"
 
-        if (!promptRef) {
-            throw new BadRequestError(`🟡 promptRef missing in context:${context}`)
-        }
-
         const assistantReply = await openAiService
             .fetchOpenAiReply({context, promptRef, functions: FUNC_GET_AVAILABLE_EXERCISES})
 
