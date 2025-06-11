@@ -8,24 +8,22 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ## 📐 Architecture
 - **Telegram Webhook** via **API Gateway (HTTP API) → Lambda**
 - **Asynchronous processing** via a second Lambda (asyncProcessor) invoked with InvokeFunction
-- **Integration with OpenAI Assistants API v2** (threads, runs, messages)
+- **Integration with OpenAI Assistants API v2** (threads, runs, messages, functions)
 - **Structured logging** with ### LABEL:start/stop, distinguishing api-level and low-level errors
 - **Custom HTTP client** with timeouts, hidden responses, and semantic errorClass
 - **DynamoDB** for storing Telegram users (chat_id, username, etc.) + GSI ActiveUsersIndex
 - **CloudWatch** Logs and Dashboards with key metrics like Invocations, Errors
-
 ---
 
 ## ⭐ Features
 - **Secure webhook** with x-telegram-bot-api-secret-token validation
 - Handles /start command and registers user in DB
-- Auto-deletes users after receiving Telegram 403 errors (e.g., bot blocked)
+- Mark users as inactive users after receiving Telegram 403 errors (e.g., bot blocked)
 - **Daily cron-based message broadcast** via ka4today-cron-daily-message Lambda
-- **Cleans OpenAI assistant output** by stripping source annotations
-- **Personalized messages** based on the day of the week
+- **Personalized messages** based on OpenAI assistant and the day of the week
 - **Localization support** for messages (multi-language)
 - **Prompt dictionary** stored in DynamoDB for consistent responses
-
+- **Personalized workout generation** custom daily workout plan for the user, based on their preferences and available exercise
 ---
 
 ## 🧩 Project Structure
@@ -63,7 +61,7 @@ npm run local -- Ka4TodayTelegramWebhook event-samples/telegram-event.json
 
 Run async processor
 ```bash
-npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-workout.json
 ```
 
 ---
