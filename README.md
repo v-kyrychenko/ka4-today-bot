@@ -8,12 +8,11 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ## 📐 Architecture
 - **Telegram Webhook** via **API Gateway (HTTP API) → Lambda**
 - **Asynchronous processing** via a second Lambda (asyncProcessor) invoked with InvokeFunction
-- **Integration with OpenAI Assistants API v2** (threads, runs, messages)
+- **Integration with OpenAI Assistants API v2** (threads, runs, messages, functions)
 - **Structured logging** with ### LABEL:start/stop, distinguishing api-level and low-level errors
 - **Custom HTTP client** with timeouts, hidden responses, and semantic errorClass
 - **DynamoDB** for storing Telegram users (chat_id, username, etc.) + GSI ActiveUsersIndex
 - **CloudWatch** Logs and Dashboards with key metrics like Invocations, Errors
-
 ---
 
 ## ⭐ Features
@@ -24,7 +23,7 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 - **Personalized messages** based on OpenAI assistant and the day of the week
 - **Localization support** for messages (multi-language)
 - **Prompt dictionary** stored in DynamoDB for consistent responses
-
+- **Personalized workout generation** custom daily workout plan for the user, based on their preferences and available exercise
 ---
 
 ## 🧩 Project Structure
