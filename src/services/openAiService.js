@@ -51,11 +51,16 @@ export const openAiService = {
             assistant_id: OPENAI_ASSISTANT_ID,
         };
 
+        body.tools = [
+            {type: "file_search"}
+        ];
+
         if (functions.length > 0) {
-            body.tools = functions.map(func => ({
+            const functionTools = functions.map(func => ({
                 type: "function",
                 function: func
             }));
+            body.tools.push(...functionTools);
         }
 
         const resp = await httpRequest({

@@ -18,7 +18,7 @@ export class DailyWorkoutCommand extends BaseCommand {
         }
 
         const assistantReply = await openAiService
-            .fetchOpenAiReply({context, promptRef, FUNC_GET_AVAILABLE_EXERCISES})
+            .fetchOpenAiReply({context, promptRef, functions: FUNC_GET_AVAILABLE_EXERCISES})
 
         await telegramService.sendMessage(context, assistantReply);
     }
