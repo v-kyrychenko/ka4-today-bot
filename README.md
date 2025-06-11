@@ -6,7 +6,6 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ---
 
 ## 📐 Architecture
-
 <img src="assets/ka4-today.arch.png">
 
 - **Telegram Webhook** via **API Gateway (HTTP API) → Lambda**
