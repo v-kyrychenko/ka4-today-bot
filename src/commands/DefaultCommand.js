@@ -9,7 +9,9 @@ export class DefaultCommand extends BaseCommand {
     }
 
     async execute(context) {
-        const assistantReply = await openAiService.fetchOpenAiReply({context})
+        const promptRef = "42_default"
+
+        const assistantReply = await openAiService.fetchOpenAiReply({context, promptRef})
         await telegramService.sendMessage(context, assistantReply);
     }
 }

@@ -93,8 +93,7 @@ sam deploy \
     TelegramSecurityToken=your-secret \
     OpenAiToken=your-openai-key \
     OpenAiAssistantId=your-assistant-id
-    OpenAiProjectId=your-openai-project-id \
-    OpenAiDefaultPrompt=your-openai-assistant-default-promt
+    OpenAiProjectId=your-openai-project-id 
 ```
 
 ## ☁️ Delete all from AWS

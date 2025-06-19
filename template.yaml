@@ -14,7 +14,6 @@ Globals:
         OPENAI_API_KEY: !Ref OpenAiToken
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
         OPENAI_ASSISTANT_ID: !Ref OpenAiAssistantId
-        OPENAI_DEFAULT_PROMPT: !Ref OpenAiDefaultPrompt
         DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
 
 Parameters:

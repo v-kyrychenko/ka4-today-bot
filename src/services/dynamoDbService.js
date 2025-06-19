@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-dynamodb';
 import {unmarshall} from "@aws-sdk/util-dynamodb";
 import {log, logError} from "../utils/logger.js";
-import {DYNAMODB_ENDPOINT, OPENAI_DEFAULT_PROMPT} from "../config/env.js";
+import {DYNAMODB_ENDPOINT} from "../config/env.js";
 import {BadRequestError} from "../utils/errors.js";
 import {DEFAULT_BATCH_SIZE, DEFAULT_PROMPT_VERSION} from "../config/constants.js";
 
@@ -151,8 +151,7 @@ export async function getUser(chatId) {
  */
 export async function getPrompt(lang, promptId) {
     if (!promptId) {
-        log("🟡 Prompt ID is not provided — using default prompt.");
-        return OPENAI_DEFAULT_PROMPT
+        throw new BadRequestError("🟡 Prompt ID is not provided");
     }
 
     const get = new GetItemCommand({
