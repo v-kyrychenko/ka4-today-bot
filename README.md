@@ -7,6 +7,7 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 
 ## 📐 Architecture
 <img src="assets/ka4-today.arch.png">
+<br>
 
 - **Telegram Webhook** is handled via **API Gateway (HTTP API)** → lightweight **Lambda**,  
   which pushes messages to an **Amazon SQS queue** instead of invoking the processor directly.
