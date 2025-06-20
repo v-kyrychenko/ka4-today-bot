@@ -15,6 +15,7 @@ Globals:
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
         OPENAI_ASSISTANT_ID: !Ref OpenAiAssistantId
         DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
+        MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
 
 Parameters:
   TelegramBotToken:
@@ -67,16 +68,34 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - Statement:
             Effect: Allow
-            Action: lambda:InvokeFunction
-            Resource: !GetAtt Ka4TodayAsyncTelegramProcessor.Arn
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt MainMessageQueue.Arn
+
   Ka4TodayAsyncTelegramProcessor:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-async-telegram-processor
       Handler: src/handlers/asyncTelegramProcessor.handler
       CodeUri: .
+      Events:
+        MessageQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MainMessageQueue.Arn
+            BatchSize: 1
+            MaximumBatchingWindowInSeconds: 0
+            ScalingConfig:
+              MaximumConcurrency: 2
       Policies:
         - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource: !GetAtt MainMessageQueue.Arn
         - Statement:
             Effect: Allow
             Action:
@@ -113,11 +132,8 @@ Resources:
             #Schedule: rate(3 minutes)
             Enabled: true
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            Effect: Allow
-            Action: lambda:InvokeFunction
-            Resource: !GetAtt Ka4TodayAsyncTelegramProcessor.Arn
+        - SQSSendMessagePolicy:
+            QueueName: ka4today-message-queue
         - Statement:
             Effect: Allow
             Action:
@@ -149,3 +165,11 @@ Resources:
       LogGroupName: ka4today-cron-daily-message
       RetentionInDays: 7
 
+  #####################################################################
+  ##                         SQS                                     ##
+  #####################################################################
+  MainMessageQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ka4today-main-message-queue
+      VisibilityTimeout: 130 #  Queue visibility timeout should be > Lambda execution timeout

@@ -7,14 +7,27 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 
 ## 📐 Architecture
 <img src="assets/ka4-today.arch.png">
+<br>
 
-- **Telegram Webhook** via **API Gateway (HTTP API) → Lambda**
-- **Asynchronous processing** via a second Lambda (asyncProcessor) invoked with InvokeFunction
-- **Integration with OpenAI Assistants API v2** (threads, runs, messages, functions)
-- **Structured logging** with ### LABEL:start/stop, distinguishing api-level and low-level errors
-- **Custom HTTP client** with timeouts, hidden responses, and semantic errorClass
-- **DynamoDB** for storing Telegram users (chat_id, username, etc.) + GSI ActiveUsersIndex
-- **CloudWatch** Logs and Dashboards with key metrics like Invocations, Errors
+- **Telegram Webhook** is handled via **API Gateway (HTTP API)** → lightweight **Lambda**,  
+  which pushes messages to an **Amazon SQS queue** instead of invoking the processor directly.
+- **Amazon SQS** acts as a **decoupling layer and rate controller**,  
+  enabling safe and scalable asynchronous processing.
+- The **Async Processor Lambda** consumes messages from the SQS queue with controlled concurrency  
+  (e.g. `MaximumConcurrency: 2`) to avoid hitting **OpenAI token limits**.
+- Integration with **OpenAI Assistants API v2**: threads, runs, tool calls, file search support.
+- **Structured logging** with semantic markers (`### LABEL:start/stop`),  
+  distinguishing between API-level and low-level errors.
+- **Custom HTTP client** with:
+  - timeouts,
+  - semantic `errorClass`,
+  - optional hidden responses (for logging privacy or size constraints).
+- **DynamoDB** for:
+  - Telegram users (`chat_id`, `username`, etc.),
+  - Prompt references,
+  - Daily training schedule,
+  - Invocation logs.
+
 ---
 
 ## ⭐ Features

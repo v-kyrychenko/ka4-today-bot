@@ -1,9 +1,9 @@
 import {log} from '../utils/logger.js';
-import {InvokeCommand, LambdaClient} from "@aws-sdk/client-lambda";
-import {ASYNC_TELEGRAM_PROCESSOR} from "../config/constants.js";
+import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {dynamoDbService} from "../services/dynamoDbService.js";
+import {MAIN_MESSAGE_QUEUE_URL} from "../config/env.js";
 
-const lambdaClient = new LambdaClient();
+const sqsClient = new SQSClient();
 
 /**
  * AWS Lambda handler triggered by a daily scheduled event.
@@ -22,8 +22,7 @@ export const handler = async () => {
         await Promise.all(
             scheduledUsers.map(async (item) => {
                 const payload = createLambdaRequest(item);
-                log(`📤 Invoking Lambda for chat_id=${item.chat_id}, prompt_ref=${item.prompt_ref}`);
-                await invokeTelegramProcessor(payload);
+                await sendToQueue(payload);
             })
         );
     } catch (err) {
@@ -74,24 +73,18 @@ function createLambdaRequest(item) {
 }
 
 /**
- * Asynchronously invokes the Telegram processing Lambda function.
+ * Sends the message to the SQS queue.
  *
- * This function sends a fire-and-forget ("Event" type) invocation
- * to the `ASYNC_TELEGRAM_PROCESSOR` Lambda, allowing Telegram messages
- * to be processed independently of the current execution flow.
- *
- * @param {object} payload - The payload to send to the Lambda function.
- *
- * @returns {Promise<void>} A Promise that resolves when the Lambda invocation
- *   request has been successfully sent.
- *
- * @throws {Error} Throws if the Lambda invocation fails to be dispatched.
+ * @param {object} payload - The structured payload to be enqueued.
+ * @returns {Promise<void>}
  */
-async function invokeTelegramProcessor(payload) {
-    const command = new InvokeCommand({
-        FunctionName: ASYNC_TELEGRAM_PROCESSOR,
-        InvocationType: "Event",
-        Payload: Buffer.from(JSON.stringify(payload)),
+async function sendToQueue(payload) {
+    const msg = JSON.stringify(payload)
+    log(`📩 Sending to queue:${MAIN_MESSAGE_QUEUE_URL} payload:${msg}`);
+    const command = new SendMessageCommand({
+        QueueUrl: MAIN_MESSAGE_QUEUE_URL,
+        MessageBody: msg,
     });
-    await lambdaClient.send(command);
+
+    await sqsClient.send(command);
 }
