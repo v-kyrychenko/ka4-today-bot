@@ -21,7 +21,7 @@ export const handler = async () => {
 
         await Promise.all(
             scheduledUsers.map(async (item) => {
-                const payload = createLambdaRequest(item);
+                const payload = createRequest(item);
                 await sendToQueue(payload);
             })
         );
@@ -34,7 +34,7 @@ export const handler = async () => {
 };
 
 /**
- * Constructs a Lambda invocation payload for a Telegram message.
+ * Constructs a invocation payload for a asyncTelegramProcessor.js.
  *
  * This function prepares the input structure required by the Telegram webhook-compatible
  * Lambda function. The payload includes a message object with the chat ID and a fixed
@@ -58,7 +58,7 @@ export const handler = async () => {
  *     }
  *   }
  */
-function createLambdaRequest(item) {
+function createRequest(item) {
     return {
         request: {
             message: {
