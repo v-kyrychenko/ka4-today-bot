@@ -16,4 +16,5 @@ export const OPENAI_API_KEY = getEnvVar('OPENAI_API_KEY');
 export const OPENAI_PROJECT_ID = getEnvVar('OPENAI_PROJECT_ID');
 export const OPENAI_ASSISTANT_ID = getEnvVar('OPENAI_ASSISTANT_ID');
 export const DYNAMODB_ENDPOINT = getEnvVar('DYNAMODB_ENDPOINT', false);
+export const MAIN_MESSAGE_QUEUE_URL = getEnvVar('MAIN_MESSAGE_QUEUE_URL');
 

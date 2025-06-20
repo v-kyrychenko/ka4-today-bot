@@ -1,29 +1,27 @@
-import {LambdaClient, InvokeCommand} from "@aws-sdk/client-lambda";
+import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {TELEGRAM_SECURITY_TOKEN} from '../config/env.js';
-import {ASYNC_TELEGRAM_PROCESSOR} from "../config/constants.js";
+import {MAIN_MESSAGE_QUEUE_URL} from "../config/env.js";
+import {logError} from "../utils/logger.js";
 
-const lambdaClient = new LambdaClient();
+const sqsClient = new SQSClient();
 
 export const handler = async (event) => {
     if (!isAuthorized(event.headers)) {
         return buildResponse(401, 'Unauthorized');
     }
 
-    const request = JSON.parse(event.body);
+    try {
+        const request = JSON.parse(event.body);
+        await sendToQueue({request});
 
-    //async invoke
-    const command = new InvokeCommand({
-        FunctionName: ASYNC_TELEGRAM_PROCESSOR,
-        InvocationType: "Event",
-        Payload: Buffer.from(JSON.stringify({request})),
-    });
-
-    await lambdaClient.send(command);
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ok: true}),
-    };
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ok: true}),
+        };
+    } catch (err) {
+        logError("❌ Failed to process webhook", err);
+        return buildResponse(500, 'Internal Server Error');
+    }
 };
 
 function isAuthorized(headers = {}) {
@@ -35,4 +33,18 @@ function buildResponse(statusCode, message) {
         statusCode,
         body: JSON.stringify({message}),
     };
+}
+
+/**
+ * Sends a given payload to the SQS message queue.
+ * @param {Object} payload - The message payload to send.
+ * @returns {Promise<void>}
+ */
+async function sendToQueue(payload) {
+    const command = new SendMessageCommand({
+        QueueUrl: MAIN_MESSAGE_QUEUE_URL,
+        MessageBody: JSON.stringify(payload),
+    });
+
+    await sqsClient.send(command);
 }
