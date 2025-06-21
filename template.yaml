@@ -132,8 +132,12 @@ Resources:
             #Schedule: rate(3 minutes)
             Enabled: true
       Policies:
-        - SQSSendMessagePolicy:
-            QueueName: ka4today-message-queue
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt MainMessageQueue.Arn
         - Statement:
             Effect: Allow
             Action:
