@@ -1,8 +1,8 @@
-import {telegramService} from './telegramService.js';
 import {BadRequestError, OpenAIError} from '../utils/errors.js';
-import {log} from "../utils/logger.js";
+import {telegramService} from './telegramService.js';
 import {commandRegistry} from "../commands/registry.js";
 import {dynamoDbService} from "./dynamoDbService.js";
+import {log} from "../utils/logger.js";
 
 /**
  * Telegram webhook handler.
@@ -18,7 +18,7 @@ export const mainProcessor = {
         const username = inRequest?.message?.from?.username ?? null;
 
         log(`Incoming message from ${username || userId}: ${text}`);
-        const user = await dynamoDbService.getUser(chatId)
+        const user = await dynamoDbService.getOrCreateUser(chatId, inRequest.message)
 
         const context = {chatId, text, user, message: inRequest.message};
 

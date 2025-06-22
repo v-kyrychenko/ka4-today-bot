@@ -1,6 +1,10 @@
 import {
     BatchGetItemCommand,
-    DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand,
+    DynamoDBClient,
+    GetItemCommand,
+    PutItemCommand,
+    QueryCommand,
+    UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import {unmarshall} from "@aws-sdk/util-dynamodb";
 import {log, logError} from "../utils/logger.js";
@@ -19,7 +23,7 @@ const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
 export const dynamoDbService = {
     getUser,
-    ensureUserExists,
+    getOrCreateUser,
     markUserInactive,
     getUsersScheduledForDay,
     getPrompt,
@@ -27,42 +31,88 @@ export const dynamoDbService = {
 };
 
 /**
- * Ensures the Telegram user is present in DynamoDB.
- * @param {object} context - command context
+ * Retrieves a user from DynamoDB by chat ID.
+ *
+ * @param {number} chatId - The Telegram chat ID of the user.
+ * @param {boolean} [throwIfNotFound=true] - Whether to throw an error if the user is not found.
+ * @returns {Promise<object|null>} - The user object, or null if not found and throwIfNotFound is false.
+ * @throws {BadRequestError} - If user is not found and throwIfNotFound is true (default).
  */
-export async function ensureUserExists(context) {
-    const chatId = context.chatId;
-
+export async function getUser(chatId, throwIfNotFound = true) {
     const get = new GetItemCommand({
         TableName: DYNAMO_USER_TABLE,
         Key: {chat_id: {N: String(chatId)}},
     });
 
     const result = await dynamo.send(get);
-    if (result.Item) {
-        log(`Chat id: ${chatId} already present in db`)
-        return;
+
+    if (!result.Item) {
+        if (throwIfNotFound) {
+            throw new BadRequestError(`User for chat id: ${chatId} not found in db`);
+        }
+        return null;
     }
 
-    const user = context.message.from || {};
-    const chat = context.message.chat || {};
+    return unmarshall(result.Item);
+}
+
+
+/**
+ * Retrieves a Telegram user from the database, or creates one if it does not exist.
+ * Ensures atomic creation using a conditional PutItem.
+ * Safe against race conditions (retries fetch on ConditionalCheckFailed).
+ *
+ * @param {number} chatId - Telegram chat ID (numeric).
+ * @param {object} message - Telegram message object, must contain `from` and `chat`.
+ * @returns {Promise<object>} - The existing or newly created user object.
+ */
+export async function getOrCreateUser(chatId, message) {
+    const existing = await getUser(chatId, false);
+    if (existing) return existing;
+
+    const item = buildUserItem(chatId, message);
 
     const put = new PutItemCommand({
         TableName: DYNAMO_USER_TABLE,
-        Item: {
-            chat_id: {N: String(chatId)},
-            username: user.username ? {S: user.username} : {NULL: true},
-            first_name: user.first_name ? {S: user.first_name} : {NULL: true},
-            last_name: user.last_name ? {S: user.last_name} : {NULL: true},
-            language_code: user.language_code ? {S: user.language_code} : {NULL: true},
-            chat_type: chat.type ? {S: chat.type} : {NULL: true},
-            is_bot: {BOOL: !!user.is_bot},
-            created_at: {S: new Date().toISOString()},
-            is_active: {N: '1'},
-        },
+        Item: item,
+        ConditionExpression: 'attribute_not_exists(chat_id)',
     });
-    log(`Store chat id: ${chatId} into db`)
-    await dynamo.send(put);
+
+    try {
+        await dynamo.send(put);
+        log(`🆕 Created user ${chatId}`);
+        return unmarshall(item);
+    } catch (err) {
+        if (err.name === 'ConditionalCheckFailedException') {
+            log(`⚠️ Race detected, reloading user ${chatId}`);
+            return await getUser(chatId);
+        }
+        throw err;
+    }
+}
+
+/**
+ * Builds a DynamoDB item for a Telegram user.
+ *
+ * @param {number} chatId - Telegram chat ID.
+ * @param {object} message - Telegram message object with `from` and `chat`.
+ * @returns {object} - DynamoDB formatted item for PutItemCommand.
+ */
+function buildUserItem(chatId, message) {
+    const user = message?.from || {};
+    const chat = message?.chat || {};
+
+    return {
+        chat_id: {N: String(chatId)},
+        username: user.username ? {S: user.username} : {NULL: true},
+        first_name: user.first_name ? {S: user.first_name} : {NULL: true},
+        last_name: user.last_name ? {S: user.last_name} : {NULL: true},
+        language_code: user.language_code ? {S: user.language_code} : {NULL: true},
+        chat_type: chat.type ? {S: chat.type} : {NULL: true},
+        is_bot: {BOOL: !!user.is_bot},
+        created_at: {S: new Date().toISOString()},
+        is_active: {N: '1'},
+    };
 }
 
 /**
@@ -125,23 +175,6 @@ export async function getUsersScheduledForDay() {
             return {...item, user};
         })
         .filter(Boolean);
-}
-
-/**
- * Get user from DynamoDB.
- * @param {Number} chatId - user chat id
- */
-export async function getUser(chatId) {
-    const get = new GetItemCommand({
-        TableName: DYNAMO_USER_TABLE,
-        Key: {chat_id: {N: String(chatId)}},
-    });
-
-    const result = await dynamo.send(get);
-    if (!result.Item) {
-        throw new BadRequestError(`User for chat id: ${chatId} not found in db`)
-    }
-    return unmarshall(result.Item);
 }
 
 /**
