@@ -105,6 +105,8 @@ Resources:
               - dynamodb:PutItem
             Resource:
               - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
+              - !GetAtt StorageStack.Outputs.UserTrainingScheduleTableArn
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users-training-schedule/index/ScheduleByDay
         - Statement:
             Effect: Allow
             Action:
