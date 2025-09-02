@@ -139,12 +139,14 @@ export const openAiService = {
      * @param context - main execution context
      * @param promptRef - reference to prompt that will be used for assistant
      * @param functions - list of openAi functions definitions
+     * @param variables - parameters for prompt customization
      * @returns {Promise<string>} - The extracted assistant reply as plain text.
      * @throws {OpenAIError} If the run did not complete successfully or no reply is found.
      */
-    fetchOpenAiReply: async ({context, promptRef, functions = []}) => {
+    fetchOpenAiReply: async ({context, promptRef, functions = [], variables = {}}) => {
         const lang = context.user.language_code || DEFAULT_LANG
-        const prompt = await dynamoDbService.getPrompt(lang, promptRef)
+        const rawPrompt = await dynamoDbService.getPrompt(lang, promptRef)
+        const prompt = renderPromptTemplate(rawPrompt, variables)
 
         const threadId = await openAiService.createThread();
         await openAiService.addMessageToThread(threadId, prompt);
@@ -285,4 +287,48 @@ function mergeArgsWithContext(args, context) {
         }
     }
     return args;
+}
+
+/**
+ * Render a template string by replacing placeholders ${key} with values from variables.
+ * - Arrays: joined by ", "
+ * - Plain objects: flattened into "k1: v1, k2: v2"
+ * - Nested objects inside: JSON.stringify
+ * - null/undefined: empty string
+ * If variables is empty → template is returned unchanged.
+ *
+ * @param {string} template - Raw template containing placeholders.
+ * @param {Object} variables - Key-value pairs to substitute.
+ * @returns {string} - Rendered template.
+ */
+function renderPromptTemplate(template, variables = {}) {
+    if (!template || typeof template !== "string") return template;
+    if (!variables || typeof variables !== "object") return template;
+
+    return Object.entries(variables).reduce((out, [key, val]) => {
+        const str = formatValue(val);
+        return out.replaceAll(`\${${key}}`, str);
+    }, template);
+}
+
+function formatValue(v) {
+    if (v == null) return "";
+    if (Array.isArray(v)) return v.map(x => String(x ?? "")).join(", ");
+    if (isPlainObject(v)) {
+        return Object.entries(v)
+            .map(([k, val]) => `${k}: ${formatNested(val)}`)
+            .join(", ");
+    }
+    return String(v);
+}
+
+function formatNested(v) {
+    if (v == null) return "";
+    if (Array.isArray(v)) return v.map(x => String(x ?? "")).join(", ");
+    if (isPlainObject(v)) return JSON.stringify(v);
+    return String(v);
+}
+
+function isPlainObject(o) {
+    return typeof o === "object" && o !== null && !Array.isArray(o);
 }

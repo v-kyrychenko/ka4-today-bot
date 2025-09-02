@@ -4,25 +4,9 @@ import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {openAiService} from "../services/openAiService.js";
 import {telegramService} from "../services/telegramService.js";
-import {OpenAIError} from "../utils/errors.js";
-
-const FUNC_GET_AVAILABLE_EXERCISES = [
-    {
-        "name": "generateDailyWorkout",
-        "description": "Generate a personalized daily workout plan for a Telegram user based on their training level," +
-            " target muscles, and training history.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "chatId": {
-                    "type": "string",
-                    "description": "Unique Telegram chat ID of the user requesting the workout."
-                }
-            },
-            "required": ["chatId"]
-        }
-    }
-]
+import {BadRequestError, OpenAIError} from "../utils/errors.js";
+import {dynamoDbService} from "../services/dynamoDbService.js";
+import {log} from "../utils/logger.js";
 
 const s3 = new S3Client();
 
@@ -33,22 +17,41 @@ export class DailyWorkoutCommand extends BaseCommand {
     }
 
     async execute(context) {
-        const promptRef = "daily_workout_default"
+        const chatId = context.chatId
+        const promptRef = "daily_workout"
+        const promptNotToday = "no_training_for_today"
 
-        const assistantReply = await openAiService
-            .fetchOpenAiReply({context, promptRef, functions: FUNC_GET_AVAILABLE_EXERCISES})
+        const scheduled = await dynamoDbService.getUserScheduledForDay(context.chatId);
+        log(`🕐 ChatId:${chatId}, found scheduled training for today:${JSON.stringify(scheduled)}`);
+        if (!scheduled) {
+            const msg = await openAiService.fetchOpenAiReply({
+                context,
+                promptRef: promptNotToday,
+            });
+            await telegramService.sendMessage(context, msg);
+            return;
+        }
 
-        await telegramService.sendMessage(context, assistantReply);
-        // const exercises = parseSafeJsonExercises(assistantReply)
-        // const exercisesWithUrls = await generateSignedUrls(exercises);
-        //
-        // for (const [index, item] of exercisesWithUrls.entries()) {
-        //     const emojiIndex = toEmojiNumber(index + 1);
-        //     const caption = `${emojiIndex} ${item.name}\n${item.instructions}`;
-        //
-        //     await telegramService.sendMessage(context, caption);
-        //     await telegramService.sendWithMedia(context, item.signedImages);
-        // }
+        const plan = scheduled.plan;
+        if (plan == null) {
+            throw new BadRequestError("Today's schedule exists but 'plan' is missing");
+        }
+
+        const assistantReply = await openAiService.fetchOpenAiReply({
+            context, promptRef,
+            variables: {plan}
+        })
+
+        const exercises = parseSafeJsonExercises(assistantReply)
+        const exercisesWithUrls = await generateSignedUrls(exercises);
+
+        for (const [index, item] of exercisesWithUrls.entries()) {
+            const emojiIndex = toEmojiNumber(index + 1);
+            const caption = `${emojiIndex} ${item.name}\n${item.instructions}`;
+
+            await telegramService.sendMessage(context, caption);
+            await telegramService.sendWithMedia(context, item.signedImages);
+        }
     }
 }
 
