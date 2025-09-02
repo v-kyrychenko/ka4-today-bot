@@ -12,21 +12,25 @@ const openAiFunctionProcessor = {
      * @param {string} args.chatId - The unique identifier of the chat/user.
      * @returns {Promise<Object>} - The output object to be sent back to the Assistant API.
      */
-    getAvailableExercises: async ({chatId}) => {
-        log(`Get exercises for ${chatId}`)
-        //TODO IMPL. Example logic: fetch exercises from DB or service
-        // Here is a placeholder for the real implementation
-        // Replace this with actual data retrieval (e.g., DynamoDB, etc.)
-        const exercises = [
-            {name: "Push-ups", equipment: "bodyweight", level: "beginner", muscle_group: "chest"},
-            {name: "Squats", equipment: "bodyweight", level: "beginner", muscle_group: "legs"},
-            {name: "Plank", equipment: "bodyweight", level: "beginner", muscle_group: "core"}
-        ];
-
-        // Optionally filter exercises based on chat_id or user preferences
-        // (example: personalized recommendation)
-
-        return {exercises};
+    generateDailyWorkout: async ({chatId}) => {
+        log(`GenerateDailyWorkout for ${chatId}`)
+        //TODO read from DB
+        return {
+            "variationId": Date.now(),
+            "level": "beginner",
+            "primaryMuscles": [
+                "chest"
+            ],
+            "secondaryMuscles": [
+                "biceps"
+            ],
+            "category": "strength",
+            "history": [],
+            "plan": {
+                "chest": 3,
+                "biceps": 2
+            }
+        }
     }
 };
 

@@ -26,6 +26,7 @@ export const dynamoDbService = {
     getOrCreateUser,
     markUserInactive,
     getUsersScheduledForDay,
+    getUserScheduledForDay,
     getPrompt,
     logSentMessage
 };
@@ -175,6 +176,27 @@ export async function getUsersScheduledForDay() {
             return {...item, user};
         })
         .filter(Boolean);
+}
+
+/**
+ * Returns today's training schedule entry for a specific user (if any).
+ * Queries the ScheduleByDay GSI for the current weekday and filters by chatId.
+ *
+ * @param {number|string} chatId - Telegram chat ID.
+ * @returns {Promise<object|null>} Resolves with the matched schedule item or null if none.
+ */
+export async function getUserScheduledForDay(chatId) {
+    const day = getCurrentDayCode();
+    const resp = await dynamo.send(new QueryCommand({
+        TableName: DYNAMO_USERS_SCHEDULE_TABLE,
+        IndexName: USERS_SCHEDULE_INDEX,
+        KeyConditionExpression: "day_of_week = :day",
+        ExpressionAttributeValues: {":day": {S: day}},
+    }));
+
+    const items = (resp.Items || []).map(unmarshall);
+    const match = items.find(i => String(i.chat_id) === String(chatId));
+    return match || null;
 }
 
 /**
