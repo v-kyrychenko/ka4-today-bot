@@ -10,6 +10,10 @@ import {log} from "../utils/logger.js";
 
 const s3 = new S3Client();
 
+const PROMPT_REF = "daily_workout";
+const PROMPT_REF_NOT_TODAY = "no_training_for_today";
+const PROMPT_REF_NOT_NO_PLAN = "no_plan_for_training";
+
 export class DailyWorkoutCommand extends BaseCommand {
 
     canHandle(text) {
@@ -18,15 +22,12 @@ export class DailyWorkoutCommand extends BaseCommand {
 
     async execute(context) {
         const chatId = context.chatId
-        const promptRef = "daily_workout"
-        const promptNotToday = "no_training_for_today"
 
         const scheduled = await dynamoDbService.getUserScheduledForDay(context.chatId);
         log(`🕐 ChatId:${chatId}, found scheduled training for today:${JSON.stringify(scheduled)}`);
         if (!scheduled) {
             const msg = await openAiService.fetchOpenAiReply({
-                context,
-                promptRef: promptNotToday,
+                context, promptRef: PROMPT_REF_NOT_TODAY,
             });
             await telegramService.sendMessage(context, msg);
             return;
@@ -34,11 +35,15 @@ export class DailyWorkoutCommand extends BaseCommand {
 
         const plan = scheduled.plan;
         if (plan == null) {
-            throw new BadRequestError("Today's schedule exists but 'plan' is missing");
+            const msg = await openAiService.fetchOpenAiReply({
+                context, promptRef: PROMPT_REF_NOT_NO_PLAN,
+            });
+            await telegramService.sendMessage(context, msg);
+            return;
         }
 
         const assistantReply = await openAiService.fetchOpenAiReply({
-            context, promptRef,
+            context, promptRef: PROMPT_REF,
             variables: {plan}
         })
 
