@@ -119,6 +119,13 @@ Resources:
               - dynamodb:GetItem
             Resource:
               - !GetAtt StorageStack.Outputs.Ka4TodayPromptsTableArn
+        - Statement:
+            - Sid: ReadExerciseImages
+              Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:HeadObject
+              Resource: arn:aws:s3:::ka4-today-exercises/exercises/*
 
   Ka4TodayCronDailyMessageFunction:
     Type: AWS::Serverless::Function
