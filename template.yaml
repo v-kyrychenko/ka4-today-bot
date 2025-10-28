@@ -137,7 +137,7 @@ Resources:
         DailySchedule:
           Type: Schedule
           Properties:
-            Schedule: cron(0 2 ? * 2-7 *)  # 2:00 UTC = 5:00 by Kyiv (summer)
+            Schedule: cron(0 3 ? * 2-7 *)  # 2:00 UTC = 5:00 by Kyiv (summer), 03:00 UTC = 05:00 Kyiv (winter)
             #Schedule: rate(3 minutes)
             Enabled: true
       Policies:
