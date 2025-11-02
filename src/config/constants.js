@@ -5,5 +5,5 @@ export const DEFAULT_PROMPT_VERSION = "1"
 
 export const POLLING = {
     MAX_RETRIES: 30,
-    DELAY_MS: 1000,
+    DELAY_MS: 2000,
 };
