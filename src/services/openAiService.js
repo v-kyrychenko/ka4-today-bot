@@ -20,7 +20,7 @@ export const openAiService = {
      * Creates a response using the new OpenAI Responses API (async version).
      *
      * @param {Object} context - main execution context (expects context.user.language_code)
-     * @param {string} promptRef - reference to prompt that will be used for assistant (user prompt key in DB)
+     * @param {string} promptRef - reference to prompt configuration that will be used for open api responses
      * @param {Object} variables - parameters for prompt customization
      * @returns {Promise<Object>} - response stub { id, status: "in_progress", ... } (async mode)
      */

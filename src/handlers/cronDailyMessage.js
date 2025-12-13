@@ -38,8 +38,7 @@ export const handler = async () => {
  *
  * This function prepares the input structure required by the Telegram webhook-compatible
  * Lambda function. The payload includes a message object with the chat ID and a fixed
- * text command (`/daily_greeting`), along with a prompt reference used to generate
- * the assistant's response.
+ * text command (`/daily_greeting`), along with a prompt reference used to generate the response.
  *
  * @param {object} item - The input object containing user-specific data.
  * @param {number} item.chat_id - The Telegram chat ID of the recipient user.

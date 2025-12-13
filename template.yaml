@@ -13,7 +13,6 @@ Globals:
         TELEGRAM_SECURITY_TOKEN: !Ref TelegramSecurityToken
         OPENAI_API_KEY: !Ref OpenAiToken
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
-        OPENAI_ASSISTANT_ID: !Ref OpenAiAssistantId
         DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
         MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
 
@@ -30,9 +29,6 @@ Parameters:
   OpenAiProjectId:
     Type: String
     Description: Project ID from OpenAI (starts with proj-...)
-  OpenAiAssistantId:
-    Type: String
-    Description: Assistant ID from OpenAI (starts with asst-...)
   OpenAiDefaultPrompt:
     Type: String
     Description: Default prompt that will be sent to OpenAI thread

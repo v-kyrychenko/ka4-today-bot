@@ -4,7 +4,7 @@ import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {openAiService} from "../services/openAiService.js";
 import {telegramService} from "../services/telegramService.js";
-import {BadRequestError, OpenAIError} from "../utils/errors.js";
+import {OpenAIError} from "../utils/errors.js";
 import {dynamoDbService} from "../services/dynamoDbService.js";
 import {log} from "../utils/logger.js";
 
@@ -12,7 +12,6 @@ const s3 = new S3Client();
 
 const PROMPT_REF = "daily_workout";
 const PROMPT_REF_NOT_TODAY = "no_training_for_today";
-const PROMPT_REF_NOT_NO_PLAN = "no_plan_for_training";
 
 export class DailyWorkoutCommand extends BaseCommand {
 
@@ -26,28 +25,21 @@ export class DailyWorkoutCommand extends BaseCommand {
         const scheduled = await dynamoDbService.getUserScheduledForDay(context.chatId);
         log(`🕐 ChatId:${chatId}, found scheduled training for today:${JSON.stringify(scheduled)}`);
         if (!scheduled) {
-            const msg = await openAiService.fetchOpenAiReply({
+            const replay = await openAiService.fetchOpenAiReply({
                 context, promptRef: PROMPT_REF_NOT_TODAY,
             });
-            await telegramService.sendMessage(context, msg);
+            await telegramService.sendMessage(context, replay);
             return;
         }
 
         const plan = scheduled.plan;
-        if (plan == null) {
-            const msg = await openAiService.fetchOpenAiReply({
-                context, promptRef: PROMPT_REF_NOT_NO_PLAN,
-            });
-            await telegramService.sendMessage(context, msg);
-            return;
-        }
-
-        const assistantReply = await openAiService.fetchOpenAiReply({
-            context, promptRef: PROMPT_REF,
+        const replay = await openAiService.fetchOpenAiReply({
+            context,
+            promptRef: PROMPT_REF,
             variables: {plan}
         })
 
-        const exercises = parseSafeJsonExercises(assistantReply)
+        const exercises = parseSafeJsonExercises(replay)
         const exercisesWithUrls = await generateSignedUrls(exercises);
 
         for (const [index, item] of exercisesWithUrls.entries()) {

@@ -6,5 +6,5 @@ export const DEFAULT_MODEL = "gpt-5-mini"
 
 export const POLLING = {
     MAX_RETRIES: 30,
-    DELAY_MS: 2000,
+    DELAY_MS: 3000,
 };
