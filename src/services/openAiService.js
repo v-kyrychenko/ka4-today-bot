@@ -1,8 +1,8 @@
 import {pollUntil} from '../utils/poller.js';
 import {httpRequest} from "./httpClient.js";
-import {OpenAIError} from '../utils/errors.js';
-import {DEFAULT_LANG, POLLING} from '../config/constants.js';
-import {OPENAI_API_KEY, OPENAI_ASSISTANT_ID, OPENAI_PROJECT_ID} from '../config/env.js';
+import {BadRequestError, OpenAIError} from '../utils/errors.js';
+import {DEFAULT_LANG, DEFAULT_MODEL, POLLING} from '../config/constants.js';
+import {OPENAI_API_KEY, OPENAI_PROJECT_ID} from '../config/env.js';
 import {dynamoDbService} from "./dynamoDbService.js";
 import {log} from "../utils/logger.js";
 
@@ -20,25 +20,26 @@ export const openAiService = {
      * Creates a response using the new OpenAI Responses API (async version).
      *
      * @param {Object} context - main execution context (expects context.user.language_code)
-     * @param {string} systemPromptRef - reference to system prompt in DB (required)
      * @param {string} promptRef - reference to prompt that will be used for assistant (user prompt key in DB)
      * @param {Object} variables - parameters for prompt customization
-     * @param {string[]} [vectorStoreIds=[]] - optional vector store IDs for file_search
      * @returns {Promise<Object>} - response stub { id, status: "in_progress", ... } (async mode)
      */
     fetchOpenAiReply: async ({
                                  context,
-                                 systemPromptRef,
                                  promptRef,
-                                 variables = {},
-                                 vectorStoreIds = []
+                                 variables = {}
                              }) => {
         const lang = context.user.language_code || DEFAULT_LANG
-        const userPromptRaw = await dynamoDbService.getPrompt(lang, promptRef)
-        const systemPromptRaw = await dynamoDbService.getPrompt(lang, systemPromptRef);
+        const promptConfig = await dynamoDbService.getPrompt(lang, promptRef);
+        const systemPromptRef = promptConfig.systemPromptRef;
+        const vectorStoreIds = promptConfig.vectorStoreIds;
+        if (!systemPromptRef) {
+            throw new BadRequestError(`Prompt '${promptRef}' has no systemPromptRef configuration`);
+        }
+        const systemPromptConfig = await dynamoDbService.getPrompt(lang, systemPromptRef);
 
-        const systemPrompt = renderPromptTemplate(systemPromptRaw, variables);
-        const userPrompt = renderPromptTemplate(userPromptRaw, variables);
+        const systemPrompt = renderPromptTemplate(systemPromptConfig.prompts[lang], variables);
+        const userPrompt = renderPromptTemplate(promptConfig.prompts[lang], variables);
 
         const response = await openAiService.createResponse(systemPrompt, userPrompt, vectorStoreIds);
         const responseId = response.id;
@@ -54,7 +55,7 @@ export const openAiService = {
     createResponse: async (systemPrompt, userPrompt, vectorStoreIds = []) => {
         const background = true
         const body = {
-            model: "gpt-5-mini",
+            model: DEFAULT_MODEL,
             background,
             input: [
                 {role: "system", content: systemPrompt},
