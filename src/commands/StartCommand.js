@@ -11,7 +11,7 @@ export class StartCommand extends BaseCommand {
     async execute(context) {
         const promptRef = "welcome_greeting"
 
-        const assistantReply = await openAiService.fetchOpenAiReply({context, promptRef})
-        await telegramService.sendMessage(context, assistantReply);
+        const replay = await openAiService.fetchOpenAiReply({context, promptRef})
+        await telegramService.sendMessage(context, replay);
     }
 }

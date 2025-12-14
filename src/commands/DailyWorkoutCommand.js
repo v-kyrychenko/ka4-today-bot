@@ -4,7 +4,7 @@ import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {openAiService} from "../services/openAiService.js";
 import {telegramService} from "../services/telegramService.js";
-import {BadRequestError, OpenAIError} from "../utils/errors.js";
+import {OpenAIError} from "../utils/errors.js";
 import {dynamoDbService} from "../services/dynamoDbService.js";
 import {log} from "../utils/logger.js";
 
@@ -26,10 +26,10 @@ export class DailyWorkoutCommand extends BaseCommand {
         const scheduled = await dynamoDbService.getUserScheduledForDay(context.chatId);
         log(`🕐 ChatId:${chatId}, found scheduled training for today:${JSON.stringify(scheduled)}`);
         if (!scheduled) {
-            const msg = await openAiService.fetchOpenAiReply({
+            const replay = await openAiService.fetchOpenAiReply({
                 context, promptRef: PROMPT_REF_NOT_TODAY,
             });
-            await telegramService.sendMessage(context, msg);
+            await telegramService.sendMessage(context, replay);
             return;
         }
 
@@ -42,12 +42,13 @@ export class DailyWorkoutCommand extends BaseCommand {
             return;
         }
 
-        const assistantReply = await openAiService.fetchOpenAiReply({
-            context, promptRef: PROMPT_REF,
+        const replay = await openAiService.fetchOpenAiReply({
+            context,
+            promptRef: PROMPT_REF,
             variables: {plan}
         })
 
-        const exercises = parseSafeJsonExercises(assistantReply)
+        const exercises = parseSafeJsonExercises(replay)
         const exercisesWithUrls = await generateSignedUrls(exercises);
 
         for (const [index, item] of exercisesWithUrls.entries()) {

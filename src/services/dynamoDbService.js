@@ -228,7 +228,7 @@ export async function getPrompt(lang, promptId) {
         throw new BadRequestError(`Prompt '${promptId}' has no translation for language '${lang}'.`);
     }
 
-    return item.prompts[lang];
+    return item;
 }
 
 /**
