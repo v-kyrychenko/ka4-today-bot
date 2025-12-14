@@ -12,6 +12,7 @@ const s3 = new S3Client();
 
 const PROMPT_REF = "daily_workout";
 const PROMPT_REF_NOT_TODAY = "no_training_for_today";
+const PROMPT_REF_NOT_NO_PLAN = "no_plan_for_training";
 
 export class DailyWorkoutCommand extends BaseCommand {
 
@@ -33,6 +34,14 @@ export class DailyWorkoutCommand extends BaseCommand {
         }
 
         const plan = scheduled.plan;
+        if (plan == null) {
+            const msg = await openAiService.fetchOpenAiReply({
+                context, promptRef: PROMPT_REF_NOT_NO_PLAN,
+            });
+            await telegramService.sendMessage(context, msg);
+            return;
+        }
+
         const replay = await openAiService.fetchOpenAiReply({
             context,
             promptRef: PROMPT_REF,
