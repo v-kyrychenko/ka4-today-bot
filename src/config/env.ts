@@ -1,13 +1,9 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-function getEnvVar(name, required = true) {
+function getEnvVar(name: string, required = true): string | undefined {
     const value = process.env[name];
     if (!value && required) {
         throw new Error(`Missing required environment variable: ${name}`);
     }
-    return value || undefined;
+    return value ?? undefined;
 }
 
 export const TELEGRAM_BOT_TOKEN = getEnvVar('TELEGRAM_BOT_TOKEN');
@@ -16,4 +12,3 @@ export const OPENAI_API_KEY = getEnvVar('OPENAI_API_KEY');
 export const OPENAI_PROJECT_ID = getEnvVar('OPENAI_PROJECT_ID');
 export const DYNAMODB_ENDPOINT = getEnvVar('DYNAMODB_ENDPOINT', false);
 export const MAIN_MESSAGE_QUEUE_URL = getEnvVar('MAIN_MESSAGE_QUEUE_URL');
-

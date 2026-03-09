@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "gen-env": "node scripts/genEnvJson.cjs",
-    "local": "node scripts/runLocal.cjs"
+    "local": "node scripts/runLocal.cjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.812.0",
@@ -15,5 +16,8 @@
     "@aws-sdk/util-dynamodb": "^3.817.0",
     "axios": "^1.6.0",
     "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
   }
 }
