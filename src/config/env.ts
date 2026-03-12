@@ -1,3 +1,7 @@
+declare const process: {
+    env: Record<string, string | undefined>;
+};
+
 function getEnvVar(name: string, required = true): string | undefined {
     const value = process.env[name];
     if (!value && required) {

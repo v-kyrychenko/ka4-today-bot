@@ -142,7 +142,7 @@ function renderPromptTemplate(
 
     return Object.entries(variables).reduce((output, [key, value]) => {
         const stringValue = formatValue(value);
-        return output.replaceAll(`\${${key}}`, stringValue);
+        return output.split(`\${${key}}`).join(stringValue);
     }, template);
 }
 

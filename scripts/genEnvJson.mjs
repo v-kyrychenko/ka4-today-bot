@@ -1,12 +1,12 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
 
 const functionName = process.argv[2];
 const envFile = path.resolve('.env');
 const outputFile = path.resolve('env.tmp.json');
 
 if (!functionName) {
-    console.error('❌ Missing function name. Usage: node genEnvJson.cjs <FunctionName>');
+    console.error('Missing function name. Usage: node scripts/genEnvJson.mjs <FunctionName>');
     process.exit(1);
 }
 
@@ -15,11 +15,11 @@ try {
 
     const lines = raw
         .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0 && !line.startsWith('#'));
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0 && !line.startsWith('#'));
 
     const envVars = Object.fromEntries(
-        lines.map(line => {
+        lines.map((line) => {
             const [key, ...val] = line.split('=');
             return [key.trim(), val.join('=').trim()];
         })
@@ -30,8 +30,9 @@ try {
     };
 
     fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-    console.log(`✅ Generated ${outputFile} for function "${functionName}"`);
-} catch (err) {
-    console.error(`❌ Failed to generate env.tmp.json:`, err.message);
+    console.log(`Generated ${outputFile} for function "${functionName}"`);
+} catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`Failed to generate env.tmp.json: ${err.message}`);
     process.exit(1);
 }

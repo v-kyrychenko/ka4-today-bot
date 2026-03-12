@@ -72,9 +72,9 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/handlers/ka4TodayTelegramWebhook.ts
-        Format: esm
+        Format: cjs
         Minify: false
-        Sourcemap: true
+        Sourcemap: false
         Target: es2022
 
   Ka4TodayAsyncTelegramProcessor:
@@ -136,9 +136,9 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/handlers/asyncTelegramProcessor.ts
-        Format: esm
+        Format: cjs
         Minify: false
-        Sourcemap: true
+        Sourcemap: false
         Target: es2022
 
   Ka4TodayCronDailyMessageFunction:
@@ -177,9 +177,9 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/handlers/cronDailyMessage.ts
-        Format: esm
+        Format: cjs
         Minify: false
-        Sourcemap: true
+        Sourcemap: false
         Target: es2022
 
   #####################################################################

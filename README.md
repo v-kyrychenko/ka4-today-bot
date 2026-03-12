@@ -89,7 +89,7 @@ npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
 
 ```bash
 sam build
-sam deploy --guided
+sam deploy
 ```
 
 You will be prompted to enter your environment variables. These are saved to `samconfig.toml`.
