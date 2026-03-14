@@ -4,7 +4,15 @@ export interface LambdaResponse {
 }
 
 export interface ApiGatewayHttpEvent {
+    requestContext?: {
+        http?: {
+            method?: string;
+            path?: string;
+        };
+    };
     headers?: Record<string, string | undefined>;
+    queryStringParameters?: Record<string, string | undefined> | null;
+    pathParameters?: Record<string, string | undefined> | null;
     body?: string | null;
 }
 

@@ -79,6 +79,11 @@ Run async processor
 npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
 ```
 
+Run HttpApiClients
+```bash
+npm run local-api -- HttpApiClients
+```
+
 ---
 
 ## ☁️ Deploying to AWS

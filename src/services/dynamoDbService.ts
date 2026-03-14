@@ -4,6 +4,7 @@ import {
     GetItemCommand,
     PutItemCommand,
     QueryCommand,
+    ScanCommand,
     UpdateItemCommand,
     type AttributeValue,
 } from '@aws-sdk/client-dynamodb';
@@ -25,6 +26,7 @@ const DYNAMO_MESSAGE_LOG_TABLE = 'ka4-today-log';
 const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
 export const dynamoDbService = {
+    getUsers,
     getUser,
     getOrCreateUser,
     markUserInactive,
@@ -50,6 +52,32 @@ export async function getUser(chatId: number | string, throwIfNotFound = true): 
     }
 
     return new AppUser(unmarshall(result.Item) as Partial<AppUser>);
+}
+
+export interface GetUsersParams {
+    limit?: number;
+    exclusiveStartKey?: Record<string, AttributeValue>;
+}
+
+export interface GetUsersResult {
+    items: AppUser[];
+    lastEvaluatedKey?: Record<string, AttributeValue>;
+}
+
+export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersResult> {
+    const command = new ScanCommand({
+        TableName: DYNAMO_USER_TABLE,
+        Limit: params.limit,
+        ExclusiveStartKey: params.exclusiveStartKey,
+    });
+
+    const result = await dynamo.send(command);
+
+    return {
+        items: (result.Items ?? []).map((item) =>
+            new AppUser(unmarshall(item) as Partial<AppUser>)),
+        lastEvaluatedKey: result.LastEvaluatedKey,
+    };
 }
 
 export async function getOrCreateUser(chatId: number, message: TelegramMessage): Promise<AppUser> {

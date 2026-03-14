@@ -5,6 +5,7 @@
   "scripts": {
     "gen-env": "node scripts/genEnvJson.mjs",
     "local": "node scripts/runLocal.mjs",
+    "local-api": "node scripts/runLocalApi.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

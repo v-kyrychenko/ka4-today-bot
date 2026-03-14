@@ -1,4 +1,6 @@
 export const DEFAULT_BATCH_SIZE = 100;
+export const PAGINATION_DEFAULT_LIMIT = 20;
+export const PAGINATION_MAX_LIMIT = 100;
 
 export const DEFAULT_LANG = 'ua';
 export const DEFAULT_PROMPT_VERSION = '1';
