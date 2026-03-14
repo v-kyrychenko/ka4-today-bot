@@ -5,6 +5,7 @@ export interface LambdaResponse {
 
 export interface ApiGatewayHttpEvent {
     requestContext?: {
+        routeKey?: string;
         http?: {
             method?: string;
             path?: string;
