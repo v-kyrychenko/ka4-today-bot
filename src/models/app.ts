@@ -16,9 +16,7 @@ export class AppUser {
     last_name?: string | null;
     language_code?: string | null;
     chat_type?: string | null;
-    is_bot = false;
     created_at?: string;
-    is_active = 1;
 
     constructor(init?: Partial<AppUser>) {
         Object.assign(this, init);
