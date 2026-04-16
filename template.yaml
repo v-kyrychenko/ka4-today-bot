@@ -243,11 +243,11 @@ Resources:
   #####################################################################
   ##                        UI API                                   ##
   #####################################################################
-  HttpApiClients:
+  HttpApiClientRoutes:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: ka4today-http-api-clients
-      Handler: src/modules/coach/api/index.handler
+      FunctionName: ka4today-http-api-client-routes
+      Handler: src/modules/coach/client/api/index.handler
       CodeUri: .
       Events:
         GetClients:
@@ -270,11 +270,6 @@ Resources:
           Properties:
             Path: /clients/{clientId}
             Method: PUT
-        GetExercise:
-          Type: HttpApi
-          Properties:
-            Path: /exercise
-            Method: GET
       Policies:
         - AWSLambdaBasicExecutionRole
         - Statement:
@@ -291,7 +286,31 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/modules/coach/api/index.ts
+          - src/modules/coach/client/api/index.ts
+        Format: cjs
+        Minify: false
+        Sourcemap: false
+        Target: es2022
+
+  HttpApiExerciseRoutes:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-http-api-exercise-routes
+      Handler: src/modules/coach/exercise/api/index.handler
+      CodeUri: .
+      Events:
+        GetExercise:
+          Type: HttpApi
+          Properties:
+            Path: /exercise
+            Method: GET
+      Policies:
+        - AWSLambdaBasicExecutionRole
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/modules/coach/exercise/api/index.ts
         Format: cjs
         Minify: false
         Sourcemap: false
