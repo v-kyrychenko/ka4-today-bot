@@ -7,6 +7,7 @@ import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../../shared/types
 import {createClient} from '../application/createClient.js';
 import {getClientById} from '../application/getClient.js';
 import {listClients} from '../application/listClients.js';
+import {updateClient} from '../application/updateClient.js';
 
 export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     if (event.pathParameters?.clientId) {
@@ -41,4 +42,10 @@ async function handleGetById(event: ApiGatewayHttpEvent): Promise<LambdaResponse
 
 export async function handleClientsCreate(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     return jsonResponse(501, await createClient(event.body));
+}
+
+export async function handleClientsUpdate(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
+    const clientId = getPathParam(event, 'clientId');
+
+    return jsonResponse(501, await updateClient(clientId, event.body));
 }
