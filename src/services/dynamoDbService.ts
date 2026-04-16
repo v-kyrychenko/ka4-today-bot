@@ -1,3 +1,6 @@
+/**
+ * @deprecated This module is deprecated.
+ */
 import {
     BatchGetItemCommand,
     DynamoDBClient,
@@ -36,6 +39,9 @@ export const dynamoDbService = {
     logSentMessage,
 };
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function getUser(chatId: number | string, throwIfNotFound = true): Promise<AppUser | null> {
     const get = new GetItemCommand({
         TableName: DYNAMO_USER_TABLE,
@@ -64,6 +70,9 @@ export interface GetUsersResult {
     lastEvaluatedKey?: Record<string, AttributeValue>;
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersResult> {
     const command = new ScanCommand({
         TableName: DYNAMO_USER_TABLE,
@@ -80,6 +89,9 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
     };
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function getOrCreateUser(chatId: number, message: TelegramMessage): Promise<AppUser> {
     const existing = await getUser(chatId, false);
     if (existing) return existing;
@@ -110,6 +122,9 @@ export async function getOrCreateUser(chatId: number, message: TelegramMessage):
     }
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 function buildUserItem(chatId: number, message: TelegramMessage): Record<string, AttributeValue> {
     const user = message.from;
     const chat = message.chat;
@@ -127,6 +142,9 @@ function buildUserItem(chatId: number, message: TelegramMessage): Record<string,
     };
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function markUserInactive(chatId: string | number): Promise<void> {
     const command = new UpdateItemCommand({
         TableName: DYNAMO_USER_TABLE,
@@ -142,6 +160,9 @@ export async function markUserInactive(chatId: string | number): Promise<void> {
     await dynamo.send(command);
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function getUsersScheduledForDay(): Promise<TrainingScheduleItem[]> {
     const dayOfWeek = getCurrentDayCode();
     const command = new QueryCommand({
@@ -184,6 +205,9 @@ export async function getUsersScheduledForDay(): Promise<TrainingScheduleItem[]>
         .filter((item): item is TrainingScheduleItem => item !== null);
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function getUserScheduledForDay(chatId: number | string): Promise<TrainingScheduleItem | null> {
     const day = getCurrentDayCode();
     const response = await dynamo.send(
@@ -201,6 +225,9 @@ export async function getUserScheduledForDay(chatId: number | string): Promise<T
     return items.find((item) => String(item.chat_id) === String(chatId)) ?? null;
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function getPrompt(lang: string, promptId: string): Promise<PromptConfig> {
     if (!promptId) {
         throw new BadRequestError('Prompt ID is not provided');
@@ -269,6 +296,9 @@ async function batchGetItems<T extends object>(
     return result;
 }
 
+/**
+ * @deprecated This module is deprecated.
+ */
 export async function logSentMessage(params: SentMessageLog): Promise<void> {
     const {chatId, text, promptRef} = params;
     const timestamp = new Date().toISOString();
