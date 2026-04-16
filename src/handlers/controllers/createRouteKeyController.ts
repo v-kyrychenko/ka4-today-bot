@@ -1,7 +1,7 @@
-import type {ApiGatewayHttpEvent, LambdaResponse} from '../models/aws.js';
-import {getHttpMethod, jsonResponse} from '../utils/api.js';
-import {toErrorResponse} from '../utils/api/errorResponse.js';
-import {logError} from '../utils/logger.js';
+import type {ApiGatewayHttpEvent, LambdaResponse} from '../../models/aws.js';
+import {getHttpMethod, jsonResponse} from '../../utils/api.js';
+import {toErrorResponse} from '../../utils/api/errorResponse.js';
+import {logError} from '../../utils/logger.js';
 
 import type {ApiAction} from './createMethodController.js';
 

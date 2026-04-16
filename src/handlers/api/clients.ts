@@ -1,6 +1,5 @@
 import type {AttributeValue} from '@aws-sdk/client-dynamodb';
 import {PAGINATION_DEFAULT_LIMIT, PAGINATION_MAX_LIMIT} from '../../config/constants.js';
-import {createMethodController} from '../../controllers/createMethodController.js';
 import {clientsService} from '../../services/clientsService.js';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../models/aws.js';
 import {
@@ -10,12 +9,7 @@ import {
 import {encodeDynamoCursor, parseDynamoCursor} from '../../utils/pagination/dynamoCursor.js';
 import {parsePageRequest} from '../../utils/pagination/pageRequest.js';
 
-export const handler = createMethodController('clients', {
-    GET: handleGet,
-    POST: handleCreate,
-});
-
-async function handleGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
+export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     if (event.pathParameters?.clientId) {
         return handleGetById(event);
     }
@@ -46,6 +40,6 @@ async function handleGetById(event: ApiGatewayHttpEvent): Promise<LambdaResponse
     return jsonResponse(501, await clientsService.getClientById(clientId));
 }
 
-async function handleCreate(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
+export async function handleClientsCreate(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     return jsonResponse(501, await clientsService.createClient(event.body));
 }

@@ -9,6 +9,8 @@ export type PromptVariableValue =
     | Record<string, unknown>
     | Array<unknown>;
 
+export type JsonObject = Record<string, unknown>;
+
 export class AppUser {
     chat_id = 0;
     username?: string | null;
@@ -17,6 +19,7 @@ export class AppUser {
     language_code?: string | null;
     chat_type?: string | null;
     created_at?: string;
+    is_active?: number;
 
     constructor(init?: Partial<AppUser>) {
         Object.assign(this, init);
@@ -100,4 +103,39 @@ export class ExerciseWithSignedImages extends Exercise {
         super(init);
         this.signedImages = init?.signedImages ?? [];
     }
+}
+
+export class ExerciseItem {
+    id = 0;
+    name: JsonObject = {};
+    key = '';
+    level = '';
+    category = '';
+    force = '';
+    mechanic = '';
+    equipment?: string | null;
+    primaryMuscles: string[] = [];
+    secondaryMuscles: string[] = [];
+    instructions: JsonObject = {};
+    images: string[] = [];
+
+    constructor(init?: Partial<ExerciseItem>) {
+        Object.assign(this, init);
+        this.name = init?.name ?? {};
+        this.primaryMuscles = init?.primaryMuscles ?? [];
+        this.secondaryMuscles = init?.secondaryMuscles ?? [];
+        this.instructions = init?.instructions ?? {};
+        this.images = init?.images ?? [];
+    }
+}
+
+export interface ExerciseSearchRequest {
+    q: string;
+    page: number;
+    limit: number;
+}
+
+export interface ExerciseSearchResult {
+    items: ExerciseItem[];
+    hasNextPage: boolean;
 }

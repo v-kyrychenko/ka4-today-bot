@@ -15,6 +15,12 @@ Globals:
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
         DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
         MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
+        POSTGRES_HOST: !Ref PostgresHost
+        POSTGRES_PORT: !Ref PostgresPort
+        POSTGRES_DB: !Ref PostgresDb
+        POSTGRES_USER: !Ref PostgresUser
+        POSTGRES_PASSWORD: !Ref PostgresPassword
+        POSTGRES_SSL: !Ref PostgresSsl
 
 Parameters:
   TelegramBotToken:
@@ -36,6 +42,30 @@ Parameters:
     Type: String
     Description: DynamoDb endpoint address
     Default: ""
+  PostgresHost:
+    Type: String
+    Description: PostgreSQL host
+    Default: ""
+  PostgresPort:
+    Type: String
+    Description: PostgreSQL port
+    Default: ""
+  PostgresDb:
+    Type: String
+    Description: PostgreSQL database name
+    Default: ""
+  PostgresUser:
+    Type: String
+    Description: PostgreSQL user
+    Default: ""
+  PostgresPassword:
+    Type: String
+    Description: PostgreSQL password
+    Default: ""
+  PostgresSsl:
+    Type: String
+    Description: Whether PostgreSQL SSL is enabled
+    Default: "false"
 
 Resources:
   #####################################################################
@@ -217,7 +247,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-http-api-clients
-      Handler: src/handlers/api/clients.handler
+      Handler: src/handlers/api/index.handler
       CodeUri: .
       Events:
         GetClients:
@@ -240,6 +270,11 @@ Resources:
           Properties:
             Path: /clients/{clientId}
             Method: PUT
+        GetExercise:
+          Type: HttpApi
+          Properties:
+            Path: /exercise
+            Method: GET
       Policies:
         - AWSLambdaBasicExecutionRole
         - Statement:
@@ -256,7 +291,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/api/clients.ts
+          - src/handlers/api/index.ts
         Format: cjs
         Minify: false
         Sourcemap: false

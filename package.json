@@ -16,9 +16,12 @@
     "@aws-sdk/s3-request-presigner": "^3.848.0",
     "@aws-sdk/util-dynamodb": "^3.848.0",
     "axios": "^1.6.0",
-    "dotenv": "^16.5.0"
+    "drizzle-orm": "^0.44.2",
+    "dotenv": "^16.5.0",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
+    "@types/pg": "^8.15.6",
     "typescript": "^5.8.2",
     "esbuild": "0.27.4"
   }
