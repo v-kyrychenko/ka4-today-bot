@@ -82,7 +82,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-telegram-webhook-handler
-      Handler: src/handlers/ka4TodayTelegramWebhook.handler
+      Handler: src/modules/telegram/handlers/ka4TodayTelegramWebhook.handler
       CodeUri: .
       Events:
         Webhook:
@@ -101,7 +101,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/ka4TodayTelegramWebhook.ts
+          - src/modules/telegram/handlers/ka4TodayTelegramWebhook.ts
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -111,7 +111,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-async-telegram-processor
-      Handler: src/handlers/asyncTelegramProcessor.handler
+      Handler: src/modules/telegram/handlers/asyncTelegramProcessor.handler
       CodeUri: .
       Events:
         MessageQueueEvent:
@@ -165,7 +165,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/asyncTelegramProcessor.ts
+          - src/modules/telegram/handlers/asyncTelegramProcessor.ts
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -175,7 +175,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-cron-daily-message
-      Handler: src/handlers/cronDailyMessage.handler
+      Handler: src/modules/telegram/handlers/cronDailyMessage.handler
       CodeUri: .
       Events:
         DailySchedule:
@@ -206,7 +206,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/cronDailyMessage.ts
+          - src/modules/telegram/handlers/cronDailyMessage.ts
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -247,7 +247,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-http-api-clients
-      Handler: src/handlers/api/index.handler
+      Handler: src/modules/coach/api/handlers/index.handler
       CodeUri: .
       Events:
         GetClients:
@@ -291,7 +291,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/api/index.ts
+          - src/modules/coach/api/handlers/index.ts
         Format: cjs
         Minify: false
         Sourcemap: false
