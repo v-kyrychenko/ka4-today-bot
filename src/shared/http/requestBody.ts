@@ -1,5 +1,5 @@
 import type {ApiGatewayHttpEvent} from '../types/aws.js';
-import {BadRequestError} from '../errors/index.js';
+import {BadRequestError} from '../errors';
 
 export function parseJsonBody<T>(event: ApiGatewayHttpEvent): T {
     if (!event.body) {

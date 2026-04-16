@@ -1,10 +1,10 @@
 import {
     PAGINATION_DEFAULT_LIMIT, PAGINATION_DEFAULT_PAGE, PAGINATION_MAX_LIMIT,
 } from '../../../../app/config/constants.js';
-import {BadRequestError} from '../../../../shared/errors/index.js';
+import {BadRequestError} from '../../../../shared/errors';
 import {getQueryParam, jsonResponse, parseOptionalInteger} from '../../../../shared/http/apiHelpers.js';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../../shared/types/aws.js';
-import {exerciseService} from '../../exercise/application/exerciseService.js';
+import {searchExercises} from '../application/searchExercises.js';
 
 export async function handleExerciseGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     const q = getRequiredQuery(event, 'q').trim();
@@ -25,7 +25,7 @@ export async function handleExerciseGet(event: ApiGatewayHttpEvent): Promise<Lam
         name: 'limit',
     });
 
-    const result = await exerciseService.searchExercises({
+    const result = await searchExercises({
         q,
         page,
         limit,

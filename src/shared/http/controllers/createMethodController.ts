@@ -1,7 +1,7 @@
-import {getHttpMethod, jsonResponse} from '../../../../shared/http/apiHelpers.js';
-import {toErrorResponse} from '../../../../shared/http/errorResponse.js';
-import {logError} from '../../../../shared/logging/index.js';
-import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../../shared/types/aws.js';
+import {getHttpMethod, jsonResponse} from '../apiHelpers.js';
+import {toErrorResponse} from '../errorResponse.js';
+import {logError} from '../../logging';
+import type {ApiGatewayHttpEvent, LambdaResponse} from '../../types/aws.js';
 
 export type ApiAction = (event: ApiGatewayHttpEvent) => Promise<LambdaResponse>;
 export type MethodMap = Partial<Record<string, ApiAction>>;

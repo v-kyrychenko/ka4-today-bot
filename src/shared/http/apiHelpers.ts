@@ -1,4 +1,4 @@
-import {BadRequestError} from '../errors/index.js';
+import {BadRequestError} from '../errors';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../types/aws.js';
 
 export function getHttpMethod(event: ApiGatewayHttpEvent): string {

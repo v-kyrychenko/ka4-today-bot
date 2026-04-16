@@ -4,7 +4,9 @@ import {getPathParam, jsonResponse} from '../../../../shared/http/apiHelpers.js'
 import {encodeDynamoCursor, parseDynamoCursor} from '../../../../shared/pagination/dynamoCursor.js';
 import {parsePageRequest} from '../../../../shared/pagination/pageRequest.js';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../../shared/types/aws.js';
-import {clientsService} from '../../client/application/clientsService.js';
+import {createClient} from '../application/createClient.js';
+import {getClientById} from '../application/getClient.js';
+import {listClients} from '../application/listClients.js';
 
 export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     if (event.pathParameters?.clientId) {
@@ -20,7 +22,7 @@ async function handleList(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
         maxLimit: PAGINATION_MAX_LIMIT,
         parseCursor: parseDynamoCursor,
     });
-    const result = await clientsService.listClients(pageRequest);
+    const result = await listClients(pageRequest);
 
     return jsonResponse(200, {
         items: result.items,
@@ -34,9 +36,9 @@ async function handleList(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
 async function handleGetById(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     const clientId = getPathParam(event, 'clientId');
 
-    return jsonResponse(501, await clientsService.getClientById(clientId));
+    return jsonResponse(501, await getClientById(clientId));
 }
 
 export async function handleClientsCreate(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
-    return jsonResponse(501, await clientsService.createClient(event.body));
+    return jsonResponse(501, await createClient(event.body));
 }
