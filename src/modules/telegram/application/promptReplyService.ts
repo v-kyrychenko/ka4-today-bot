@@ -17,7 +17,7 @@ export async function fetchOpenAiReply({
     promptRef,
     variables = {},
 }: FetchOpenAiReplyRequest): Promise<string> {
-    const lang = context.user.language_code || DEFAULT_LANG;
+    const lang = context.user.lang || DEFAULT_LANG;
     const promptConfig = await dynamoDbService.getPrompt(lang, promptRef);
     const systemPromptRef = promptConfig.systemPromptRef;
     const vectorStoreIds = promptConfig.vectorStoreIds;

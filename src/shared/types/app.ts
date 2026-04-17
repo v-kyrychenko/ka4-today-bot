@@ -9,17 +9,13 @@ export type PromptVariableValue =
 
 export type JsonObject = Record<string, unknown>;
 
-export class AppUser {
+export class ScheduleUser {
     chat_id = 0;
     username?: string | null;
-    first_name?: string | null;
-    last_name?: string | null;
     language_code?: string | null;
-    chat_type?: string | null;
-    created_at?: string;
     is_active?: number;
 
-    constructor(init?: Partial<AppUser>) {
+    constructor(init?: Partial<ScheduleUser>) {
         Object.assign(this, init);
     }
 }
@@ -43,20 +39,10 @@ export class TrainingScheduleItem {
     day_of_week = '';
     prompt_ref?: string;
     plan?: PromptVariableValue;
-    user?: AppUser;
+    user?: ScheduleUser;
 
     constructor(init?: Partial<TrainingScheduleItem>) {
         Object.assign(this, init);
-        this.user = init?.user ? new AppUser(init.user) : undefined;
-    }
-}
-
-export class SentMessageLog {
-    chatId = 0;
-    text = '';
-    promptRef?: string | null;
-
-    constructor(init?: Partial<SentMessageLog>) {
-        Object.assign(this, init);
+        this.user = init?.user ? new ScheduleUser(init.user) : undefined;
     }
 }

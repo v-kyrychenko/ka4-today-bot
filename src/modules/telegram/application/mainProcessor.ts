@@ -1,9 +1,9 @@
 import {commandRegistry} from '../commands/registry.js';
-import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
 import {BadRequestError, OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {ProcessorContext} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
+import {telegramUserRepository} from '../repository/telegramUserRepository.js';
 import {telegramMessagingService} from './telegramMessagingService.js';
 
 export const mainProcessor = {
@@ -20,7 +20,7 @@ export const mainProcessor = {
         }
 
         log(`Incoming message from ${username || userId}: ${text}`);
-        const user = await dynamoDbService.getOrCreateUser(chatId, message);
+        const user = await telegramUserRepository.getOrCreateUser(chatId, message);
 
         const context = new ProcessorContext({chatId, text, user, message});
         const command = commandRegistry.find((item) => item.canHandle(text, context));

@@ -5,19 +5,15 @@ import {
     BatchGetItemCommand,
     DynamoDBClient,
     GetItemCommand,
-    PutItemCommand,
     QueryCommand,
-    ScanCommand,
-    UpdateItemCommand,
     type AttributeValue,
 } from '@aws-sdk/client-dynamodb';
 import {unmarshall} from '@aws-sdk/util-dynamodb';
 import {DYNAMODB_ENDPOINT} from '../../../../app/config/env.js';
 import {DEFAULT_BATCH_SIZE, DEFAULT_PROMPT_VERSION} from '../../../../app/config/constants.js';
-import {TelegramMessage} from '../../../../modules/telegram/domain/telegram.js';
 import {BadRequestError} from '../../../../shared/errors/index.js';
 import {log, logError} from '../../../../shared/logging/index.js';
-import {AppUser, PromptConfig, SentMessageLog, TrainingScheduleItem} from '../../../../shared/types/app.js';
+import {PromptConfig, TrainingScheduleItem} from '../../../../shared/types/app.js';
 
 const DYNAMO_USER_TABLE = 'ka4-today-users';
 const DYNAMO_USERS_SCHEDULE_TABLE = 'ka4-today-users-training-schedule';
@@ -28,7 +24,6 @@ const DYNAMO_PROMPT_TABLE = 'ka4-today-prompts';
 const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
 export const dynamoDbService = {
-    getOrCreateUser,
     getUsersScheduledForDay,
     getUserScheduledForDay,
     getPrompt,
@@ -40,61 +35,8 @@ export interface GetUsersParams {
 }
 
 export interface GetUsersResult {
-    items: AppUser[];
+    items: ScheduleUser[];
     lastEvaluatedKey?: Record<string, AttributeValue>;
-}
-
-/**
- * @deprecated This module is deprecated.
- */
-export async function getOrCreateUser(chatId: number, message: TelegramMessage): Promise<AppUser> {
-    const existing = await getUser(chatId, false);
-    if (existing) return existing;
-
-    const item = buildUserItem(chatId, message);
-
-    const put = new PutItemCommand({
-        TableName: DYNAMO_USER_TABLE,
-        Item: item,
-        ConditionExpression: 'attribute_not_exists(chat_id)',
-    });
-
-    try {
-        await dynamo.send(put);
-        log(`Created user ${chatId}`);
-        return new AppUser(unmarshall(item) as Partial<AppUser>);
-    } catch (error) {
-        const err = error as Error;
-        if (err.name === 'ConditionalCheckFailedException') {
-            log(`Race detected, reloading user ${chatId}`);
-            const user = await getUser(chatId);
-            if (!user) {
-                throw new BadRequestError(`User for chat id: ${chatId} not found after retry`);
-            }
-            return user;
-        }
-        throw error;
-    }
-}
-
-/**
- * @deprecated This module is deprecated.
- */
-function buildUserItem(chatId: number, message: TelegramMessage): Record<string, AttributeValue> {
-    const user = message.from;
-    const chat = message.chat;
-
-    return {
-        chat_id: {N: String(chatId)},
-        username: user?.username ? {S: user.username} : {NULL: true},
-        first_name: user?.first_name ? {S: user.first_name} : {NULL: true},
-        last_name: user?.last_name ? {S: user.last_name} : {NULL: true},
-        language_code: user?.language_code ? {S: user.language_code} : {NULL: true},
-        chat_type: chat?.type ? {S: chat.type} : {NULL: true},
-        is_bot: {BOOL: Boolean(user?.is_bot)},
-        created_at: {S: new Date().toISOString()},
-        is_active: {N: '1'},
-    };
 }
 
 /**
@@ -125,7 +67,7 @@ export async function getUsersScheduledForDay(): Promise<TrainingScheduleItem[]>
 
     const keys = chatIds.map((id) => ({chat_id: {N: id}}));
 
-    const users = await batchGetItems<AppUser>(
+    const users = await batchGetItems<ScheduleUser>(
         DYNAMO_USER_TABLE,
         keys,
         'chat_id, is_active, username, language_code',
