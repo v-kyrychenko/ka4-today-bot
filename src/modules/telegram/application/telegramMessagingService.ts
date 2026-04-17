@@ -1,8 +1,10 @@
 import {telegramClient} from '../../../infrastructure/integrations/telegram/telegramClient.js';
 import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
+import {telegramMessageLogRepository} from '../repository/telegramMessageLogRepository.js';
 import {TelegramError} from '../../../shared/errors';
 import {log, logError} from '../../../shared/logging';
 import type {ProcessorContext} from '../domain/context.js';
+import type {TelegramSentMessageLogInput} from '../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
 
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
 
@@ -23,10 +25,10 @@ export async function sendMessage(context: TelegramContext, message: string): Pr
             logError(`Failed to send message to ${chatId}`, err);
         }
     } finally {
-        await dynamoDbService.logSentMessage({
+        await logSentMessage({
             chatId,
             promptRef: context.message?.promptRef ?? null,
-            text: message,
+            messageText: message,
         });
     }
 }
@@ -61,3 +63,12 @@ export const telegramMessagingService = {
 };
 
 export const telegramService = telegramMessagingService;
+
+async function logSentMessage(input: TelegramSentMessageLogInput): Promise<void> {
+    try {
+        await telegramMessageLogRepository.logSentMessage(input);
+    } catch (error) {
+        logError(`Failed to log sent Telegram message for ${input.chatId}`, error);
+        throw error;
+    }
+}
