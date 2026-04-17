@@ -4,29 +4,24 @@
 import {
     BatchGetItemCommand,
     DynamoDBClient,
-    GetItemCommand,
     QueryCommand,
     type AttributeValue,
 } from '@aws-sdk/client-dynamodb';
 import {unmarshall} from '@aws-sdk/util-dynamodb';
 import {DYNAMODB_ENDPOINT} from '../../../../app/config/env.js';
-import {DEFAULT_BATCH_SIZE, DEFAULT_PROMPT_VERSION} from '../../../../app/config/constants.js';
-import {BadRequestError} from '../../../../shared/errors/index.js';
+import {DEFAULT_BATCH_SIZE} from '../../../../app/config/constants.js';
 import {log, logError} from '../../../../shared/logging/index.js';
-import {PromptConfig, TrainingScheduleItem} from '../../../../shared/types/app.js';
+import {ScheduleUser, TrainingScheduleItem} from '../../../../shared/types/app.js';
 
 const DYNAMO_USER_TABLE = 'ka4-today-users';
 const DYNAMO_USERS_SCHEDULE_TABLE = 'ka4-today-users-training-schedule';
 const USERS_SCHEDULE_INDEX = 'ScheduleByDay';
-
-const DYNAMO_PROMPT_TABLE = 'ka4-today-prompts';
 
 const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
 export const dynamoDbService = {
     getUsersScheduledForDay,
     getUserScheduledForDay,
-    getPrompt,
 };
 
 export interface GetUsersParams {
@@ -102,36 +97,6 @@ export async function getUserScheduledForDay(chatId: number | string): Promise<T
         (item) => new TrainingScheduleItem(unmarshall(item) as Partial<TrainingScheduleItem>)
     );
     return items.find((item) => String(item.chat_id) === String(chatId)) ?? null;
-}
-
-/**
- * @deprecated This module is deprecated.
- */
-export async function getPrompt(lang: string, promptId: string): Promise<PromptConfig> {
-    if (!promptId) {
-        throw new BadRequestError('Prompt ID is not provided');
-    }
-
-    const get = new GetItemCommand({
-        TableName: DYNAMO_PROMPT_TABLE,
-        Key: {
-            prompt_id: {S: promptId},
-            version: {N: DEFAULT_PROMPT_VERSION},
-        },
-    });
-
-    const result = await dynamo.send(get);
-    if (!result.Item) {
-        throw new BadRequestError(`Prompt: ${promptId} not found in db`);
-    }
-
-    const item = new PromptConfig(unmarshall(result.Item) as Partial<PromptConfig>);
-
-    if (!item.prompts || !item.prompts[lang]) {
-        throw new BadRequestError(`Prompt '${promptId}' has no translation for language '${lang}'.`);
-    }
-
-    return item;
 }
 
 function getCurrentDayCode(): string {
