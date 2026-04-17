@@ -24,41 +24,15 @@ const DYNAMO_USERS_SCHEDULE_TABLE = 'ka4-today-users-training-schedule';
 const USERS_SCHEDULE_INDEX = 'ScheduleByDay';
 
 const DYNAMO_PROMPT_TABLE = 'ka4-today-prompts';
-const DYNAMO_MESSAGE_LOG_TABLE = 'ka4-today-log';
 
 const dynamo = new DynamoDBClient({endpoint: DYNAMODB_ENDPOINT || undefined});
 
 export const dynamoDbService = {
-    getUsers,
-    getUser,
     getOrCreateUser,
-    markUserInactive,
     getUsersScheduledForDay,
     getUserScheduledForDay,
     getPrompt,
-    logSentMessage,
 };
-
-/**
- * @deprecated This module is deprecated.
- */
-export async function getUser(chatId: number | string, throwIfNotFound = true): Promise<AppUser | null> {
-    const get = new GetItemCommand({
-        TableName: DYNAMO_USER_TABLE,
-        Key: {chat_id: {N: String(chatId)}},
-    });
-
-    const result = await dynamo.send(get);
-
-    if (!result.Item) {
-        if (throwIfNotFound) {
-            throw new BadRequestError(`User for chat id: ${chatId} not found in db`);
-        }
-        return null;
-    }
-
-    return new AppUser(unmarshall(result.Item) as Partial<AppUser>);
-}
 
 export interface GetUsersParams {
     limit?: number;
@@ -68,25 +42,6 @@ export interface GetUsersParams {
 export interface GetUsersResult {
     items: AppUser[];
     lastEvaluatedKey?: Record<string, AttributeValue>;
-}
-
-/**
- * @deprecated This module is deprecated.
- */
-export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersResult> {
-    const command = new ScanCommand({
-        TableName: DYNAMO_USER_TABLE,
-        Limit: params.limit,
-        ExclusiveStartKey: params.exclusiveStartKey,
-    });
-
-    const result = await dynamo.send(command);
-
-    return {
-        items: (result.Items ?? []).map((item) =>
-            new AppUser(unmarshall(item) as Partial<AppUser>)),
-        lastEvaluatedKey: result.LastEvaluatedKey,
-    };
 }
 
 /**
@@ -140,24 +95,6 @@ function buildUserItem(chatId: number, message: TelegramMessage): Record<string,
         created_at: {S: new Date().toISOString()},
         is_active: {N: '1'},
     };
-}
-
-/**
- * @deprecated This module is deprecated.
- */
-export async function markUserInactive(chatId: string | number): Promise<void> {
-    const command = new UpdateItemCommand({
-        TableName: DYNAMO_USER_TABLE,
-        Key: {
-            chat_id: {N: String(chatId)},
-        },
-        UpdateExpression: 'SET is_active = :false',
-        ExpressionAttributeValues: {
-            ':false': {N: '0'},
-        },
-    });
-
-    await dynamo.send(command);
 }
 
 /**
@@ -294,28 +231,4 @@ async function batchGetItems<T extends object>(
     }
 
     return result;
-}
-
-/**
- * @deprecated This module is deprecated.
- */
-export async function logSentMessage(params: SentMessageLog): Promise<void> {
-    const {chatId, text, promptRef} = params;
-    const timestamp = new Date().toISOString();
-
-    const command = new PutItemCommand({
-        TableName: DYNAMO_MESSAGE_LOG_TABLE,
-        Item: {
-            chat_id: {N: String(chatId)},
-            timestamp: {S: timestamp},
-            text: {S: text},
-            prompt_ref: {S: promptRef || 'unknown'},
-        },
-    });
-
-    try {
-        await dynamo.send(command);
-    } catch (error) {
-        logError('Failed to log message:', error);
-    }
 }

@@ -1,12 +1,19 @@
 import {telegramClient} from '../../../infrastructure/integrations/telegram/telegramClient.js';
-import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
 import {telegramMessageLogRepository} from '../repository/telegramMessageLogRepository.js';
+import {telegramUserRepository} from '../repository/telegramUserRepository.js';
 import {TelegramError} from '../../../shared/errors';
 import {log, logError} from '../../../shared/logging';
 import type {ProcessorContext} from '../domain/context.js';
-import type {TelegramSentMessageLogInput} from '../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
+import type {
+    TelegramSentMessageLogInput
+} from '../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
 
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
+
+export const telegramMessagingService = {
+    sendMessage,
+    sendWithMedia,
+};
 
 export async function sendMessage(context: TelegramContext, message: string): Promise<void> {
     const chatId = context.chatId;
@@ -19,8 +26,7 @@ export async function sendMessage(context: TelegramContext, message: string): Pr
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         if (err.message.includes('Forbidden') || err.message.includes('user is deactivated')) {
-            await dynamoDbService.markUserInactive(chatId);
-            log(`Removed user ${chatId} (no longer reachable)`);
+            await markUserInactive(chatId);
         } else {
             logError(`Failed to send message to ${chatId}`, err);
         }
@@ -57,18 +63,27 @@ export async function sendWithMedia(
     }
 }
 
-export const telegramMessagingService = {
-    sendMessage,
-    sendWithMedia,
-};
-
-export const telegramService = telegramMessagingService;
-
 async function logSentMessage(input: TelegramSentMessageLogInput): Promise<void> {
     try {
         await telegramMessageLogRepository.logSentMessage(input);
     } catch (error) {
         logError(`Failed to log sent Telegram message for ${input.chatId}`, error);
+        throw error;
+    }
+}
+
+async function markUserInactive(chatId: number): Promise<void> {
+    try {
+        const updated = await telegramUserRepository.markInactive(chatId);
+
+        if (!updated) {
+            logError(`Telegram user ${chatId} not found in Postgres while marking inactive`);
+            return;
+        }
+
+        log(`Removed user ${chatId} (no longer reachable)`);
+    } catch (error) {
+        logError(`Failed to mark Telegram user ${chatId} inactive`, error);
         throw error;
     }
 }

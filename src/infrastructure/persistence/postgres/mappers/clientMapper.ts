@@ -1,5 +1,6 @@
 import {
     ClientItem,
+    type ClientStatus,
     type ClientCreateInput,
     type ClientUpdateInput,
 } from '../../../../modules/coach/client/domain/client.js';
@@ -9,7 +10,7 @@ export interface ClientCreateRow {
     coach_id: number;
     first_name: string;
     last_name: string;
-    status: string;
+    status: ClientStatus;
     lang: string;
     birthday: string;
     created_at: string;
@@ -20,7 +21,7 @@ export interface ClientCreateRow {
 export interface ClientUpdateRow {
     first_name?: string;
     last_name?: string;
-    status?: string;
+    status?: ClientStatus;
     lang?: string;
     birthday?: string;
     goals?: string | null;
@@ -39,7 +40,7 @@ export function toAppModel(row: ClientRow): ClientItem {
         coachId: row.coach_id,
         firstName: row.first_name,
         lastName: row.last_name,
-        status: row.status,
+        status: row.status as ClientStatus,
         lang: row.lang,
         birthday: row.birthday,
         createdAt: row.created_at,

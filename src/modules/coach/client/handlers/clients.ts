@@ -11,7 +11,12 @@ import {createClient} from '../application/createClient.js';
 import {getClientById} from '../application/getClient.js';
 import {listClients} from '../application/listClients.js';
 import {updateClient} from '../application/updateClient.js';
-import type {ClientCreateInput, ClientUpdateInput} from '../domain/client.js';
+import {
+    CLIENT_STATUSES,
+    type ClientCreateInput,
+    type ClientStatus,
+    type ClientUpdateInput,
+} from '../domain/client.js';
 
 export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     if (event.pathParameters?.clientId) {
@@ -78,7 +83,7 @@ function parseCreateInput(event: ApiGatewayHttpEvent): ClientCreateInput {
     return {
         firstName: parseRequiredString(body, 'firstName', 60),
         lastName: parseRequiredString(body, 'lastName', 60),
-        status: parseRequiredString(body, 'status', 20),
+        status: parseClientStatus(body, 'status'),
         lang: parseRequiredString(body, 'lang', 10),
         birthday: parseRequiredDate(body, 'birthday'),
         goals: parseOptionalNullableString(body, 'goals'),
@@ -99,7 +104,7 @@ function parseUpdateInput(event: ApiGatewayHttpEvent): ClientUpdateInput {
         input.lastName = parseRequiredString(body, 'lastName', 60);
     }
     if ('status' in body) {
-        input.status = parseRequiredString(body, 'status', 20);
+        input.status = parseClientStatus(body, 'status');
     }
     if ('lang' in body) {
         input.lang = parseRequiredString(body, 'lang', 10);
@@ -176,6 +181,16 @@ function parseRequiredDate(body: Record<string, unknown>, name: string): string 
     }
 
     return value;
+}
+
+function parseClientStatus(body: Record<string, unknown>, name: string): ClientStatus {
+    const value = parseRequiredString(body, name, 20);
+
+    if (!CLIENT_STATUSES.includes(value as ClientStatus)) {
+        throw new BadRequestError(`Field '${name}' must be one of: ${CLIENT_STATUSES.join(', ')}`);
+    }
+
+    return value as ClientStatus;
 }
 
 function parseOptionalNullableString(body: Record<string, unknown>, name: string): string | null | undefined {

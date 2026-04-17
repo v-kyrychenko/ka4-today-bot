@@ -1,9 +1,21 @@
+export const CLIENT_STATUS_ACTIVE = 'ACTIVE';
+export const CLIENT_STATUS_ONLINE = 'ONLINE';
+export const CLIENT_STATUS_INACTIVE = 'INACTIVE';
+
+export const CLIENT_STATUSES = [
+    CLIENT_STATUS_ACTIVE,
+    CLIENT_STATUS_ONLINE,
+    CLIENT_STATUS_INACTIVE,
+] as const;
+
+export type ClientStatus = typeof CLIENT_STATUSES[number];
+
 export class ClientItem {
     id = 0;
     coachId = 0;
     firstName = '';
     lastName = '';
-    status = '';
+    status: ClientStatus = CLIENT_STATUS_ACTIVE;
     lang = '';
     birthday = '';
     createdAt = '';
@@ -30,7 +42,7 @@ export interface ClientListResult {
 export interface ClientCreateInput {
     firstName: string;
     lastName: string;
-    status: string;
+    status: ClientStatus;
     lang: string;
     birthday: string;
     goals?: string | null;
@@ -40,7 +52,7 @@ export interface ClientCreateInput {
 export interface ClientUpdateInput {
     firstName?: string;
     lastName?: string;
-    status?: string;
+    status?: ClientStatus;
     lang?: string;
     birthday?: string;
     goals?: string | null;

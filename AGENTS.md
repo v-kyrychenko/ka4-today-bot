@@ -31,6 +31,8 @@ Inside module `application/` folders, prefer focused use-case files such as `lis
 
 For coach REST APIs, keep the REST model, domain model, and persistence row shape separated. Request and response payloads should stay camelCase, PostgreSQL rows and schema definitions should stay snake_case, and translation between them should happen through dedicated mappers in `src/infrastructure/persistence/postgres/mappers/`. Handlers should parse and validate REST payloads, application code should work with domain or REST-facing models, and repositories should be the boundary where mapped persistence rows are read or written.
 
+For small service modules, prefer placing exported service objects such as `export const telegramMessagingService = { ... }` near the top of the file, right after imports, so the public API is visible immediately when the file is opened. Treat this as a strong default, not a hard rule: if a different placement makes the file substantially easier to read top-to-bottom, prefer readability.
+
 ## Testing Guidelines
 There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.
 
