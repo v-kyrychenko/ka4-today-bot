@@ -88,6 +88,35 @@ npm run local-api -- HttpApiClients
 all HTTP API route functions in `scripts/genEnvJson.mjs`. 
 If a new API route function is added in `template.yaml`, 
 update that alias mapping as well so `sam local start-api` receives env vars for the new function.
+
+---
+
+## 🔎 Troubleshooting
+
+- **Large SAM Artifact**
+  
+    Check artifact sizes after `sam build`:
+
+  ```bash
+  du -h .aws-sam/build/*
+  ```
+
+  Use this to track bundle growth after refactors or dependency changes. 
+  If one Lambda suddenly becomes much larger than the others, inspect recent imports, 
+  shared entrypoints, copied assets, and newly added dependencies.
+
+
+- **Missing Env Vars In Local API**
+  
+    If one route works in `npm run local-api -- HttpApiClients` but another fails with missing env vars, check `scripts/genEnvJson.mjs`. 
+    It must generate env blocks for every API route function used by `npm run local-api -- HttpApiClients`.
+
+
+- **New Route Fails Only Locally**
+  
+    If a new HTTP API route was added in `template.yaml`, update the `HttpApiClients` 
+    compatibility mapping in `scripts/genEnvJson.mjs` so the new route function also receives local env vars.
+
 ---
 
 ## ☁️ Deploying to AWS
