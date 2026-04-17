@@ -1,7 +1,7 @@
 import {commandRegistry} from '../commands/registry.js';
 import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
-import {BadRequestError, OpenAIError} from '../../../shared/errors/index.js';
-import {log} from '../../../shared/logging/index.js';
+import {BadRequestError, OpenAIError} from '../../../shared/errors';
+import {log} from '../../../shared/logging';
 import {ProcessorContext} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
 import {telegramMessagingService} from './telegramMessagingService.js';

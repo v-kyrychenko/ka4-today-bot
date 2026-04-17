@@ -1,7 +1,7 @@
 import {telegramClient} from '../../../infrastructure/integrations/telegram/telegramClient.js';
 import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
-import {TelegramError} from '../../../shared/errors/index.js';
-import {log, logError} from '../../../shared/logging/index.js';
+import {TelegramError} from '../../../shared/errors';
+import {log, logError} from '../../../shared/logging';
 import type {ProcessorContext} from '../domain/context.js';
 
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;

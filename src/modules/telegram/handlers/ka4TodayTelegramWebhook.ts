@@ -1,6 +1,6 @@
 import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {MAIN_MESSAGE_QUEUE_URL, TELEGRAM_SECURITY_TOKEN} from '../../../app/config/env.js';
-import {logError} from '../../../shared/logging/index.js';
+import {logError} from '../../../shared/logging';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../shared/types/aws.js';
 import {QueueRequestEnvelope} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';

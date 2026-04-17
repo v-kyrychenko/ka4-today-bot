@@ -23,14 +23,13 @@ Deployment is defined in `template.yaml` and `stack/`. Local helper scripts live
 Install dependencies with `npm install`.
 
 - `npm run typecheck` validates the TypeScript codebase with `tsc --noEmit`.
-- `npm run local -- Ka4TodayTelegramWebhook event-samples/telegram-event.json` runs a Lambda handler locally through the SAM helper script.
-- `npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json` runs the async queue processor locally.
-- `npm run local-api -- HttpApiClients` starts the HTTP API handler locally.
 
 ## Coding Style & Naming Conventions
 This repository uses TypeScript with ESM (`"type": "module"`). Follow the existing style: 4-space indentation, semicolons, single quotes, and named exports for shared modules. Keep handlers thin and push orchestration into module `application/` code or repositories as appropriate. Put generic helpers in `shared`, low-level external integration code in `infrastructure`, and product behavior in the owning module under `modules`.
 
 Inside module `application/` folders, prefer focused use-case files such as `listClients.ts`, `getClient.ts`, `createClient.ts`, or `searchExercises.ts` when the logic is small and clearly maps to one behavior. Use broader `*Service.ts` files only when multiple closely related operations truly need to stay together. Use `camelCase` for functions and variables, `PascalCase` for classes like `AppUser`, and descriptive file names such as `telegramMessagingService.ts`, `listClients.ts`, or `createRouteKeyController.ts`.
+
+For coach REST APIs, keep the REST model, domain model, and persistence row shape separated. Request and response payloads should stay camelCase, PostgreSQL rows and schema definitions should stay snake_case, and translation between them should happen through dedicated mappers in `src/infrastructure/persistence/postgres/mappers/`. Handlers should parse and validate REST payloads, application code should work with domain or REST-facing models, and repositories should be the boundary where mapped persistence rows are read or written.
 
 ## Testing Guidelines
 There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.

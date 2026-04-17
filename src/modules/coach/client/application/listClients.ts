@@ -1,9 +1,6 @@
-import type {AttributeValue} from '@aws-sdk/client-dynamodb';
+import type {ClientListRequest} from '../domain/client.js';
 import {clientsRepository} from '../repository/clientsRepository.js';
 
-export async function listClients(input: {
-    limit: number;
-    cursor?: Record<string, AttributeValue>;
-}) {
+export async function listClients(input: ClientListRequest) {
     return clientsRepository.findAll(input);
 }

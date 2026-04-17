@@ -1,7 +1,7 @@
 import {DEFAULT_LANG} from '../../../app/config/constants.js';
 import {openAiClient} from '../../../infrastructure/integrations/openai/openAiClient.js';
 import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
-import {BadRequestError, OpenAIError} from '../../../shared/errors/index.js';
+import {BadRequestError, OpenAIError} from '../../../shared/errors';
 import type {PromptVariableValue} from '../../../shared/types/app.js';
 import {OpenAiResponseDetails} from '../../../shared/types/openai.js';
 import type {ProcessorContext} from '../domain/context.js';

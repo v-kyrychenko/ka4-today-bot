@@ -253,35 +253,25 @@ Resources:
         GetClients:
           Type: HttpApi
           Properties:
-            Path: /clients
+            Path: /coaches/{id}/clients
             Method: GET
         GetClientById:
           Type: HttpApi
           Properties:
-            Path: /clients/{clientId}
+            Path: /coaches/{id}/clients/{clientId}
             Method: GET
         CreateClient:
           Type: HttpApi
           Properties:
-            Path: /clients
+            Path: /coaches/{id}/clients
             Method: POST
         UpdateClient:
           Type: HttpApi
           Properties:
-            Path: /clients/{clientId}
+            Path: /coaches/{id}/clients/{clientId}
             Method: PUT
       Policies:
         - AWSLambdaBasicExecutionRole
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:Query
-              - dynamodb:Scan
-              - dynamodb:GetItem
-              - dynamodb:UpdateItem
-              - dynamodb:PutItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

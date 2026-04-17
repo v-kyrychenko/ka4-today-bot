@@ -84,6 +84,10 @@ Run HttpApiClients
 npm run local-api -- HttpApiClients
 ```
 
+`HttpApiClients` is kept as a compatibility alias for the local API runner and currently expands to 
+all HTTP API route functions in `scripts/genEnvJson.mjs`. 
+If a new API route function is added in `template.yaml`, 
+update that alias mapping as well so `sam local start-api` receives env vars for the new function.
 ---
 
 ## ☁️ Deploying to AWS
@@ -140,4 +144,3 @@ All Rights Reserved.
 
 This code and associated content may not be copied, modified, or distributed without explicit written permission.
 This project is intended as a personal exploration and demonstration only.
-

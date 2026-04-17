@@ -1,4 +1,4 @@
-import {logError} from '../../../shared/logging/index.js';
+import {logError} from '../../../shared/logging';
 import type {LambdaResponse, SqsEvent} from '../../../shared/types/aws.js';
 import {mainProcessor} from '../application/mainProcessor.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';

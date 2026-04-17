@@ -1,6 +1,5 @@
-export async function getClientById(clientId: string) {
-    return {
-        message: 'Not Implemented',
-        clientId,
-    };
+import {clientsRepository} from '../repository/clientsRepository.js';
+
+export async function getClientById(coachId: number, clientId: number) {
+    return clientsRepository.findById(coachId, clientId);
 }

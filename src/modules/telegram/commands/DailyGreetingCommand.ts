@@ -1,6 +1,6 @@
 import {BaseCommand} from './BaseCommand.js';
 import {DAILY_GREETING_COMMAND} from './registry.js';
-import {BadRequestError} from '../../../shared/errors/index.js';
+import {BadRequestError} from '../../../shared/errors';
 import {promptReplyService} from '../application/promptReplyService.js';
 import {telegramMessagingService} from '../application/telegramMessagingService.js';
 import type {ProcessorContext} from '../domain/context.js';

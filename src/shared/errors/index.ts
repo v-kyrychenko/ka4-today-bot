@@ -7,6 +7,15 @@ export class BadRequestError extends Error {
     }
 }
 
+export class NotFoundError extends Error {
+    statusCode = 404;
+
+    constructor(message = 'Not Found') {
+        super(message);
+        this.name = 'NotFoundError';
+    }
+}
+
 export class OpenAIError extends Error {
     statusCode: number;
 
