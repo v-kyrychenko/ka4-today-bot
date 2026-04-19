@@ -78,7 +78,8 @@ Run async processor
 ```bash
 npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
 npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-event.json
-
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-workout.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/start-event.json
 ```
 
 Run HttpApiClients

@@ -36,6 +36,7 @@ export class OpenAiResponseDetails {
     status: OpenAiResponseStatus = 'in_progress';
     output: OpenAiOutputMessage[] = [];
     required_action?: OpenAiRequiredAction;
+    incomplete_details?: Object;
 
     constructor(init?: Partial<OpenAiResponseDetails>) {
         Object.assign(this, init);

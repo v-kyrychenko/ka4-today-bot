@@ -24,7 +24,6 @@ interface OpenAiResponseCreatePayload {
     model: string;
     background: boolean;
     temperature: number;
-    max_output_tokens: number;
     input: Array<{ role: 'system' | 'user'; content: string }>;
     tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
 }
@@ -38,7 +37,6 @@ export async function createResponse(
         model: DEFAULT_MODEL,
         background: true,
         temperature: 1.0,
-        max_output_tokens: 250,
         input: [
             {role: 'system', content: systemPrompt},
             {role: 'user', content: userPrompt},
@@ -65,7 +63,7 @@ export async function createResponse(
 export async function waitForResponse(responseId: string): Promise<boolean> {
     return pollUntil(async () => {
         const response = await getResponse(responseId);
-        log(`Run status: ${response.status}, requires_action: ${response.required_action?.type}`);
+        log(`Run status: ${response.status}, incomplete_details: ${JSON.stringify(response.incomplete_details)}`);
 
         if (response.status === 'completed') {
             return true;

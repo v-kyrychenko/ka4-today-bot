@@ -11,7 +11,8 @@ export class DefaultCommand extends BaseCommand {
 
     async execute(context: ProcessorContext): Promise<void> {
         const promptRef = '42_default';
-        context.message.promptRef = promptRef; //TODO remove promptRef from input params of fetchOpenAiReply
+        context.message.promptRef = promptRef;
+        // TODO remove promptRef from input params of fetchOpenAiReply., and put it to ProcessorContext
 
         const reply = await promptReplyService.fetchOpenAiReply({context, promptRef});
         await telegramMessagingService.sendMessage(context, reply);
