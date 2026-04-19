@@ -1,9 +1,9 @@
 import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {MAIN_MESSAGE_QUEUE_URL} from '../../../app/config/env.js';
-import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
 import {log} from '../../../shared/logging';
-import {TrainingScheduleItem} from '../../../shared/types/app.js';
 import {QueueRequestEnvelope} from '../domain/context.js';
+import {WorkoutSchedule} from '../domain/workout.js';
+import {telegramUserRepository} from '../repository/telegramUserRepository.js';
 
 const sqsClient = new SQSClient();
 
@@ -11,7 +11,7 @@ export const handler = async (): Promise<void> => {
     log('Daily cron started');
 
     try {
-        const scheduledUsers = await dynamoDbService.getUsersScheduledForDay();
+        const scheduledUsers = await telegramUserRepository.getUsersScheduledForDay();
 
         await Promise.all(
             scheduledUsers.map(async (item) => {
@@ -27,14 +27,14 @@ export const handler = async (): Promise<void> => {
     log('Daily cron finished');
 };
 
-function createRequest(item: TrainingScheduleItem): QueueRequestEnvelope {
+function createRequest(item: WorkoutSchedule): QueueRequestEnvelope {
     return new QueueRequestEnvelope({
         request: {
             message: {
-                promptRef: item.prompt_ref,
+                promptRef: item.dictPrompt.key,
                 text: '/daily_greeting',
                 chat: {
-                    id: item.chat_id,
+                    id: item.client.chatId,
                 },
             },
         },

@@ -12,6 +12,7 @@ import {DYNAMODB_ENDPOINT} from '../../../../app/config/env.js';
 import {DEFAULT_BATCH_SIZE} from '../../../../app/config/constants.js';
 import {log, logError} from '../../../../shared/logging/index.js';
 import {ScheduleUser, TrainingScheduleItem} from '../../../../shared/types/app.js';
+import {getCurrentDayCode} from '../../../../shared/utils/dayOfWeek.js';
 
 const DYNAMO_USER_TABLE = 'ka4-today-users';
 const DYNAMO_USERS_SCHEDULE_TABLE = 'ka4-today-users-training-schedule';
@@ -97,12 +98,6 @@ export async function getUserScheduledForDay(chatId: number | string): Promise<T
         (item) => new TrainingScheduleItem(unmarshall(item) as Partial<TrainingScheduleItem>)
     );
     return items.find((item) => String(item.chat_id) === String(chatId)) ?? null;
-}
-
-function getCurrentDayCode(): string {
-    const daysShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const today = new Date().getDay();
-    return daysShort[today] ?? 'SUN';
 }
 
 async function batchGetItems<T extends object>(
