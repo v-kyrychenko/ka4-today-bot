@@ -17,7 +17,7 @@ try {
 
     const child = spawn(
         'sam',
-        ['local', 'start-api', '--env-vars', 'env.tmp.json'],
+        ['local', 'start-api', '--skip-pull-image', '--env-vars', 'env.tmp.json'],
         { stdio: 'inherit' }
     );
 

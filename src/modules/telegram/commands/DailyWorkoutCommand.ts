@@ -1,14 +1,14 @@
-import {BaseCommand} from './BaseCommand.js';
 import {DAILY_WORKOUT_COMMAND} from './registry.js';
+import {BaseCommand} from './BaseCommand.js';
 import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
-import {dynamoDbService} from '../../../infrastructure/persistence/dynamodb/legacy/dynamoDbService.js';
 import {OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {promptReplyService} from '../application/promptReplyService.js';
 import {telegramMessagingService} from '../application/telegramMessagingService.js';
 import {ProcessorContext} from '../domain/context.js';
 import {Exercise, ExerciseWithSignedImages} from '../domain/workout.js';
+import {telegramUserRepository} from '../repository/telegramUserRepository.js';
 
 const s3 = new S3Client();
 
@@ -27,7 +27,7 @@ export class DailyWorkoutCommand extends BaseCommand {
             throw new OpenAIError('chatId is mandatory');
         }
 
-        const scheduled = await dynamoDbService.getUserScheduledForDay(chatId);
+        const scheduled = await telegramUserRepository.getUserScheduledForDay(chatId);
         log(`ChatId:${chatId}, found scheduled training for today:${JSON.stringify(scheduled)}`);
 
         if (!scheduled) {
@@ -39,7 +39,7 @@ export class DailyWorkoutCommand extends BaseCommand {
             return;
         }
 
-        const plan = scheduled.plan;
+        const plan = scheduled.workout?.plan;
         if (plan == null) {
             const message = await promptReplyService.fetchOpenAiReply({
                 context,

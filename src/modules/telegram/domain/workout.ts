@@ -21,15 +21,26 @@ export class ExerciseWithSignedImages extends Exercise {
     }
 }
 
+export class Workout {
+    id = 0;
+    plan: unknown = null;
+
+    constructor(init?: Partial<Workout>) {
+        Object.assign(this, init);
+    }
+}
+
 export class WorkoutSchedule {
     id = 0;
     dayOfWeek = '';
     client = new TelegramUser();
     dictPrompt = new PromptDict();
+    workout: Workout | null = null;
 
     constructor(init?: Partial<WorkoutSchedule>) {
         Object.assign(this, init);
         this.client = new TelegramUser(init?.client);
         this.dictPrompt = new PromptDict(init?.dictPrompt);
+        this.workout = init?.workout ? new Workout(init.workout) : null;
     }
 }
