@@ -4,6 +4,7 @@ import {BadRequestError, OpenAIError} from '../../../shared/errors';
 import {OpenAiResponseDetails} from '../../../shared/types/openai.js';
 import type {ProcessorContext} from '../domain/context.js';
 import {telegramPromptRepository} from '../repository/telegramPromptRepository.js';
+import {log} from '../../../shared/logging';
 
 type TemplateVariableValue = unknown;
 
@@ -20,6 +21,7 @@ export async function fetchOpenAiReply({
                                        }: FetchOpenAiReplyRequest): Promise<string> {
     const lang = context.user.lang || DEFAULT_LANG;
     const prompt = await telegramPromptRepository.getPromptByKey(promptRef);
+
     const systemPromptDict = prompt.systemPrompt;
     if (!systemPromptDict) {
         throw new BadRequestError(`Prompt '${promptRef}' has no systemPromptRef configuration`);
@@ -33,6 +35,7 @@ export async function fetchOpenAiReply({
     if (!userPromptTemplate) {
         throw new BadRequestError(`Prompt '${prompt.key}' has no translation for language '${lang}'.`);
     }
+    log(`Fetched prompt: ${prompt.key}, system prompt: ${systemPromptDict.key}`);
 
     const systemPrompt = renderPromptTemplate(systemPromptTemplate, variables);
     const userPrompt = renderPromptTemplate(userPromptTemplate, variables);

@@ -23,6 +23,8 @@ export const openAiClient = {
 interface OpenAiResponseCreatePayload {
     model: string;
     background: boolean;
+    temperature: number;
+    max_output_tokens: number;
     input: Array<{ role: 'system' | 'user'; content: string }>;
     tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
 }
@@ -35,6 +37,8 @@ export async function createResponse(
     const body: OpenAiResponseCreatePayload = {
         model: DEFAULT_MODEL,
         background: true,
+        temperature: 1.0,
+        max_output_tokens: 250,
         input: [
             {role: 'system', content: systemPrompt},
             {role: 'user', content: userPrompt},

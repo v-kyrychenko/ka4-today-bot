@@ -4,6 +4,7 @@ import {log} from '../../../shared/logging';
 import {QueueRequestEnvelope} from '../domain/context.js';
 import {WorkoutSchedule} from '../domain/workout.js';
 import {telegramUserRepository} from '../repository/telegramUserRepository.js';
+import {DAILY_GREETING_COMMAND} from "../commands/registry";
 
 const sqsClient = new SQSClient();
 
@@ -32,7 +33,7 @@ function createRequest(item: WorkoutSchedule): QueueRequestEnvelope {
         request: {
             message: {
                 promptRef: item.dictPrompt.key,
-                text: '/daily_greeting',
+                text: DAILY_GREETING_COMMAND,
                 chat: {
                     id: item.client.chatId,
                 },
