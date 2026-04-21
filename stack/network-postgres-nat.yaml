@@ -50,12 +50,12 @@ Parameters:
     Description: PostgreSQL TCP port
   PostgresDb:
     Type: String
-    Default: ka4today
+    Default: ka4-today
     MinLength: 1
     Description: PostgreSQL database name to bootstrap on the EC2 host
   PostgresUser:
     Type: String
-    Default: ka4today
+    Default: ka4-today
     MinLength: 1
     Description: PostgreSQL application user to bootstrap on the EC2 host
   PostgresPasswordParameterName:
@@ -292,6 +292,9 @@ Resources:
       ImageId: !Ref LatestAmiId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref Ec2InstanceProfile
+      MetadataOptions:
+        HttpTokens: required
+        HttpEndpoint: enabled
       SourceDestCheck: false
       SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
@@ -316,25 +319,6 @@ Resources:
           POSTGRES_BOOTSTRAP_DB='${PostgresDb}'
           POSTGRES_BOOTSTRAP_USER='${PostgresUser}'
           POSTGRES_PASSWORD_PARAMETER_NAME='${PostgresPasswordParameterName}'
-          BOOTSTRAP_SQL_FILE='/root/postgres-bootstrap.sql'
-
-          cat >"$BOOTSTRAP_SQL_FILE" <<'SQL'
-          SELECT format('CREATE ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password')
-          WHERE NOT EXISTS (
-              SELECT 1
-              FROM pg_catalog.pg_roles
-              WHERE rolname = :'app_user'
-          ) \gexec
-
-          SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password') \gexec
-
-          SELECT format('CREATE DATABASE %I OWNER %I', :'app_db', :'app_user')
-          WHERE NOT EXISTS (
-              SELECT 1
-              FROM pg_database
-              WHERE datname = :'app_db'
-          ) \gexec
-          SQL
 
           dnf install -y postgresql18-server postgresql18 iptables-services
 
@@ -382,6 +366,7 @@ Resources:
 
           POSTGRES_BOOTSTRAP_PASSWORD="$(aws ssm get-parameter \
               --name "$POSTGRES_PASSWORD_PARAMETER_NAME" \
+              --region '${AWS::Region}' \
               --with-decryption \
               --query 'Parameter.Value' \
               --output text)"
@@ -391,8 +376,24 @@ Resources:
               --set=ON_ERROR_STOP=1 \
               --set=app_user="$POSTGRES_BOOTSTRAP_USER" \
               --set=app_password="$POSTGRES_BOOTSTRAP_PASSWORD" \
-              --set=app_db="$POSTGRES_BOOTSTRAP_DB" \
-              --file="$BOOTSTRAP_SQL_FILE"
+              --set=app_db="$POSTGRES_BOOTSTRAP_DB" <<'SQL'
+
+          SELECT format('CREATE ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password')
+          WHERE NOT EXISTS (
+              SELECT 1
+              FROM pg_catalog.pg_roles
+              WHERE rolname = :'app_user'
+          ) \gexec
+
+          SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password') \gexec
+
+          SELECT format('CREATE DATABASE %I OWNER %I', :'app_db', :'app_user')
+          WHERE NOT EXISTS (
+              SELECT 1
+              FROM pg_database
+              WHERE datname = :'app_db'
+          ) \gexec
+          SQL
 
           unset POSTGRES_BOOTSTRAP_PASSWORD
           unset POSTGRES_PASSWORD_PARAMETER_NAME
