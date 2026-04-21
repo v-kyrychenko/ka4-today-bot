@@ -92,7 +92,7 @@ Parameters:
     Description: Public SSM parameter resolving the latest Amazon Linux 2023 ARM64 AMI
 
 Conditions:
-  InstanceScheduleEnabled: !Equals [!Ref EnableInstanceSchedule, 'true']
+  InstanceScheduleEnabled: !Equals [!Ref EnableInstanceSchedule, 'false']
   PostgresPasswordUsesCustomKmsKey: !Not [!Equals [!Ref PostgresPasswordKmsKeyArn, '']]
 
 Resources:
@@ -357,8 +357,14 @@ Resources:
           sed -i "s/^#\?listen_addresses.*/listen_addresses = '$LOCAL_IPV4'/" "$PG_CONF"
           sed -i "s/^#\?port.*/port = $POSTGRES_PORT/" "$PG_CONF"
 
+          # Allow connections from the same host (SSM tunnel, localhost)
+            if ! grep -Fq "host all all samehost scram-sha-256" "$PG_HBA"; then
+            echo "host all all samehost scram-sha-256" >> "$PG_HBA"
+            fi
+            
+          # Allow connections from private subnet (future Lambda)
           if ! grep -Fq "host all all $PRIVATE_SUBNET_CIDR scram-sha-256" "$PG_HBA"; then
-              echo "host all all $PRIVATE_SUBNET_CIDR scram-sha-256" >> "$PG_HBA"
+          echo "host all all $PRIVATE_SUBNET_CIDR scram-sha-256" >> "$PG_HBA"
           fi
 
           systemctl enable postgresql
