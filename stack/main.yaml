@@ -51,6 +51,7 @@ Parameters:
   OpenAiProjectId:
     Type: String
     Description: Project ID from OpenAI (starts with proj-...)
+    NoEcho: true
   NetworkStackExportPrefix:
     Type: String
     Description: Export name prefix used by the standalone network-postgres-nat stack
@@ -270,7 +271,7 @@ Resources:
         GetExercise:
           Type: HttpApi
           Properties:
-            Path: /exercise
+            Path: /exercises
             Method: GET
       Policies:
         - AWSLambdaBasicExecutionRole
