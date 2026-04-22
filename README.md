@@ -137,6 +137,13 @@ update that alias mapping as well so `sam local start-api` receives env vars for
 
 ## ☁️ Deploying to AWS
 
+### Validation
+
+```
+sam validate --lint -t stack/main.yaml
+aws cloudformation validate-template --template-body file://stack/main.yaml
+```
+
 > Requires [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) and configured AWS credentials.
 
 ### One-time setup:

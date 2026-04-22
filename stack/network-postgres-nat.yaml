@@ -445,46 +445,80 @@ Outputs:
   VpcId:
     Description: VPC ID
     Value: !Ref Vpc
+    Export:
+      Name: !Sub '${NamePrefix}-VpcId'
 
   PublicSubnetId:
     Description: Public subnet ID
     Value: !Ref PublicSubnet
+    Export:
+      Name: !Sub '${NamePrefix}-PublicSubnetId'
 
   PrivateSubnetId:
     Description: Private subnet ID reserved for future Lambda placement
     Value: !Ref PrivateSubnet
+    Export:
+      Name: !Sub '${NamePrefix}-PrivateSubnetId'
 
   Ec2InstanceId:
     Description: EC2 instance ID of the combined PostgreSQL/NAT host
     Value: !Ref NatPostgresInstance
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2InstanceId'
 
   Ec2PrivateIp:
     Description: Private IP of the EC2 instance
     Value: !GetAtt NatPostgresInstance.PrivateIp
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2PrivateIp'
 
   Ec2PublicIp:
     Description: Ephemeral public IPv4 assigned while the EC2 instance is running
     Value: !GetAtt NatPostgresInstance.PublicIp
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2PublicIp'
 
   Ec2PublicDnsName:
     Description: Public DNS name of the EC2 instance
     Value: !GetAtt NatPostgresInstance.PublicDnsName
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2PublicDnsName'
 
   Ec2SecurityGroupId:
     Description: Security group ID of the EC2 host
     Value: !Ref Ec2SecurityGroup
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2SecurityGroupId'
 
   LambdaSecurityGroupId:
     Description: Security group ID reserved for future Lambda VPC attachment
     Value: !Ref LambdaSecurityGroup
+    Export:
+      Name: !Sub '${NamePrefix}-LambdaSecurityGroupId'
 
   PostgresHost:
     Description: PostgreSQL host value for future Lambda configuration
     Value: !GetAtt NatPostgresInstance.PrivateIp
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresHost'
 
   PostgresPort:
     Description: PostgreSQL port value for future Lambda configuration
     Value: !Ref PostgresPort
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresPort'
+
+  PostgresDb:
+    Description: PostgreSQL database name for Lambda configuration
+    Value: !Ref PostgresDb
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresDb'
+
+  PostgresUser:
+    Description: PostgreSQL application user for Lambda configuration
+    Value: !Ref PostgresUser
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresUser'
 
   InstanceScheduleEnabled:
     Description: Whether the daily instance scheduler resources are enabled

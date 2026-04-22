@@ -23,6 +23,7 @@ Deployment is defined in `template.yaml` and `stack/`. Local helper scripts live
 Install dependencies with `npm install`.
 
 - `npm run typecheck` validates the TypeScript codebase with `tsc --noEmit`.
+- Do not run script interpreters or ad-hoc scripting languages such as `ruby`, `python`, or similar for repository tasks. Prefer standard shell utilities and the documented `npm` commands instead.
 
 ## Coding Style & Naming Conventions
 This repository uses TypeScript with ESM (`"type": "module"`). Follow the existing style: 4-space indentation, semicolons, single quotes, and named exports for shared modules. Keep handlers thin and push orchestration into module `application/` code or repositories as appropriate. Put generic helpers in `shared`, low-level external integration code in `infrastructure`, and product behavior in the owning module under `modules`.

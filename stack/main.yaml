@@ -7,74 +7,67 @@ Globals:
     Runtime: nodejs22.x
     Timeout: 120
     MemorySize: 512
+    VpcConfig:
+      SecurityGroupIds:
+        - !ImportValue
+            'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+      SubnetIds:
+        - !ImportValue
+            'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
     Environment:
       Variables:
+        #TODO move to esolve:ssm-secure
         TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+        #TODO move to esolve:ssm-secure
         TELEGRAM_SECURITY_TOKEN: !Ref TelegramSecurityToken
+        #TODO move to esolve:ssm-secure
         OPENAI_API_KEY: !Ref OpenAiToken
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
-        DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
         MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
-        POSTGRES_HOST: !Ref PostgresHost
-        POSTGRES_PORT: !Ref PostgresPort
-        POSTGRES_DB: !Ref PostgresDb
-        POSTGRES_USER: !Ref PostgresUser
-        POSTGRES_PASSWORD: !Ref PostgresPassword
+        POSTGRES_HOST: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresHost'
+        POSTGRES_PORT: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresPort'
+        POSTGRES_DB: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresDb'
+        POSTGRES_USER: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresUser'
+        POSTGRES_PASSWORD: !Sub '{{resolve:ssm-secure:${PostgresPasswordParameterName}}}'
         POSTGRES_SSL: !Ref PostgresSsl
 
 Parameters:
   TelegramBotToken:
     Type: String
     Description: Telegram bot token from BotFather
+    NoEcho: true
   TelegramSecurityToken:
     Type: String
     Description: Token used to validate incoming webhook requests
+    NoEcho: true
   OpenAiToken:
     Type: String
     Description: OpenAI API key (starts with sk-...)
+    NoEcho: true
   OpenAiProjectId:
     Type: String
     Description: Project ID from OpenAI (starts with proj-...)
   OpenAiDefaultPrompt:
     Type: String
     Description: Default prompt that will be sent to OpenAI thread
-  DynamoDbEndpoint:
+  NetworkStackExportPrefix:
     Type: String
-    Description: DynamoDb endpoint address
-    Default: ""
-  PostgresHost:
+    Description: Export name prefix used by the standalone network-postgres-nat stack
+    Default: ka4today
+  PostgresPasswordParameterName:
     Type: String
-    Description: PostgreSQL host
-    Default: ""
-  PostgresPort:
-    Type: String
-    Description: PostgreSQL port
-    Default: ""
-  PostgresDb:
-    Type: String
-    Description: PostgreSQL database name
-    Default: ""
-  PostgresUser:
-    Type: String
-    Description: PostgreSQL user
-    Default: ""
-  PostgresPassword:
-    Type: String
-    Description: PostgreSQL password
-    Default: ""
+    Description: SSM SecureString parameter name containing the PostgreSQL password
+    Default: /ka4today/postgres/app-password
   PostgresSsl:
     Type: String
     Description: Whether PostgreSQL SSL is enabled
     Default: "false"
 
 Resources:
-  #####################################################################
-  ##                         Storage                                 ##
-  #####################################################################
-  StorageStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stack/storage.yaml
   #####################################################################
   ##                         Bot                                     ##
   #####################################################################
@@ -92,6 +85,7 @@ Resources:
             Method: POST
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
         - Statement:
             Effect: Allow
             Action:
@@ -124,6 +118,7 @@ Resources:
               MaximumConcurrency: 2
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
         - Statement:
             Effect: Allow
             Action:
@@ -131,29 +126,6 @@ Resources:
               - sqs:DeleteMessage
               - sqs:GetQueueAttributes
             Resource: !GetAtt MainMessageQueue.Arn
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:Query
-              - dynamodb:GetItem
-              - dynamodb:UpdateItem
-              - dynamodb:PutItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
-              - !GetAtt StorageStack.Outputs.UserTrainingScheduleTableArn
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users-training-schedule/index/ScheduleByDay
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:PutItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayLogTableArn
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:GetItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayPromptsTableArn
         - Statement:
             - Sid: ReadExerciseImages
               Effect: Allow
@@ -186,22 +158,12 @@ Resources:
             Enabled: true
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
         - Statement:
             Effect: Allow
             Action:
               - sqs:SendMessage
             Resource: !GetAtt MainMessageQueue.Arn
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:Query
-              - dynamodb:BatchGetItem
-              - dynamodb:GetItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
-              - !GetAtt StorageStack.Outputs.UserTrainingScheduleTableArn
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users-training-schedule/index/ScheduleByDay
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -272,6 +234,7 @@ Resources:
             Method: PUT
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -296,6 +259,7 @@ Resources:
             Method: GET
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
