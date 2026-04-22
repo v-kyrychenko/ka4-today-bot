@@ -51,9 +51,6 @@ Parameters:
   OpenAiProjectId:
     Type: String
     Description: Project ID from OpenAI (starts with proj-...)
-  OpenAiDefaultPrompt:
-    Type: String
-    Description: Default prompt that will be sent to OpenAI thread
   NetworkStackExportPrefix:
     Type: String
     Description: Export name prefix used by the standalone network-postgres-nat stack
@@ -127,12 +124,12 @@ Resources:
               - sqs:GetQueueAttributes
             Resource: !GetAtt MainMessageQueue.Arn
         - Statement:
-            - Sid: ReadExerciseImages
-              Effect: Allow
-              Action:
-                - s3:GetObject
-                - s3:HeadObject
-              Resource: arn:aws:s3:::ka4-today-exercises/exercises/*
+            Sid: ReadExerciseImages
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:HeadObject
+            Resource: arn:aws:s3:::ka4-today-exercises/exercises/*
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -190,17 +187,35 @@ Resources:
   CronDailyMessageLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: ka4today-cron-daily-message
+      LogGroupName: /aws/lambda/ka4today-cron-daily-message
+      RetentionInDays: 7
+  HttpApiClientRoutesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-http-api-client-routes
+      RetentionInDays: 7
+  HttpApiExerciseRoutesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-http-api-exercise-routes
       RetentionInDays: 7
 
   #####################################################################
   ##                         SQS                                     ##
   #####################################################################
+  MainMessageDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ka4today-main-message-dlq
+
   MainMessageQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: ka4today-main-message-queue
-      VisibilityTimeout: 130 #  Queue visibility timeout should be > Lambda execution timeout
+      VisibilityTimeout: 300 #  Queue visibility timeout should be > Lambda execution timeout
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt MainMessageDeadLetterQueue.Arn
+        maxReceiveCount: 5
 
   #####################################################################
   ##                        UI API                                   ##
