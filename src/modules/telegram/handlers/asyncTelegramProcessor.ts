@@ -1,18 +1,34 @@
 import {withAppInitialization} from '../../../app/withAppInitialization.js';
-import {logError} from '../../../shared/logging';
+import {log, logError} from '../../../shared/logging';
 import type {LambdaResponse, SqsEvent} from '../../../shared/types/aws.js';
 import {mainProcessor} from '../application/mainProcessor.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
 
 export const handler = withAppInitialization(async (event: SqsEvent): Promise<LambdaResponse | undefined> => {
-    for (const record of event.Records) {
+    log('[telegram.async] Processing SQS batch', {
+        recordCount: event.Records.length,
+    });
+
+    for (const [recordIndex, record] of event.Records.entries()) {
         try {
+            log('[telegram.async] Processing SQS record', {
+                recordIndex,
+            });
             const payload = JSON.parse(record.body) as {request?: unknown};
             const body = extractBody(payload.request);
+            log('[telegram.async] Executing main processor', {
+                recordIndex,
+            });
             await mainProcessor.execute(body);
+            log('[telegram.async] Record processed successfully', {
+                recordIndex,
+            });
             return buildResponse(200, 'OK');
         } catch (error) {
-            logError('webhook execution failed', error);
+            logError('[telegram.async] Record processing failed', {
+                recordIndex,
+                error,
+            });
             const err = error as Error & {statusCode?: number};
             const status = err.statusCode ?? 500;
             const message = err.message || 'Internal Server Error';

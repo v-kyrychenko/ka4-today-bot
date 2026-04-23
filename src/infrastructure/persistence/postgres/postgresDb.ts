@@ -7,6 +7,7 @@ import {
     POSTGRES_SSL,
     POSTGRES_USER,
 } from '../../../app/config/env.js';
+import {log, logError} from '../../../shared/logging/index.js';
 import {getPostgresPassword} from './postgresPassword.js';
 
 const shouldUseSsl = POSTGRES_SSL === 'true';
@@ -15,6 +16,14 @@ async function createPool(): Promise<Pool> {
     if (!POSTGRES_HOST || !POSTGRES_PORT || !POSTGRES_DB || !POSTGRES_USER) {
         throw new Error('PostgreSQL configuration is incomplete');
     }
+
+    log('[postgres.init] Creating PostgreSQL pool', {
+        host: POSTGRES_HOST,
+        port: POSTGRES_PORT,
+        database: POSTGRES_DB,
+        user: POSTGRES_USER,
+        ssl: shouldUseSsl,
+    });
 
     const password = await getPostgresPassword();
 
@@ -34,20 +43,25 @@ let postgresDbInitPromise: Promise<void> | null = null;
 
 export async function initializePostgresDb(): Promise<void> {
     if (postgresDb) {
+        log('[postgres.init] PostgreSQL already initialized');
         return;
     }
 
     if (postgresDbInitPromise) {
+        log('[postgres.init] Waiting for in-flight PostgreSQL initialization');
         await postgresDbInitPromise;
         return;
     }
 
+    log('[postgres.init] Starting PostgreSQL initialization');
     postgresDbInitPromise = createPool()
         .then((pool) => {
             postgresDb = drizzle(pool);
+            log('[postgres.init] PostgreSQL initialization completed');
         })
         .catch((error) => {
             postgresDbInitPromise = null;
+            logError('[postgres.init] PostgreSQL initialization failed', error);
             throw error;
         });
 
