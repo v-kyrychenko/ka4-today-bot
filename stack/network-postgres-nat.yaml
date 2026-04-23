@@ -320,7 +320,7 @@ Resources:
           POSTGRES_BOOTSTRAP_USER='${PostgresUser}'
           POSTGRES_PASSWORD_PARAMETER_NAME='${PostgresPasswordParameterName}'
 
-          dnf install -y postgresql18-server postgresql18 iptables-services
+          dnf install -y postgresql18-server postgresql18 postgresql18-contrib iptables-services
 
           TOKEN="$(curl -X PUT -fsS "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")"
           LOCAL_IPV4="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)"

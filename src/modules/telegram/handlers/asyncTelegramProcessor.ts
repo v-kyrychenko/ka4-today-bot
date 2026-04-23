@@ -1,9 +1,10 @@
+import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {logError} from '../../../shared/logging';
 import type {LambdaResponse, SqsEvent} from '../../../shared/types/aws.js';
 import {mainProcessor} from '../application/mainProcessor.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
 
-export const handler = async (event: SqsEvent): Promise<LambdaResponse | undefined> => {
+export const handler = withAppInitialization(async (event: SqsEvent): Promise<LambdaResponse | undefined> => {
     for (const record of event.Records) {
         try {
             const payload = JSON.parse(record.body) as {request?: unknown};
@@ -20,7 +21,7 @@ export const handler = async (event: SqsEvent): Promise<LambdaResponse | undefin
     }
 
     return undefined;
-};
+});
 
 export function extractBody(input: unknown): TelegramWebhookRequest {
     if (!input) {

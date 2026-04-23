@@ -10,6 +10,8 @@ function getEnvVar(name: string, required = true): string | undefined {
     return value ?? undefined;
 }
 
+export {getEnvVar};
+
 export const TELEGRAM_BOT_TOKEN = getEnvVar('TELEGRAM_BOT_TOKEN');
 export const TELEGRAM_SECURITY_TOKEN = getEnvVar('TELEGRAM_SECURITY_TOKEN');
 export const OPENAI_API_KEY = getEnvVar('OPENAI_API_KEY');
@@ -19,5 +21,5 @@ export const POSTGRES_HOST = getEnvVar('POSTGRES_HOST');
 export const POSTGRES_PORT = getEnvVar('POSTGRES_PORT');
 export const POSTGRES_DB = getEnvVar('POSTGRES_DB');
 export const POSTGRES_USER = getEnvVar('POSTGRES_USER');
-export const POSTGRES_PASSWORD = getEnvVar('POSTGRES_PASSWORD');
+export const POSTGRES_PASSWORD = getEnvVar('POSTGRES_PASSWORD', false);
 export const POSTGRES_SSL = getEnvVar('POSTGRES_SSL', false);

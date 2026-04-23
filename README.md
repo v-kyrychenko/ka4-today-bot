@@ -166,7 +166,7 @@ sam deploy \
     TelegramBotToken=your-token \
     TelegramSecurityToken=your-secret \
     OpenAiToken=your-openai-key \
-    OpenAiProjectId=your-openai-project-id 
+    OpenAiProjectId=your-openai-project-id
     
     
 aws cloudformation deploy \
@@ -188,7 +188,7 @@ aws ssm start-session \
     --output text \
     --region eu-central-1) \
   --document-name AWS-StartPortForwardingSessionToRemoteHost \
-  --parameters '{"host":["10.42.0.33"],"portNumber":["5432"],"localPortNumber":["5432"]}' \
+  --parameters '{"host":["10.42.0.33"],"portNumber":["5432"],"localPortNumber":["54322"]}' \
   --region eu-central-1
 ```
 
