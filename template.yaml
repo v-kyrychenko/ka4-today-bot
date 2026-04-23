@@ -33,7 +33,7 @@ Globals:
         POSTGRES_USER: !ImportValue
           'Fn::Sub': '${NetworkStackExportPrefix}-PostgresUser'
         POSTGRES_PASSWORD: ''
-        POSTGRES_SSL: !Ref PostgresSsl
+        POSTGRES_SSL: 'false'
 
 Parameters:
   TelegramBotToken:
@@ -55,13 +55,17 @@ Parameters:
   NetworkStackExportPrefix:
     Type: String
     Description: Export name prefix used by the standalone network-postgres-nat stack
-    Default: ka4today
-  PostgresSsl:
-    Type: String
-    Description: Whether PostgreSQL SSL is enabled
-    Default: "false"
-
+    Default: ka4-today
 Resources:
+  #####################################################################
+  ##                         Storage                                 ##
+  #####################################################################
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stack/storage.yaml
+  #####################################################################
+
   #####################################################################
   ##                         Bot                                     ##
   #####################################################################
@@ -235,67 +239,67 @@ Resources:
   #####################################################################
   ##                        UI API                                   ##
   #####################################################################
-  HttpApiClientRoutes:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ka4today-http-api-client-routes
-      Handler: src/modules/coach/client/api/index.handler
-      CodeUri: .
-      Events:
-        GetClients:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients
-            Method: GET
-        GetClientById:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients/{clientId}
-            Method: GET
-        CreateClient:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients
-            Method: POST
-        UpdateClient:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients/{clientId}
-            Method: PUT
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSLambdaVPCAccessExecutionRole
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/modules/coach/client/api/index.ts
-        Format: cjs
-        Minify: false
-        Sourcemap: false
-        Target: es2022
-
-  HttpApiExerciseRoutes:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ka4today-http-api-exercise-routes
-      Handler: src/modules/coach/exercise/api/index.handler
-      CodeUri: .
-      Events:
-        GetExercise:
-          Type: HttpApi
-          Properties:
-            Path: /exercises
-            Method: GET
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSLambdaVPCAccessExecutionRole
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/modules/coach/exercise/api/index.ts
-        Format: cjs
-        Minify: false
-        Sourcemap: false
-        Target: es2022
+#  HttpApiClientRoutes:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-http-api-client-routes
+#      Handler: src/modules/coach/client/api/index.handler
+#      CodeUri: .
+#      Events:
+#        GetClients:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients
+#            Method: GET
+#        GetClientById:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients/{clientId}
+#            Method: GET
+#        CreateClient:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients
+#            Method: POST
+#        UpdateClient:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients/{clientId}
+#            Method: PUT
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/coach/client/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022
+#
+#  HttpApiExerciseRoutes:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-http-api-exercise-routes
+#      Handler: src/modules/coach/exercise/api/index.handler
+#      CodeUri: .
+#      Events:
+#        GetExercise:
+#          Type: HttpApi
+#          Properties:
+#            Path: /exercises
+#            Method: GET
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/coach/exercise/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022

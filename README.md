@@ -163,6 +163,7 @@ sam deploy \
   --region eu-central-1 \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides \
+    NetworkStackExportPrefix=ka4-today \
     TelegramBotToken=your-token \
     TelegramSecurityToken=your-secret \
     OpenAiToken=your-openai-key \
