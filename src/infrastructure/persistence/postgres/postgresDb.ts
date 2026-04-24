@@ -8,6 +8,7 @@ import {
     POSTGRES_SSL,
     POSTGRES_USER,
 } from '../../../app/config/env.js';
+import {POSTGRES_TIMEOUT_MS} from '../../../app/config/constants.js';
 import {log, logError} from '../../../shared/logging';
 
 const shouldUseSsl = POSTGRES_SSL === 'true';
@@ -33,6 +34,9 @@ async function createPool(): Promise<Pool> {
         password: POSTGRES_PASSWORD,
         ssl: shouldUseSsl ? {rejectUnauthorized: false} : false,
         max: 5,
+        connectionTimeoutMillis: POSTGRES_TIMEOUT_MS,
+        query_timeout: POSTGRES_TIMEOUT_MS,
+        statement_timeout: POSTGRES_TIMEOUT_MS,
     });
 }
 
