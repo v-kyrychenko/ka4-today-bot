@@ -5,6 +5,7 @@ import {ProcessorContext} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
 import {telegramUserRepository} from '../repository/telegramUserRepository.js';
 import {telegramMessagingService} from './telegramMessagingService.js';
+import {TG_ERROR_DEFAULT} from "../../../app/config/constants";
 
 export const mainProcessor = {
     execute: async (inputRequest: TelegramWebhookRequest): Promise<void> => {
@@ -33,7 +34,7 @@ export const mainProcessor = {
         try {
             await command.execute(context);
         } catch (error) {
-            await telegramMessagingService.sendMessage(context, '🧠💥🪄🐞');
+            await telegramMessagingService.sendMessage(context, TG_ERROR_DEFAULT);
             throw error as BadRequestError | OpenAIError;
         }
     },
