@@ -73,6 +73,8 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/modules/telegram/handlers/ka4TodayTelegramWebhook.ts
+        External:
+          - '@resvg/resvg-js'
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -122,6 +124,8 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/modules/telegram/handlers/asyncTelegramProcessor.ts
+        External:
+          - '@resvg/resvg-js'
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -160,6 +164,8 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/modules/telegram/handlers/cronDailyMessage.ts
+        External:
+          - '@resvg/resvg-js'
         Format: cjs
         Minify: false
         Sourcemap: false
