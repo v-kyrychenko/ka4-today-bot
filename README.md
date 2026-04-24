@@ -175,44 +175,6 @@ aws cloudformation deploy \
     NamePrefix=ka4-today    
 ```
 
-### AWS DB port forwarding
-```
-aws ssm start-session \
-  --target $(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=ka4-today-postgres-nat" \
-              "Name=instance-state-name,Values=running" \
-    --query "Reservations[0].Instances[0].InstanceId" \
-    --output text \
-    --region eu-central-1) \
-  --document-name AWS-StartPortForwardingSessionToRemoteHost \
-  --parameters '{"host":["10.42.0.33"],"portNumber":["5432"],"localPortNumber":["54322"]}' \
-  --region eu-central-1
-```
-
-### AWS DB stop instance
-```
-aws ec2 stop-instances \
-  --instance-ids $(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=ka4-today-postgres-nat" \
-              "Name=instance-state-name,Values=running" \
-    --query "Reservations[0].Instances[0].InstanceId" \
-    --output text \
-    --region eu-central-1) \
-  --region eu-central-1
-```
-
-### AWS DB start instance
-```
-aws ec2 start-instances \
-  --instance-ids $(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=ka4-today-postgres-nat" \
-              "Name=instance-state-name,Values=stopped" \
-    --query "Reservations[0].Instances[0].InstanceId" \
-    --output text \
-    --region eu-central-1) \
-  --region eu-central-1
-```
-
 ## ☁️ Delete all from AWS
 
 ```bash
