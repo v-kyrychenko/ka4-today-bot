@@ -175,18 +175,6 @@ aws cloudformation deploy \
     NamePrefix=ka4-today    
 ```
 
-### Required SSM parameters
-
-Create these SSM `SecureString` parameters before deploying AWS Lambdas that read secrets at runtime:
-
-```bash
-aws ssm put-parameter --region eu-central-1 --name /ka4today/postgres/app-password --type SecureString --value 'your-postgres-password' --overwrite
-aws ssm put-parameter --region eu-central-1 --name /ka4today/telegram/bot-token --type SecureString --value 'your-telegram-bot-token' --overwrite
-aws ssm put-parameter --region eu-central-1 --name /ka4today/telegram/security-token --type SecureString --value 'your-telegram-security-token' --overwrite
-aws ssm put-parameter --region eu-central-1 --name /ka4today/openai/api-key --type SecureString --value 'your-openai-api-key' --overwrite
-aws ssm put-parameter --region eu-central-1 --name /ka4today/openai/project-id --type SecureString --value 'your-openai-project-id' --overwrite
-```
-
 ### AWS DB port forwarding
 ```
 aws ssm start-session \
@@ -252,10 +240,3 @@ All Rights Reserved.
 
 This code and associated content may not be copied, modified, or distributed without explicit written permission.
 This project is intended as a personal exploration and demonstration only.
-
-
-
-What changed on EC2:
-
-- SG ingress broadened from Lambda SG to EC2 SG
-- you removed the blanket FORWARD REJECT rule
