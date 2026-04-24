@@ -1,5 +1,5 @@
 import {DEFAULT_MODEL, POLLING} from '../../../app/config/constants.js';
-import {getOpenAiApiKey, getOpenAiProjectId} from '../secrets/ssmSecretService.js';
+import {OPENAI_API_KEY, OPENAI_PROJECT_ID} from '../../../app/config/env.js';
 import {OpenAIError} from '../../../shared/errors';
 import {httpRequest} from '../../../shared/http/httpClient.js';
 import {log} from '../../../shared/logging';
@@ -8,6 +8,11 @@ import {pollUntil} from '../../../shared/utils/poller.js';
 
 const OPEN_AI_API_LABEL = 'OPEN-AI';
 const OPEN_AI_BASE_URL = 'https://api.openai.com/v1';
+const OPEN_AI_API_HEADERS: Record<string, string> = {
+    authorization: `Bearer ${OPENAI_API_KEY}`,
+    'Content-Type': 'application/json',
+    ...(OPENAI_PROJECT_ID ? {'OpenAI-Project': OPENAI_PROJECT_ID} : {}),
+};
 
 export const openAiClient = {
     createResponse,
@@ -42,12 +47,11 @@ export async function createResponse(
         body.tools = [{type: 'file_search', vector_store_ids: vectorStoreIds}];
     }
 
-    const headers = await buildOpenAiHeaders();
     const response = await httpRequest<OpenAiResponseDetails, OpenAiResponseCreatePayload>({
         method: 'POST',
         path: '/responses',
         endpointUrl: OPEN_AI_BASE_URL,
-        headers,
+        headers: OPEN_AI_API_HEADERS,
         body,
         label: `${OPEN_AI_API_LABEL}:responses`,
         errorClass: OpenAIError,
@@ -74,28 +78,14 @@ export async function waitForResponse(responseId: string): Promise<boolean> {
 }
 
 export async function getResponse(responseId: string): Promise<OpenAiResponseDetails> {
-    const headers = await buildOpenAiHeaders();
     const response = await httpRequest<OpenAiResponseDetails>({
         method: 'GET',
         path: `/responses/${responseId}`,
         endpointUrl: OPEN_AI_BASE_URL,
-        headers,
+        headers: OPEN_AI_API_HEADERS,
         label: OPEN_AI_API_LABEL,
         errorClass: OpenAIError,
     });
 
     return new OpenAiResponseDetails(response);
-}
-
-async function buildOpenAiHeaders(): Promise<Record<string, string>> {
-    const [apiKey, projectId] = await Promise.all([
-        getOpenAiApiKey(),
-        getOpenAiProjectId(),
-    ]);
-
-    return {
-        Authorization: `Bearer ${apiKey}`,
-        'OpenAI-Project': projectId,
-        'Content-Type': 'application/json',
-    };
 }

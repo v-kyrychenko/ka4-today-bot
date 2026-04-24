@@ -1,4 +1,4 @@
-import {getTelegramBotToken} from '../secrets/ssmSecretService.js';
+import {TELEGRAM_BOT_TOKEN} from '../../../app/config/env.js';
 import {TelegramError} from '../../../shared/errors';
 import {httpRequest} from '../../../shared/http/httpClient.js';
 
@@ -25,10 +25,9 @@ interface TelegramMediaItem {
 }
 
 export async function sendMessage(chatId: number, message: string): Promise<void> {
-    const botToken = await getTelegramBotToken();
     await httpRequest<TelegramApiResponse, { chat_id: number; text: string }>({
         method: 'POST',
-        path: `/${botToken}/sendMessage`,
+        path: `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
         endpointUrl: TELEGRAM_BASE_URL,
         headers: TELEGRAM_HEADERS,
         body: {
@@ -41,10 +40,9 @@ export async function sendMessage(chatId: number, message: string): Promise<void
 }
 
 export async function sendPhoto(chatId: number, photo: string, caption = ''): Promise<void> {
-    const botToken = await getTelegramBotToken();
     await httpRequest<TelegramApiResponse, { chat_id: number; photo: string; caption: string }>({
         method: 'POST',
-        path: `/${botToken}/sendPhoto`,
+        path: `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
         endpointUrl: TELEGRAM_BASE_URL,
         headers: TELEGRAM_HEADERS,
         body: {
@@ -64,10 +62,9 @@ export async function sendMediaGroup(chatId: number, imageUrls: string[], captio
         ...(index === 0 && caption ? {caption} : {}),
     }));
 
-    const botToken = await getTelegramBotToken();
     await httpRequest<TelegramApiResponse, { chat_id: number; media: TelegramMediaItem[] }>({
         method: 'POST',
-        path: `/${botToken}/sendMediaGroup`,
+        path: `/${TELEGRAM_BOT_TOKEN}/sendMediaGroup`,
         endpointUrl: TELEGRAM_BASE_URL,
         headers: TELEGRAM_HEADERS,
         body: {

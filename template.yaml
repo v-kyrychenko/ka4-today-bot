@@ -9,10 +9,10 @@ Globals:
     MemorySize: 512
     Environment:
       Variables:
-        TELEGRAM_BOT_TOKEN: ''
-        TELEGRAM_SECURITY_TOKEN: ''
-        OPENAI_API_KEY: ''
-        OPENAI_PROJECT_ID: ''
+        TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+        TELEGRAM_SECURITY_TOKEN: !Ref TelegramSecurityToken
+        OPENAI_API_KEY: !Ref OpenAiToken
+        OPENAI_PROJECT_ID: !Ref OpenAiProjectId
         MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
         POSTGRES_HOST: !ImportValue
           'Fn::Sub': '${NetworkStackExportPrefix}-PostgresHost'
@@ -22,10 +22,25 @@ Globals:
           'Fn::Sub': '${NetworkStackExportPrefix}-PostgresDb'
         POSTGRES_USER: !ImportValue
           'Fn::Sub': '${NetworkStackExportPrefix}-PostgresUser'
-        POSTGRES_PASSWORD: ''
+        POSTGRES_PASSWORD: !Ref PostgresPassword
         POSTGRES_SSL: 'false'
 
 Parameters:
+  TelegramBotToken:
+    Type: String
+    NoEcho: true
+  TelegramSecurityToken:
+    Type: String
+    NoEcho: true
+  OpenAiToken:
+    Type: String
+    NoEcho: true
+  OpenAiProjectId:
+    Type: String
+    NoEcho: true
+  PostgresPassword:
+    Type: String
+    NoEcho: true
   NetworkStackExportPrefix:
     Type: String
     Description: Export name prefix used by the standalone network-postgres-nat stack
@@ -48,12 +63,6 @@ Resources:
             Method: POST
       Policies:
         - AWSLambdaBasicExecutionRole
-        - Statement:
-            Sid: ReadTelegramSecurityToken
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-            Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/telegram/security-token'
         - Statement:
             Effect: Allow
             Action:
@@ -94,16 +103,6 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSLambdaVPCAccessExecutionRole
-        - Statement:
-            Sid: ReadRuntimeSecrets
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-            Resource:
-              - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/postgres/app-password'
-              - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/telegram/bot-token'
-              - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/openai/api-key'
-              - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/openai/project-id'
         - Statement:
             Effect: Allow
             Action:
@@ -151,12 +150,6 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSLambdaVPCAccessExecutionRole
-        - Statement:
-            Sid: ReadPostgresPasswordParameter
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-            Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/postgres/app-password'
         - Statement:
             Effect: Allow
             Action:
@@ -221,93 +214,81 @@ Resources:
   #####################################################################
   ##                        UI API                                   ##
   #####################################################################
-  HttpApiClientRoutes:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ka4today-http-api-client-routes
-      Handler: src/modules/coach/client/api/index.handler
-      CodeUri: .
-      VpcConfig:
-        SecurityGroupIds:
-          - !ImportValue
-              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
-        SubnetIds:
-          - !ImportValue
-              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
-      Events:
-        GetClients:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients
-            Method: GET
-        GetClientById:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients/{clientId}
-            Method: GET
-        CreateClient:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients
-            Method: POST
-        UpdateClient:
-          Type: HttpApi
-          Properties:
-            Path: /coaches/{id}/clients/{clientId}
-            Method: PUT
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSLambdaVPCAccessExecutionRole
-        - Statement:
-            Sid: ReadPostgresPasswordParameter
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-            Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/postgres/app-password'
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/modules/coach/client/api/index.ts
-        Format: cjs
-        Minify: false
-        Sourcemap: false
-        Target: es2022
-
-  HttpApiExerciseRoutes:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ka4today-http-api-exercise-routes
-      Handler: src/modules/coach/exercise/api/index.handler
-      CodeUri: .
-      VpcConfig:
-        SecurityGroupIds:
-          - !ImportValue
-              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
-        SubnetIds:
-          - !ImportValue
-              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
-      Events:
-        GetExercise:
-          Type: HttpApi
-          Properties:
-            Path: /exercises
-            Method: GET
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSLambdaVPCAccessExecutionRole
-        - Statement:
-            Sid: ReadPostgresPasswordParameter
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-            Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ka4today/postgres/app-password'
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/modules/coach/exercise/api/index.ts
-        Format: cjs
-        Minify: false
-        Sourcemap: false
-        Target: es2022
+#  HttpApiClientRoutes:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-http-api-client-routes
+#      Handler: src/modules/coach/client/api/index.handler
+#      CodeUri: .
+#      VpcConfig:
+#        SecurityGroupIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+#        SubnetIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+#      Events:
+#        GetClients:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients
+#            Method: GET
+#        GetClientById:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients/{clientId}
+#            Method: GET
+#        CreateClient:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients
+#            Method: POST
+#        UpdateClient:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients/{clientId}
+#            Method: PUT
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/coach/client/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022
+#
+#  HttpApiExerciseRoutes:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-http-api-exercise-routes
+#      Handler: src/modules/coach/exercise/api/index.handler
+#      CodeUri: .
+#      VpcConfig:
+#        SecurityGroupIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+#        SubnetIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+#      Events:
+#        GetExercise:
+#          Type: HttpApi
+#          Properties:
+#            Path: /exercises
+#            Method: GET
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/coach/exercise/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022

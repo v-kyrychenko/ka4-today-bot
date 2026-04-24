@@ -3,12 +3,12 @@ import {Pool} from 'pg';
 import {
     POSTGRES_DB,
     POSTGRES_HOST,
+    POSTGRES_PASSWORD,
     POSTGRES_PORT,
     POSTGRES_SSL,
     POSTGRES_USER,
 } from '../../../app/config/env.js';
 import {log, logError} from '../../../shared/logging';
-import {getPostgresPassword} from '../../integrations/secrets/ssmSecretService.js';
 
 const shouldUseSsl = POSTGRES_SSL === 'true';
 
@@ -25,14 +25,12 @@ async function createPool(): Promise<Pool> {
         ssl: shouldUseSsl,
     });
 
-    const password = await getPostgresPassword();
-
     return new Pool({
         host: POSTGRES_HOST,
         port: Number(POSTGRES_PORT),
         database: POSTGRES_DB,
         user: POSTGRES_USER,
-        password,
+        password: POSTGRES_PASSWORD,
         ssl: shouldUseSsl ? {rejectUnauthorized: false} : false,
         max: 5,
     });

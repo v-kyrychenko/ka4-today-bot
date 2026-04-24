@@ -19,19 +19,19 @@ export const mainProcessor = {
             throw new BadRequestError('Telegram request message.chat.id is mandatory');
         }
 
-        log(`Incoming message from ${username || userId}: ${text}`);
+        log('[telegram.main] Incoming message', {chatId, userId, username, text,});
         const user = await telegramUserRepository.getOrCreateUser(chatId, message);
 
         const context = new ProcessorContext({chatId, text, user, message});
         const command = commandRegistry.find((item) => item.canHandle(text, context));
 
         if (!command) {
-            log(`Skipped. No command found for: ${text}`);
+            log('[telegram.main] No command found', {chatId, text});
             return;
         }
 
         const commandName = command.constructor?.name ?? 'AnonymousCommand';
-        log(`Executing: ${commandName}`);
+        log('[telegram.main] Executing command', {chatId, commandName});
 
         try {
             await command.execute(context);
