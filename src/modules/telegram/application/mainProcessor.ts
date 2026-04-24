@@ -4,8 +4,7 @@ import {log} from '../../../shared/logging';
 import {ProcessorContext} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
 import {telegramUserRepository} from '../repository/telegramUserRepository.js';
-import {telegramMessagingService} from './telegramMessagingService.js';
-import {TG_ERROR_DEFAULT} from "../../../app/config/constants";
+import {errorHandler} from './errorHandler';
 
 export const mainProcessor = {
     execute: async (inputRequest: TelegramWebhookRequest): Promise<void> => {
@@ -18,23 +17,21 @@ export const mainProcessor = {
             throw new BadRequestError('Telegram request message.chat.id is mandatory');
         }
 
-        const user = await telegramUserRepository.getOrCreateUser(chatId, message);
-
-        const context = new ProcessorContext({chatId, text, user, message});
-        const command = commandRegistry.find((item) => item.canHandle(text, context));
-
-        if (!command) {
-            log('[telegram.main] No command found', {chatId, text});
-            return;
-        }
-
-        const commandName = command.constructor?.name ?? 'AnonymousCommand';
-        log('[telegram.main] Executing command', {chatId, commandName});
-
         try {
+            const user = await telegramUserRepository.getOrCreateUser(chatId, message);
+            const context = new ProcessorContext({chatId, text, user, message});
+            const command = commandRegistry.find((item) => item.canHandle(text, context));
+
+            if (!command) {
+                log('[telegram.main] No command found', {chatId, text});
+                return;
+            }
+
+            const commandName = command.constructor?.name ?? 'AnonymousCommand';
+            log('[telegram.main] Executing command', {chatId, commandName});
             await command.execute(context);
         } catch (error) {
-            await telegramMessagingService.sendMessage(context, TG_ERROR_DEFAULT);
+            await errorHandler(chatId, error);
             throw error as BadRequestError | OpenAIError;
         }
     },

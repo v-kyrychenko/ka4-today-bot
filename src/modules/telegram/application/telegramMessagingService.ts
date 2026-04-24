@@ -11,9 +11,18 @@ import type {
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
 
 export const telegramMessagingService = {
+    sendErrorMessage,
     sendMessage,
     sendWithMedia,
 };
+
+export async function sendErrorMessage(chatId: number, message: string): Promise<void> {
+    try {
+        await telegramClient.sendMessage(chatId, message);
+    } catch (error) {
+        logError(`Failed to send error message to ${chatId}`, error);
+    }
+}
 
 export async function sendMessage(context: TelegramContext, message: string): Promise<void> {
     const chatId = context.chatId;

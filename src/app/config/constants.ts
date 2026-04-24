@@ -11,4 +11,5 @@ export const DEFAULT_MODEL = 'gpt-4o-mini';
 
 export const POSTGRES_TIMEOUT_MS = 5000;
 
-export const TG_ERROR_DEFAULT = '🧠💥🪄🐞'
+export const TG_ERROR_POSTGRES_UNAVAILABLE = '🌐 💥 🔁 ⏳';
+export const TG_ERROR_DEFAULT = '🧠💥🪄🐞';
