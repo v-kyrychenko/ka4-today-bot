@@ -28,6 +28,8 @@ Install dependencies with `npm install`.
 ## Coding Style & Naming Conventions
 This repository uses TypeScript with ESM (`"type": "module"`). Follow the existing style: 4-space indentation, semicolons, single quotes, and named exports for shared modules. Keep handlers thin and push orchestration into module `application/` code or repositories as appropriate. Put generic helpers in `shared`, low-level external integration code in `infrastructure`, and product behavior in the owning module under `modules`.
 
+For the shared logging module, prefer the shortened import path without `/index.js`, for example `import {log, logError} from '../shared/logging';`.
+
 Inside module `application/` folders, prefer focused use-case files such as `listClients.ts`, `getClient.ts`, `createClient.ts`, or `searchExercises.ts` when the logic is small and clearly maps to one behavior. Use broader `*Service.ts` files only when multiple closely related operations truly need to stay together. Use `camelCase` for functions and variables, `PascalCase` for classes like `AppUser`, and descriptive file names such as `telegramMessagingService.ts`, `listClients.ts`, or `createRouteKeyController.ts`.
 
 For coach REST APIs, keep the REST model, domain model, and persistence row shape separated. Request and response payloads should stay camelCase, PostgreSQL rows and schema definitions should stay snake_case, and translation between them should happen through dedicated mappers in `src/infrastructure/persistence/postgres/mappers/`. Handlers should parse and validate REST payloads, application code should work with domain or REST-facing models, and repositories should be the boundary where mapped persistence rows are read or written.

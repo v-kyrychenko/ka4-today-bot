@@ -7,8 +7,8 @@ import {
     POSTGRES_SSL,
     POSTGRES_USER,
 } from '../../../app/config/env.js';
-import {log, logError} from '../../../shared/logging/index.js';
-import {getPostgresPassword} from './postgresPassword.js';
+import {log, logError} from '../../../shared/logging';
+import {getPostgresPassword} from '../../integrations/secrets/ssmSecretService.js';
 
 const shouldUseSsl = POSTGRES_SSL === 'true';
 

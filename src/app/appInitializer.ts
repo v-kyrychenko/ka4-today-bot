@@ -1,5 +1,5 @@
 import {initializePostgresDb} from '../infrastructure/persistence/postgres/postgresDb.js';
-import {log, logError} from '../shared/logging/index.js';
+import {log, logError} from '../shared/logging';
 
 let appInitializationPromise: Promise<void> | null = null;
 
