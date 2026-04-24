@@ -9,10 +9,15 @@ import type {
 } from '../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
 
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
+type SendPhotoOptions = {
+    filename: string;
+    caption?: string;
+};
 
 export const telegramMessagingService = {
     sendErrorMessage,
     sendMessage,
+    sendPhoto,
     sendWithMedia,
 };
 
@@ -45,6 +50,23 @@ export async function sendMessage(context: TelegramContext, message: string): Pr
             promptRef: context.message?.promptRef ?? null,
             messageText: message,
         });
+    }
+}
+
+export async function sendPhoto(
+    context: Pick<ProcessorContext, 'chatId'>,
+    photo: Buffer,
+    options: SendPhotoOptions,
+): Promise<void> {
+    const chatId = context.chatId;
+    if (chatId == null) {
+        throw new TelegramError('chatId is mandatory');
+    }
+
+    try {
+        await telegramClient.sendPhotoBuffer(chatId, photo, options);
+    } catch (error) {
+        logError(`Failed to send photo to ${chatId}`, error);
     }
 }
 

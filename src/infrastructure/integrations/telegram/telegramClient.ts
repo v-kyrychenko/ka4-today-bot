@@ -10,6 +10,7 @@ const TELEGRAM_HEADERS = {
 
 export const telegramClient = {
     sendMessage,
+    sendPhotoBuffer,
     sendPhoto,
     sendMediaGroup,
 };
@@ -21,6 +22,11 @@ interface TelegramApiResponse {
 interface TelegramMediaItem {
     type: 'photo';
     media: string;
+    caption?: string;
+}
+
+interface SendPhotoBufferOptions {
+    filename: string;
     caption?: string;
 }
 
@@ -53,6 +59,30 @@ export async function sendPhoto(chatId: number, photo: string, caption = ''): Pr
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
     });
+}
+
+export async function sendPhotoBuffer(
+    chatId: number,
+    photo: Buffer,
+    options: SendPhotoBufferOptions,
+): Promise<void> {
+    const formData = new FormData();
+    formData.append('chat_id', String(chatId));
+    formData.append('photo', new Blob([Uint8Array.from(photo)], {type: 'image/png'}), options.filename);
+
+    if (options.caption) {
+        formData.append('caption', options.caption);
+    }
+
+    const response = await fetch(`${TELEGRAM_BASE_URL}/${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    const responseBody = (await response.json()) as TelegramApiResponse;
+    if (!response.ok) {
+        throw new TelegramError(`Failed TELEGRAM request to /${TELEGRAM_BOT_TOKEN}/sendPhoto: ${JSON.stringify(responseBody)}`);
+    }
 }
 
 export async function sendMediaGroup(chatId: number, imageUrls: string[], caption = ''): Promise<void> {
