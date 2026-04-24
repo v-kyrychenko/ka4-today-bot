@@ -185,7 +185,7 @@ Resources:
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group reserved for future Lambda placement in the private subnet
+      GroupDescription: Security group used by Lambdas attached to the private subnet
       VpcId: !Ref Vpc
       SecurityGroupEgress:
         - IpProtocol: -1
@@ -200,21 +200,7 @@ Resources:
       GroupDescription: Security group for the combined PostgreSQL and NAT EC2 instance
       VpcId: !Ref Vpc
       SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          SourceSecurityGroupId: !Ref LambdaSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
-          SourceSecurityGroupId: !Ref LambdaSecurityGroup
-        - IpProtocol: udp
-          FromPort: '123'
-          ToPort: '123'
-          SourceSecurityGroupId: !Ref LambdaSecurityGroup
-        - IpProtocol: tcp
-          FromPort: !Ref PostgresPort
-          ToPort: !Ref PostgresPort
+        - IpProtocol: -1
           SourceSecurityGroupId: !Ref LambdaSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: -1
@@ -333,8 +319,15 @@ Resources:
 
           systemctl enable --now iptables
 
+          iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 2>/dev/null || true
+          iptables -D FORWARD -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
+
           if ! iptables -t nat -C POSTROUTING -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j MASQUERADE 2>/dev/null; then
               iptables -t nat -A POSTROUTING -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j MASQUERADE
+          fi
+
+          if ! iptables -C INPUT -s "$PRIVATE_SUBNET_CIDR" -p tcp --dport "$POSTGRES_PORT" -j ACCEPT 2>/dev/null; then
+              iptables -I INPUT 4 -s "$PRIVATE_SUBNET_CIDR" -p tcp --dport "$POSTGRES_PORT" -j ACCEPT
           fi
 
           if ! iptables -C FORWARD -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j ACCEPT 2>/dev/null; then

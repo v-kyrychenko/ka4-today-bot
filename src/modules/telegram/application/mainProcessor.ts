@@ -12,14 +12,11 @@ export const mainProcessor = {
         const message = request.message;
         const chatId = message?.chat?.id ?? null;
         const text = message?.text ?? null;
-        const userId = message?.from?.id ?? null;
-        const username = message?.from?.username ?? null;
 
         if (!message || chatId == null) {
             throw new BadRequestError('Telegram request message.chat.id is mandatory');
         }
 
-        log('[telegram.main] Incoming message', {chatId, userId, username, text,});
         const user = await telegramUserRepository.getOrCreateUser(chatId, message);
 
         const context = new ProcessorContext({chatId, text, user, message});

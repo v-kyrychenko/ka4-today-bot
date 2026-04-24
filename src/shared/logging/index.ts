@@ -22,10 +22,13 @@ function formatLogArg(arg: unknown): string {
 
 function normalizeLogValue(value: unknown): unknown {
     if (value instanceof Error) {
+        const errorWithCause = value as Error & {cause?: unknown};
+
         return {
             name: value.name,
             message: value.message,
             stack: value.stack,
+            cause: errorWithCause.cause ? normalizeLogValue(errorWithCause.cause) : undefined,
         };
     }
 
