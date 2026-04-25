@@ -1,7 +1,7 @@
-import {telegramMessagingService} from '../application/telegramMessagingService.js';
-import type {ProcessorContext} from '../domain/context.js';
-import {BaseCommand} from './BaseCommand.js';
-import {PROGRESS_COMMAND} from './registry.js';
+import {telegramMessagingService} from '../../application/telegramMessagingService.js';
+import type {ProcessorContext} from '../../domain/context.js';
+import {BaseCommand} from '../BaseCommand';
+import {PROGRESS_COMMAND} from '../registry';
 
 export class ProgressCommand extends BaseCommand {
     canHandle(text: string | null): boolean {
