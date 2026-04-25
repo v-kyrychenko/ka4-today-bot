@@ -6,6 +6,7 @@
     "gen-env": "node scripts/genEnvJson.mjs",
     "local": "node scripts/runLocal.mjs",
     "local-api": "node scripts/runLocalApi.mjs",
+    "progress-preview": "node scripts/progressPreview.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

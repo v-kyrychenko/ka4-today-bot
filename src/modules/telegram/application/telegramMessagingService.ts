@@ -16,11 +16,6 @@ export const telegramMessagingService = {
     sendWithMedia,
 };
 
-interface TelegramBufferMedia {
-    buffer: Buffer;
-    filename?: string;
-}
-
 export async function sendErrorMessage(chatId: number, message: string): Promise<void> {
     try {
         await telegramClient.sendMessage(chatId, message);
@@ -55,7 +50,7 @@ export async function sendMessage(context: TelegramContext, message: string): Pr
 
 export async function sendWithMedia(
     context: Pick<ProcessorContext, 'chatId'>,
-    media: string[] | TelegramBufferMedia,
+    media: string[] | { buffer: Buffer; filename?: string },
     caption = ''
 ): Promise<void> {
     const chatId = context.chatId;

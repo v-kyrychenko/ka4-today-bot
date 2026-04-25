@@ -41,6 +41,9 @@ For small service modules, prefer placing exported service objects such as `expo
 ## Testing Guidelines
 There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.
 
+Local SAM verification depends on a working container runtime. `sam build` succeeds in this repo, but `sam local invoke` will fail unless Docker or Finch is installed and running; a recent attempt to run `npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/progress.json` was blocked for that reason rather than by an application error.
+For local TypeScript preview scripts, do not assume Node.js can execute repo source files directly with `--experimental-strip-types`. This codebase uses ESM imports that end in `.js`, so a direct TypeScript entrypoint can fail to resolve sibling source modules at runtime. The current progress preview works by using a small `esbuild` bootstrap script (`scripts/progressPreview.mjs`) that builds and runs the TypeScript preview entry under Node.js 22.
+
 ## Commit & Pull Request Guidelines
 Recent history uses short, imperative commit subjects such as `typescript migration`. Keep commits focused and small. For pull requests, include a concise summary, affected modules or handlers, required config changes, and verification steps. Add request/response examples for API changes and screenshots only when UI or rendered output is affected.
 
