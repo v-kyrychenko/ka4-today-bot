@@ -73,19 +73,19 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-    Description: Whether to create daily start and stop schedules for the EC2 instance
+    Description: Whether to create Monday-through-Saturday start and stop schedules for the EC2 instance
   ScheduleTimezone:
     Type: String
     Default: Europe/Kyiv
     Description: IANA timezone used by the instance start and stop schedules
   InstanceStartScheduleExpression:
     Type: String
-    Default: cron(0 4 * * ? *)
-    Description: EventBridge Scheduler cron expression used to start the instance
+    Default: cron(0 4 ? * MON-SAT *)
+    Description: EventBridge Scheduler cron expression used to start the instance Monday through Saturday
   InstanceStopScheduleExpression:
     Type: String
-    Default: cron(0 9 * * ? *)
-    Description: EventBridge Scheduler cron expression used to stop the instance
+    Default: cron(0 9 ? * MON-SAT *)
+    Description: EventBridge Scheduler cron expression used to stop the instance Monday through Saturday
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
@@ -408,7 +408,7 @@ Resources:
     Type: AWS::Scheduler::Schedule
     Condition: InstanceScheduleEnabled
     Properties:
-      Description: Starts the PostgreSQL/NAT EC2 instance on a daily Kyiv schedule
+      Description: Starts the PostgreSQL/NAT EC2 instance on a Monday-through-Saturday Kyiv schedule
       FlexibleTimeWindow:
         Mode: 'OFF'
       ScheduleExpression: !Ref InstanceStartScheduleExpression
@@ -423,7 +423,7 @@ Resources:
     Type: AWS::Scheduler::Schedule
     Condition: InstanceScheduleEnabled
     Properties:
-      Description: Stops the PostgreSQL/NAT EC2 instance on a daily Kyiv schedule
+      Description: Stops the PostgreSQL/NAT EC2 instance on a Monday-through-Saturday Kyiv schedule
       FlexibleTimeWindow:
         Mode: 'OFF'
       ScheduleExpression: !Ref InstanceStopScheduleExpression

@@ -1,42 +1,42 @@
 import type {ViewModel} from './viewModel.js';
 
 export const sampleViewModel: ViewModel = {
-    label: 'KA4 TODAY · PROGRESS',
-    title: 'Body progress check',
-    dateRange: 'Apr 1 - Apr 25',
+    label: 'KA4 TODAY · Прогрес тіла',
+    title: 'Останні 90 днів',
+    dateRange: 'Січ 1 - Квіт 25',
     metrics: [
         {
-            label: 'Weight',
+            label: 'Вага',
             value: '77.8 kg',
             delta: '↓ 0.7 kg',
             trend: [79.1, 78.8, 78.4, 78.2, 77.9, 77.8],
-            trendDates: ['Apr 1', 'Apr 5', 'Apr 10', 'Apr 15', 'Apr 20', 'Apr 25']
+            trendDates: ['Січ 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
         },
         {
-            label: 'Waist',
+            label: 'Талія',
             value: '86 cm',
             delta: '↓ 3 cm',
             trend: [89, 88.4, 87.9, 87.2, 86.6, 86],
-            trendDates: ['Apr 1', 'Apr 5', 'Apr 10', 'Apr 15', 'Apr 20', 'Apr 25']
+            trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
         },
         {
-            label: 'Chest',
+            label: 'Груди',
             value: '102 cm',
-            delta: 'stable',
+            delta: 'без змін',
             trend: [101.8, 102.1, 101.9, 102, 102.2, 102],
-            trendDates: ['Apr 1', 'Apr 5', 'Apr 10', 'Apr 15', 'Apr 20', 'Apr 25']
+            trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
         },
         {
-            label: 'Body fat',
+            label: 'Біцепс',
             value: '--',
             delta: '',
-            emptyStateTitle: 'No measurements yet',
-            emptyStateHint: 'Add 2+ check-ins to see a trend.'
+            emptyStateTitle: 'Поки що немає вимірювань',
+            emptyStateHint: 'Додайте 2+ заміри, щоб побачити тенденцію.'
         }
     ],
     insightTitle: 'Insight',
-    insightText: 'Waist is moving down while weight stays controlled. Looks like recomposition, not just weight loss.'
+    insightText: 'Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..'
 };
 
-export const sampleCaption = `📊 Progress POC
+export const sampleCaption = `📊 Динаміка показників
 ${sampleViewModel.insightText}`;

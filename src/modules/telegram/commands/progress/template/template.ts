@@ -111,6 +111,7 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
     const points = createChartPoints(trend);
     const xAxisTicks = createXAxisTicks(metric.trendDates);
     const yAxisTicks = createYAxisTicks(trend);
+    const gradientId = createGradientId(metric.label);
 
     return {
         type: 'div',
@@ -139,7 +140,47 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
                                             viewBox: '0 0 420 220',
                                             style: styles.chartSvg,
                                             children: [
+                                                {
+                                                    type: 'defs',
+                                                    props: {
+                                                        children: {
+                                                            type: 'linearGradient',
+                                                            props: {
+                                                                id: gradientId,
+                                                                x1: '0',
+                                                                y1: '0',
+                                                                x2: '0',
+                                                                y2: '1',
+                                                                children: [
+                                                                    {
+                                                                        type: 'stop',
+                                                                        props: {
+                                                                            offset: '0%',
+                                                                            stopColor: '#A3FF3F',
+                                                                            stopOpacity: '0.30'
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        type: 'stop',
+                                                                        props: {
+                                                                            offset: '100%',
+                                                                            stopColor: '#A3FF3F',
+                                                                            stopOpacity: '0'
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                },
                                                 ...createGridLines(),
+                                                {
+                                                    type: 'path',
+                                                    props: {
+                                                        d: points.areaPath,
+                                                        fill: `url(#${gradientId})`
+                                                    }
+                                                },
                                                 {
                                                     type: 'path',
                                                     props: {
@@ -199,11 +240,12 @@ function createNoDataState(metric: MetricViewModel): SatoriNode {
     };
 }
 
-function createChartPoints(trend: number[]): { path: string; lastPoint: { x: number; y: number } } {
+function createChartPoints(trend: number[]): { path: string; areaPath: string; lastPoint: { x: number; y: number } } {
     const chartWidth = 420;
     const chartHeight = 220;
     const paddingX = 10;
     const paddingY = 18;
+    const baselineY = chartHeight - paddingY;
     const minValue = Math.min(...trend);
     const maxValue = Math.max(...trend);
     const valueRange = maxValue - minValue || 1;
@@ -217,9 +259,11 @@ function createChartPoints(trend: number[]): { path: string; lastPoint: { x: num
         };
     });
     const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+    const firstPoint = points[0];
     const lastPoint = points[points.length - 1];
+    const areaPath = `${path} L ${lastPoint.x} ${baselineY} L ${firstPoint.x} ${baselineY} Z`;
 
-    return {path, lastPoint};
+    return {path, areaPath, lastPoint};
 }
 
 function createGridLines(): SatoriNode[] {
@@ -284,6 +328,10 @@ function formatAxisNumber(value: number): string {
     const rounded = Math.round(value * 10) / 10;
 
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function createGradientId(label: string): string {
+    return `trend-gradient-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 }
 
 function chunkMetrics(metrics: MetricViewModel[], size: number): MetricViewModel[][] {

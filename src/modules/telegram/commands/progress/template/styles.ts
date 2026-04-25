@@ -90,8 +90,9 @@ export const styles = {
         gap: '14px'
     } satisfies SatoriStyle,
     metricLabel: {
-        color: theme.colors.muted,
-        fontSize: 36
+        color: '#B6C1CD',
+        fontSize: 40,
+        lineHeight: 1
     } satisfies SatoriStyle,
     metricStatRow: {
         display: 'flex',
@@ -138,8 +139,8 @@ export const styles = {
         justifyContent: 'space-between',
         alignItems: 'flex-end',
         width: '44px',
-        color: theme.colors.muted,
-        fontSize: 20,
+        color: '#B6C1CD',
+        fontSize: 24,
         lineHeight: 1
     } satisfies SatoriStyle,
     chartPlot: {
@@ -156,13 +157,13 @@ export const styles = {
         justifyContent: 'flex-end',
         alignItems: 'center',
         gap: '12px',
-        color: theme.colors.muted,
-        fontSize: 18,
+        color: '#B6C1CD',
+        fontSize: 22,
         lineHeight: 1.1
     } satisfies SatoriStyle,
     chartXAxisTitle: {
-        color: theme.colors.muted,
-        fontSize: 18,
+        color: '#B6C1CD',
+        fontSize: 22,
         lineHeight: 1
     } satisfies SatoriStyle,
     chartXAxisTicks: {
