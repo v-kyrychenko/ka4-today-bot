@@ -4,23 +4,18 @@ import path from 'node:path';
 import {Resvg} from '@resvg/resvg-js';
 import satori from 'satori';
 
-import {
-    PROGRESS_FONT_FAMILY,
-    PROGRESS_FONT_FILE_NAME,
-    PROGRESS_IMAGE_HEIGHT,
-    PROGRESS_IMAGE_WIDTH
-} from './progressStyles.js';
-import {createProgressTemplate} from './progressTemplate.js';
-import type {ProgressViewModel} from './progressViewModel.js';
+import {FONT_FAMILY, FONT_FILE_NAME, IMAGE_HEIGHT, IMAGE_WIDTH} from './template/styles.js';
+import {createTemplate} from './template/template.js';
+import type {ViewModel} from './template/viewModel.js';
 
-export async function renderProgressPng(viewModel: ProgressViewModel): Promise<Buffer> {
+export async function renderPng(viewModel: ViewModel): Promise<Buffer> {
     const font = loadFont();
-    const svg = await satori(createProgressTemplate(viewModel), {
-        width: PROGRESS_IMAGE_WIDTH,
-        height: PROGRESS_IMAGE_HEIGHT,
+    const svg = await satori(createTemplate(viewModel), {
+        width: IMAGE_WIDTH,
+        height: IMAGE_HEIGHT,
         fonts: [
             {
-                name: PROGRESS_FONT_FAMILY,
+                name: FONT_FAMILY,
                 data: font,
                 weight: 400,
                 style: 'normal'
@@ -32,7 +27,7 @@ export async function renderProgressPng(viewModel: ProgressViewModel): Promise<B
 }
 
 function loadFont(): Buffer {
-    return fs.readFileSync(resolveAssetPath(PROGRESS_FONT_FILE_NAME));
+    return fs.readFileSync(resolveAssetPath(FONT_FILE_NAME));
 }
 
 function resolveAssetPath(fileName: string): string {

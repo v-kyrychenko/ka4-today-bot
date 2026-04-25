@@ -1,11 +1,11 @@
-export const PROGRESS_IMAGE_WIDTH = 1400;
-export const PROGRESS_IMAGE_HEIGHT = 1600;
-export const PROGRESS_FONT_FAMILY = 'Inter';
-export const PROGRESS_FONT_FILE_NAME = 'Inter-Regular.ttf';
+export const IMAGE_WIDTH = 1400;
+export const IMAGE_HEIGHT = 1600;
+export const FONT_FAMILY = 'Inter';
+export const FONT_FILE_NAME = 'Inter-Regular.ttf';
 
 type SatoriStyle = Record<string, number | string>;
 
-export const progressTheme = {
+export const theme = {
     colors: {
         background: '#0B0F14',
         foreground: '#E6EDF3',
@@ -17,16 +17,16 @@ export const progressTheme = {
     }
 };
 
-export const progressStyles = {
+export const styles = {
     root: {
-        width: `${PROGRESS_IMAGE_WIDTH}px`,
-        height: `${PROGRESS_IMAGE_HEIGHT}px`,
+        width: `${IMAGE_WIDTH}px`,
+        height: `${IMAGE_HEIGHT}px`,
         display: 'flex',
         flexDirection: 'column',
         padding: '72px',
-        background: progressTheme.colors.background,
-        color: progressTheme.colors.foreground,
-        fontFamily: PROGRESS_FONT_FAMILY,
+        background: theme.colors.background,
+        color: theme.colors.foreground,
+        fontFamily: FONT_FAMILY,
         gap: '32px'
     } satisfies SatoriStyle,
     header: {
@@ -42,7 +42,7 @@ export const progressStyles = {
         flex: 1
     } satisfies SatoriStyle,
     label: {
-        color: progressTheme.colors.accent,
+        color: theme.colors.accent,
         fontSize: 34,
         letterSpacing: 4
     } satisfies SatoriStyle,
@@ -53,7 +53,7 @@ export const progressStyles = {
     } satisfies SatoriStyle,
     dateRange: {
         width: '300px',
-        color: progressTheme.colors.muted,
+        color: theme.colors.muted,
         fontSize: 32,
         lineHeight: 1.2,
         textAlign: 'right'
@@ -79,8 +79,8 @@ export const progressStyles = {
         minHeight: 0,
         padding: '42px',
         borderRadius: '38px',
-        background: progressTheme.colors.cardBackground,
-        border: `2px solid ${progressTheme.colors.cardBorder}`,
+        background: theme.colors.cardBackground,
+        border: `2px solid ${theme.colors.cardBorder}`,
         gap: '24px'
     } satisfies SatoriStyle,
     metricHeader: {
@@ -90,7 +90,7 @@ export const progressStyles = {
         gap: '14px'
     } satisfies SatoriStyle,
     metricLabel: {
-        color: progressTheme.colors.muted,
+        color: theme.colors.muted,
         fontSize: 36
     } satisfies SatoriStyle,
     metricStatRow: {
@@ -106,7 +106,7 @@ export const progressStyles = {
         lineHeight: 1
     } satisfies SatoriStyle,
     metricDelta: {
-        color: progressTheme.colors.accent,
+        color: theme.colors.accent,
         fontSize: 36,
         lineHeight: 1
     } satisfies SatoriStyle,
@@ -119,13 +119,58 @@ export const progressStyles = {
     chartWrap: {
         display: 'flex',
         flex: 1,
+        flexDirection: 'column',
         width: '100%',
         minHeight: 0,
-        alignItems: 'stretch'
+        alignItems: 'stretch',
+        gap: '8px'
+    } satisfies SatoriStyle,
+    chartCanvas: {
+        display: 'flex',
+        flex: 1,
+        width: '100%',
+        minHeight: 0,
+        gap: '12px'
+    } satisfies SatoriStyle,
+    chartYAxis: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        width: '44px',
+        color: theme.colors.muted,
+        fontSize: 20,
+        lineHeight: 1
+    } satisfies SatoriStyle,
+    chartPlot: {
+        display: 'flex',
+        flex: 1,
+        minHeight: 0
     } satisfies SatoriStyle,
     chartSvg: {
         width: '100%',
         height: '100%'
+    } satisfies SatoriStyle,
+    chartXAxis: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: '12px',
+        color: theme.colors.muted,
+        fontSize: 18,
+        lineHeight: 1.1
+    } satisfies SatoriStyle,
+    chartXAxisTitle: {
+        color: theme.colors.muted,
+        fontSize: 18,
+        lineHeight: 1
+    } satisfies SatoriStyle,
+    chartXAxisTicks: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flex: 1,
+        gap: '10px'
     } satisfies SatoriStyle,
     noDataState: {
         display: 'flex',
@@ -137,13 +182,13 @@ export const progressStyles = {
         paddingRight: '36px'
     } satisfies SatoriStyle,
     noDataTitle: {
-        color: progressTheme.colors.foreground,
+        color: theme.colors.foreground,
         fontSize: 46,
         fontWeight: 600,
         lineHeight: 1.1
     } satisfies SatoriStyle,
     noDataHint: {
-        color: progressTheme.colors.muted,
+        color: theme.colors.muted,
         fontSize: 28,
         lineHeight: 1.35,
         maxWidth: '360px'
@@ -153,17 +198,17 @@ export const progressStyles = {
         flexDirection: 'column',
         padding: '36px',
         borderRadius: '34px',
-        background: progressTheme.colors.insightBackground,
-        border: `2px solid ${progressTheme.colors.accent}`,
+        background: theme.colors.insightBackground,
+        border: `2px solid ${theme.colors.accent}`,
         gap: '18px'
     } satisfies SatoriStyle,
     insightTitle: {
-        color: progressTheme.colors.accent,
+        color: theme.colors.accent,
         fontSize: 34,
         fontWeight: 700
     } satisfies SatoriStyle,
     insightText: {
-        color: progressTheme.colors.foreground,
+        color: theme.colors.foreground,
         fontSize: 38,
         lineHeight: 1.35
     } satisfies SatoriStyle

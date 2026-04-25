@@ -2,8 +2,8 @@ import {telegramMessagingService} from '../../application/telegramMessagingServi
 import type {ProcessorContext} from '../../domain/context.js';
 import {BaseCommand} from '../BaseCommand';
 import {PROGRESS_COMMAND} from '../registry';
-import {renderProgressPng} from './renderProgressPng.js';
-import {progressSampleCaption, progressSampleViewModel} from './sampleProgressViewModel.js';
+import {renderPng} from './renderPng.js';
+import {sampleCaption, sampleViewModel} from './template/sampleViewModel.js';
 
 export class ProgressCommand extends BaseCommand {
     canHandle(text: string | null): boolean {
@@ -11,11 +11,11 @@ export class ProgressCommand extends BaseCommand {
     }
 
     async execute(context: ProcessorContext): Promise<void> {
-        const png = await renderProgressPng(progressSampleViewModel);
+        const png = await renderPng(sampleViewModel);
 
         await telegramMessagingService.sendWithMedia(context, {
             buffer: png,
             filename: 'progress-poc.png'
-        }, progressSampleCaption);
+        }, sampleCaption);
     }
 }
