@@ -97,6 +97,40 @@ npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-workout.json
 npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/start-event.json
 ```
 
+### Prebuilt `resvg` Layer For Local `arm64`
+
+The `/progress` command uses `@resvg/resvg-js`, which depends on a native Linux binary. For local
+Apple Silicon development, the layer is prebuilt into `layers/resvg/dist` and then reused by SAM
+with `SkipBuild: True`.
+
+Rebuild the layer when `layers/resvg/package.json` changes:
+
+```bash
+mkdir -p layers/resvg/dist/nodejs
+cp layers/resvg/package.json layers/resvg/dist/nodejs/package.json
+docker run --rm \
+  --platform linux/arm64 \
+  -v "$PWD/layers/resvg/dist/nodejs:/var/task" \
+  -w /var/task \
+  public.ecr.aws/sam/build-nodejs22.x:latest-arm64 \
+  npm ci --omit=dev
+```
+
+The progress image also needs `assets/Inter-Regular.ttf`. Keep that font in the prebuilt layer so
+both local SAM and AWS Lambda can load it via `/opt/assets/Inter-Regular.ttf`:
+
+```bash
+mkdir -p layers/resvg/dist/assets
+cp assets/Inter-Regular.ttf layers/resvg/dist/assets/Inter-Regular.ttf
+```
+
+After rebuilding the layer, build the function and run the event:
+
+```bash
+sam build Ka4TodayAsyncTelegramProcessor
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/progress.json
+```
+
 Run HttpApiClients
 ```bash
 npm run local-api -- HttpApiClients

@@ -32,3 +32,4 @@ function.zip
 
 # 🔸 Event mocks / test files
 event-samples/*.json
+/layers/
