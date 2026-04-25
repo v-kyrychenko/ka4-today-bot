@@ -9,7 +9,7 @@ import type {ProcessorContext} from '../../domain/context.js';
 import {BaseCommand} from '../BaseCommand';
 import {PROGRESS_COMMAND} from '../registry';
 
-const IMAGE_WIDTH = 1200;
+const IMAGE_WIDTH = 1400;
 const IMAGE_HEIGHT = 1600;
 const FONT_FILE_NAME = 'Inter-Regular.ttf';
 
@@ -24,7 +24,7 @@ export class ProgressCommand extends BaseCommand {
         await telegramMessagingService.sendWithMedia(context, {
             buffer: png,
             filename: 'progress-poc.png'
-        }, '📊 Progress POC');
+        }, '📊 Progress POC \n Waist is moving down while weight stays controlled. Looks like recomposition, not just weight loss.');
     }
 }
 
@@ -148,18 +148,18 @@ function createInsight(): object {
                 border: '2px solid #A3FF3F',
                 gap: '18px'
             },
-            children: [
-                createText('Insight', {
-                    color: '#A3FF3F',
-                    fontSize: 34,
-                    fontWeight: 700
-                }),
-                createText('Waist is moving down while weight stays controlled. Looks like recomposition, not just weight loss.', {
-                    color: '#E6EDF3',
-                    fontSize: 38,
-                    lineHeight: 1.35
-                })
-            ]
+            // children: [
+            //     createText('Insight', {
+            //         color: '#A3FF3F',
+            //         fontSize: 34,
+            //         fontWeight: 700
+            //     }),
+            //     createText('Waist is moving down while weight stays controlled. Looks like recomposition, not just weight loss.', {
+            //         color: '#E6EDF3',
+            //         fontSize: 38,
+            //         lineHeight: 1.35
+            //     })
+            // ]
         }
     };
 }
