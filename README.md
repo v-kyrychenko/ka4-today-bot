@@ -6,8 +6,10 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ---
 
 ## 📐 Architecture
-<img src="assets/ka4-today.arch.png">
-<br>
+
+[//]: # (<img src="assets/ka4-today.arch.png">)
+
+[//]: # (<br>)
 
 - **Telegram webhook flow** uses **API Gateway (HTTP API)** to invoke a lightweight Lambda.
   That handler validates the Telegram secret token and pushes inbound updates to **Amazon SQS**.
