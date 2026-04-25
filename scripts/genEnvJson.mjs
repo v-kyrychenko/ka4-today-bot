@@ -5,6 +5,10 @@ const functionName = process.argv[2];
 const envFile = path.resolve('.env');
 const outputFile = path.resolve('env.tmp.json');
 
+const functionAliases = {
+    HttpApiClients: ['HttpApiClientRoutes', 'HttpApiExerciseRoutes'],
+};
+
 if (!functionName) {
     console.error('Missing function name. Usage: node scripts/genEnvJson.mjs <FunctionName>');
     process.exit(1);
@@ -25,12 +29,15 @@ try {
         })
     );
 
-    const result = {
-        [functionName]: envVars,
-    };
+    const targetFunctions = functionAliases[functionName] ?? [functionName];
+    const result = Object.fromEntries(
+        targetFunctions.map((targetFunctionName) => [targetFunctionName, envVars])
+    );
 
     fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-    console.log(`Generated ${outputFile} for function "${functionName}"`);
+    console.log(
+        `Generated ${outputFile} for function target${targetFunctions.length > 1 ? 's' : ''} "${targetFunctions.join('", "')}"`,
+    );
 } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error(`Failed to generate env.tmp.json: ${err.message}`);

@@ -6,27 +6,27 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 ---
 
 ## 📐 Architecture
-<img src="assets/ka4-today.arch.png">
-<br>
 
-- **Telegram Webhook** is handled via **API Gateway (HTTP API)** → lightweight **Lambda**,  
-  which pushes messages to an **Amazon SQS queue** instead of invoking the processor directly.
-- **Amazon SQS** acts as a **decoupling layer and rate controller**,  
-  enabling safe and scalable asynchronous processing.
-- The **Async Processor Lambda** consumes messages from the SQS queue with controlled concurrency  
-  (e.g. `MaximumConcurrency: 2`) to avoid hitting **OpenAI token limits**.
-- Integration with **OpenAI Responses API**: threads, runs, tool calls, file search support.
-- **Structured logging** with semantic markers (`### LABEL:start/stop`),  
-  distinguishing between API-level and low-level errors.
-- **Custom HTTP client** with:
-  - timeouts,
-  - semantic `errorClass`,
-  - optional hidden responses (for logging privacy or size constraints).
-- **DynamoDB** for:
-  - Telegram users (`chat_id`, `username`, etc.),
-  - Prompt references,
-  - Daily training schedule,
-  - Invocation logs.
+[//]: # (<img src="assets/ka4-today.arch.png">)
+
+[//]: # (<br>)
+
+- **Telegram webhook flow** uses **API Gateway (HTTP API)** to invoke a lightweight Lambda.
+  That handler validates the Telegram secret token and pushes inbound updates to **Amazon SQS**.
+- **Amazon SQS** decouples delivery from processing and acts as the buffer between Telegram and
+  the async worker Lambda.
+- The **async processor Lambda** consumes queue messages with controlled concurrency
+  (`MaximumConcurrency: 2`) before routing each update through the Telegram command pipeline.
+- **Daily scheduled delivery** runs through a dedicated cron Lambda that loads the users scheduled
+  for the day and enqueues outbound work onto the same SQS queue.
+- **Coach HTTP APIs** are exposed as separate **API Gateway (HTTP API)** Lambda handlers for
+  client and exercise endpoints, isolated from the Telegram webhook path.
+- **OpenAI Responses API** is used by the Telegram application layer to render prompt-driven
+  replies and workout generation flows.
+- **PostgreSQL** is the main application data store for Telegram users, prompts, message logs,
+  clients, exercises, workouts, and workout schedules.
+- **Structured logging** and shared HTTP helpers centralize error handling, request boundaries,
+  and outbound integration behavior across Lambdas.
 
 ---
 
@@ -37,7 +37,7 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 - **Daily cron-based message broadcast** via ka4today-cron-daily-message Lambda
 - **Personalized messages** based on OpenAI responses and the day of the week
 - **Localization support** for messages (multi-language)
-- **Prompt dictionary** stored in DynamoDB for consistent responses
+- **Prompt dictionary** stored in Postgres for consistent responses
 - **Personalized workout generation** custom daily workout plan for the user, based on their preferences and available exercise
 ---
 
@@ -45,11 +45,26 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 
 ```
 src/
-├── config/              # Environment variables and constants
-├── handlers/            # Lambda entrypoints
-├── services/            # Core business logic (Telegram, OpenAI, etc.)
-├── utils/               # Shared helpers (http client, logger, poller, errors)
-template.yaml            # AWS SAM template
+├── app/
+│   └── config/          # Environment variables and app-level constants
+├── shared/              # Cross-cutting helpers, HTTP utilities, logging, and shared types
+├── infrastructure/
+│   ├── integrations/    # Low-level Telegram and OpenAI clients
+│   └── persistence/     # PostgreSQL and legacy DynamoDB persistence code
+├── modules/
+│   ├── telegram/
+│   │   ├── handlers/    # Telegram Lambda entrypoints
+│   │   ├── application/ # Telegram orchestration and services
+│   │   ├── commands/    # Bot command implementations
+│   │   ├── domain/      # Telegram-specific domain models
+│   │   └── repository/  # Telegram read/write data access
+│   └── coach/
+│       ├── client/      # Coach client API, use cases, domain, and repository code
+│       ├── exercise/    # Exercise API, use cases, domain, and repository code
+│       └── workout/     # Reserved for coach workout functionality
+template.yaml            # AWS SAM infrastructure template
+scripts/                 # Local helper scripts
+assets/                  # Static assets such as diagrams
 .env.sample              # Local environment variables sample
 ```
 
@@ -77,11 +92,59 @@ npm run local -- Ka4TodayTelegramWebhook event-samples/telegram-event.json
 Run async processor
 ```bash
 npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-event.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/daily-workout.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/start-event.json
 ```
+
+Run HttpApiClients
+```bash
+npm run local-api -- HttpApiClients
+```
+
+`HttpApiClients` is kept as a compatibility alias for the local API runner and currently expands to 
+all HTTP API route functions in `scripts/genEnvJson.mjs`. 
+If a new API route function is added in `template.yaml`, 
+update that alias mapping as well so `sam local start-api` receives env vars for the new function.
+
+---
+
+## 🔎 Troubleshooting
+
+- **Large SAM Artifact**
+  
+    Check artifact sizes after `sam build`:
+
+  ```bash
+  du -h .aws-sam/build/*
+  ```
+
+  Use this to track bundle growth after refactors or dependency changes. 
+  If one Lambda suddenly becomes much larger than the others, inspect recent imports, 
+  shared entrypoints, copied assets, and newly added dependencies.
+
+
+- **Missing Env Vars In Local API**
+  
+    If one route works in `npm run local-api -- HttpApiClients` but another fails with missing env vars, check `scripts/genEnvJson.mjs`. 
+    It must generate env blocks for every API route function used by `npm run local-api -- HttpApiClients`.
+
+
+- **New Route Fails Only Locally**
+  
+    If a new HTTP API route was added in `template.yaml`, update the `HttpApiClients` 
+    compatibility mapping in `scripts/genEnvJson.mjs` so the new route function also receives local env vars.
 
 ---
 
 ## ☁️ Deploying to AWS
+
+### Validation
+
+```
+sam validate --lint -t stack/main.yaml
+aws cloudformation validate-template --template-body file://stack/main.yaml
+```
 
 > Requires [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) and configured AWS credentials.
 
@@ -102,10 +165,16 @@ sam deploy \
   --region eu-central-1 \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides \
-    TelegramBotToken=your-token \
-    TelegramSecurityToken=your-secret \
-    OpenAiToken=your-openai-key \
-    OpenAiProjectId=your-openai-project-id 
+    NetworkStackExportPrefix=ka4-today
+    
+    
+aws cloudformation deploy \
+  --template-file stack/network-postgres-nat.yaml \
+  --stack-name ka4-today \
+  --capabilities CAPABILITY_IAM \
+  --parameter-overrides \
+    EnableInstanceSchedule=false \
+    NamePrefix=ka4-today    
 ```
 
 ## ☁️ Delete all from AWS
@@ -135,4 +204,3 @@ All Rights Reserved.
 
 This code and associated content may not be copied, modified, or distributed without explicit written permission.
 This project is intended as a personal exploration and demonstration only.
-

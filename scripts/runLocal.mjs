@@ -12,7 +12,7 @@ try {
     runCommand('node', ['scripts/genEnvJson.mjs', functionName], `Generating env for ${functionName}...`);
     runCommand(
         'sam',
-        ['local', 'invoke', functionName, '--event', eventPath, '--env-vars', 'env.tmp.json'],
+        ['local', 'invoke', functionName, '--event', eventPath, '--skip-pull-image', '--env-vars', 'env.tmp.json'],
         `Running sam local invoke ${functionName}...`
     );
 } catch (error) {

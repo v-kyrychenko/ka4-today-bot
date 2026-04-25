@@ -13,46 +13,47 @@ Globals:
         TELEGRAM_SECURITY_TOKEN: !Ref TelegramSecurityToken
         OPENAI_API_KEY: !Ref OpenAiToken
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
-        DYNAMODB_ENDPOINT: !Ref DynamoDbEndpoint
         MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
+        POSTGRES_HOST: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresHost'
+        POSTGRES_PORT: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresPort'
+        POSTGRES_DB: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresDb'
+        POSTGRES_USER: !ImportValue
+          'Fn::Sub': '${NetworkStackExportPrefix}-PostgresUser'
+        POSTGRES_PASSWORD: !Ref PostgresPassword
+        POSTGRES_SSL: 'false'
 
 Parameters:
   TelegramBotToken:
     Type: String
-    Description: Telegram bot token from BotFather
+    NoEcho: true
   TelegramSecurityToken:
     Type: String
-    Description: Token used to validate incoming webhook requests
+    NoEcho: true
   OpenAiToken:
     Type: String
-    Description: OpenAI API key (starts with sk-...)
+    NoEcho: true
   OpenAiProjectId:
     Type: String
-    Description: Project ID from OpenAI (starts with proj-...)
-  OpenAiDefaultPrompt:
+    NoEcho: true
+  PostgresPassword:
     Type: String
-    Description: Default prompt that will be sent to OpenAI thread
-  DynamoDbEndpoint:
+    NoEcho: true
+  NetworkStackExportPrefix:
     Type: String
-    Description: DynamoDb endpoint address
-    Default: ""
-
+    Description: Export name prefix used by the standalone network-postgres-nat stack
+    Default: ka4-today
 Resources:
   #####################################################################
-  ##                         Storage                                 ##
-  #####################################################################
-  StorageStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stack/storage.yaml
-  #####################################################################
-  ##                         Functions                               ##
+  ##                         Bot                                     ##
   #####################################################################
   Ka4TodayTelegramWebhook:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-telegram-webhook-handler
-      Handler: src/handlers/ka4TodayTelegramWebhook.handler
+      Handler: src/modules/telegram/handlers/ka4TodayTelegramWebhook.handler
       CodeUri: .
       Events:
         Webhook:
@@ -71,7 +72,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/ka4TodayTelegramWebhook.ts
+          - src/modules/telegram/handlers/ka4TodayTelegramWebhook.ts
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -81,8 +82,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-async-telegram-processor
-      Handler: src/handlers/asyncTelegramProcessor.handler
+      Handler: src/modules/telegram/handlers/asyncTelegramProcessor.handler
       CodeUri: .
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+        SubnetIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
       Events:
         MessageQueueEvent:
           Type: SQS
@@ -94,6 +102,7 @@ Resources:
               MaximumConcurrency: 2
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
         - Statement:
             Effect: Allow
             Action:
@@ -102,40 +111,17 @@ Resources:
               - sqs:GetQueueAttributes
             Resource: !GetAtt MainMessageQueue.Arn
         - Statement:
+            Sid: ReadExerciseImages
             Effect: Allow
             Action:
-              - dynamodb:Query
-              - dynamodb:GetItem
-              - dynamodb:UpdateItem
-              - dynamodb:PutItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
-              - !GetAtt StorageStack.Outputs.UserTrainingScheduleTableArn
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users-training-schedule/index/ScheduleByDay
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:PutItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayLogTableArn
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:GetItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayPromptsTableArn
-        - Statement:
-            - Sid: ReadExerciseImages
-              Effect: Allow
-              Action:
-                - s3:GetObject
-                - s3:HeadObject
-              Resource: arn:aws:s3:::ka4-today-exercises/exercises/*
+              - s3:GetObject
+              - s3:HeadObject
+            Resource: arn:aws:s3:::ka4-today-exercises/exercises/*
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/asyncTelegramProcessor.ts
+          - src/modules/telegram/handlers/asyncTelegramProcessor.ts
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -145,8 +131,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ka4today-cron-daily-message
-      Handler: src/handlers/cronDailyMessage.handler
+      Handler: src/modules/telegram/handlers/cronDailyMessage.handler
       CodeUri: .
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+        SubnetIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
       Events:
         DailySchedule:
           Type: Schedule
@@ -156,27 +149,17 @@ Resources:
             Enabled: true
       Policies:
         - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
         - Statement:
             Effect: Allow
             Action:
               - sqs:SendMessage
             Resource: !GetAtt MainMessageQueue.Arn
-        - Statement:
-            Effect: Allow
-            Action:
-              - dynamodb:Query
-              - dynamodb:BatchGetItem
-              - dynamodb:GetItem
-            Resource:
-              - !GetAtt StorageStack.Outputs.Ka4TodayUsersTableArn
-              - !GetAtt StorageStack.Outputs.UserTrainingScheduleTableArn
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users/index/ActiveUsersIndex
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ka4-today-users-training-schedule/index/ScheduleByDay
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - src/handlers/cronDailyMessage.ts
+          - src/modules/telegram/handlers/cronDailyMessage.ts
         Format: cjs
         Minify: false
         Sourcemap: false
@@ -198,14 +181,114 @@ Resources:
   CronDailyMessageLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: ka4today-cron-daily-message
+      LogGroupName: /aws/lambda/ka4today-cron-daily-message
+      RetentionInDays: 7
+  HttpApiClientRoutesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-http-api-client-routes
+      RetentionInDays: 7
+  HttpApiExerciseRoutesLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-http-api-exercise-routes
       RetentionInDays: 7
 
   #####################################################################
   ##                         SQS                                     ##
   #####################################################################
+  MainMessageDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ka4today-main-message-dlq
+
   MainMessageQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: ka4today-main-message-queue
-      VisibilityTimeout: 130 #  Queue visibility timeout should be > Lambda execution timeout
+      VisibilityTimeout: 300 #  Queue visibility timeout should be > Lambda execution timeout
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt MainMessageDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  #####################################################################
+  ##                        UI API                                   ##
+  #####################################################################
+#  HttpApiClientRoutes:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-http-api-client-routes
+#      Handler: src/modules/coach/client/api/index.handler
+#      CodeUri: .
+#      VpcConfig:
+#        SecurityGroupIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+#        SubnetIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+#      Events:
+#        GetClients:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients
+#            Method: GET
+#        GetClientById:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients/{clientId}
+#            Method: GET
+#        CreateClient:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients
+#            Method: POST
+#        UpdateClient:
+#          Type: HttpApi
+#          Properties:
+#            Path: /coaches/{id}/clients/{clientId}
+#            Method: PUT
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/coach/client/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022
+#
+#  HttpApiExerciseRoutes:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-http-api-exercise-routes
+#      Handler: src/modules/coach/exercise/api/index.handler
+#      CodeUri: .
+#      VpcConfig:
+#        SecurityGroupIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+#        SubnetIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+#      Events:
+#        GetExercise:
+#          Type: HttpApi
+#          Properties:
+#            Path: /exercises
+#            Method: GET
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/coach/exercise/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022

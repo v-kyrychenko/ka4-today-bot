@@ -1,0 +1,528 @@
+# Before deploying this stack, create the PostgreSQL application password in SSM Parameter Store:
+# aws ssm put-parameter \
+#   --name /ka4today/postgres/app-password \
+#   --type SecureString \
+#   --value 'your-strong-password' \
+#   --overwrite
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Minimal VPC with a single EC2 instance acting as PostgreSQL host and NAT instance
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: ka4today
+    Description: Prefix used for tagging and naming resources
+  VpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+    Description: CIDR block for the VPC
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.42.0.0/24
+    Description: CIDR block for the public subnet hosting the EC2 instance
+  PrivateSubnetCidr:
+    Type: String
+    Default: 10.42.1.0/24
+    Description: CIDR block for the private subnet reserved for future Lambda placement
+  AvailabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-central-1a
+    Description: Availability Zone in the Frankfurt region used for both subnets
+  InstanceType:
+    Type: String
+    Default: t4g.micro
+    AllowedValues:
+      - t4g.micro
+      - t4g.small
+      - t4g.medium
+      - t4g.large
+    Description: EC2 instance type for the combined PostgreSQL/NAT host
+  RootVolumeSize:
+    Type: Number
+    Default: 8
+    MinValue: 8
+    Description: Size of the EC2 root gp3 volume in GiB
+  PostgresPort:
+    Type: Number
+    Default: 5432
+    MinValue: 1
+    MaxValue: 65535
+    Description: PostgreSQL TCP port
+  PostgresDb:
+    Type: String
+    Default: ka4-today
+    MinLength: 1
+    Description: PostgreSQL database name to bootstrap on the EC2 host
+  PostgresUser:
+    Type: String
+    Default: ka4-today
+    MinLength: 1
+    Description: PostgreSQL application user to bootstrap on the EC2 host
+  PostgresPasswordParameterName:
+    Type: String
+    Default: /ka4today/postgres/app-password
+    MinLength: 1
+    Description: Name of the SSM SecureString parameter containing the PostgreSQL application user password
+  PostgresPasswordKmsKeyArn:
+    Type: String
+    Default: ''
+    Description: Optional KMS key ARN used to decrypt the PostgreSQL password SecureString when a customer managed key is used
+  EnableInstanceSchedule:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether to create daily start and stop schedules for the EC2 instance
+  ScheduleTimezone:
+    Type: String
+    Default: Europe/Kyiv
+    Description: IANA timezone used by the instance start and stop schedules
+  InstanceStartScheduleExpression:
+    Type: String
+    Default: cron(0 4 * * ? *)
+    Description: EventBridge Scheduler cron expression used to start the instance
+  InstanceStopScheduleExpression:
+    Type: String
+    Default: cron(0 9 * * ? *)
+    Description: EventBridge Scheduler cron expression used to stop the instance
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+    Description: Public SSM parameter resolving the latest Amazon Linux 2023 ARM64 AMI
+
+Conditions:
+  InstanceScheduleEnabled: !Equals [!Ref EnableInstanceSchedule, 'false']
+  PostgresPasswordUsesCustomKmsKey: !Not [!Equals [!Ref PostgresPasswordKmsKeyArn, '']]
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-vpc'
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-igw'
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PublicSubnetCidr
+      AvailabilityZone: !Ref AvailabilityZone
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-public-subnet'
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PrivateSubnetCidr
+      AvailabilityZone: !Ref AvailabilityZone
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-private-subnet'
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-public-rt'
+
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGatewayAttachment
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W40
+            reason: Public subnet egress through the Internet Gateway is required because this EC2 instance also acts as the NAT host for the private subnet.
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-private-rt'
+
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group used by Lambdas attached to the private subnet
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-lambda-sg'
+
+  Ec2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the combined PostgreSQL and NAT EC2 instance
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-ec2-sg'
+
+  Ec2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: !Sub '${NamePrefix}-postgres-password-parameter-access'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${PostgresPasswordParameterName}'
+              - !If
+                - PostgresPasswordUsesCustomKmsKey
+                - Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                  Resource: !Ref PostgresPasswordKmsKeyArn
+                - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-postgres-nat-role'
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Ec2Role
+
+  InstanceSchedulerRole:
+    Type: AWS::IAM::Role
+    Condition: InstanceScheduleEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${NamePrefix}-instance-scheduler-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:StartInstances
+                  - ec2:StopInstances
+                Resource: !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${NatPostgresInstance}'
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-instance-scheduler-role'
+
+  NatPostgresInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      MetadataOptions:
+        HttpTokens: required
+        HttpEndpoint: enabled
+      SourceDestCheck: false
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref Ec2SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: !Ref RootVolumeSize
+            DeleteOnTermination: true
+            Encrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${NamePrefix}-postgres-nat'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+
+          PRIVATE_SUBNET_CIDR='${PrivateSubnetCidr}'
+          POSTGRES_PORT='${PostgresPort}'
+          POSTGRES_BOOTSTRAP_DB='${PostgresDb}'
+          POSTGRES_BOOTSTRAP_USER='${PostgresUser}'
+          POSTGRES_PASSWORD_PARAMETER_NAME='${PostgresPasswordParameterName}'
+
+          dnf install -y postgresql18-server postgresql18 postgresql18-contrib iptables-services
+
+          TOKEN="$(curl -X PUT -fsS "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")"
+          LOCAL_IPV4="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)"
+          PRIMARY_IFACE="$(ip route show default | awk '/default/ {print $5; exit}')"
+
+          cat >/etc/sysctl.d/99-nat.conf <<'EOF'
+          net.ipv4.ip_forward = 1
+          EOF
+          sysctl --system
+
+          systemctl enable --now iptables
+
+          iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT 2>/dev/null || true
+          iptables -D FORWARD -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
+
+          if ! iptables -t nat -C POSTROUTING -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j MASQUERADE 2>/dev/null; then
+              iptables -t nat -A POSTROUTING -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j MASQUERADE
+          fi
+
+          if ! iptables -C INPUT -s "$PRIVATE_SUBNET_CIDR" -p tcp --dport "$POSTGRES_PORT" -j ACCEPT 2>/dev/null; then
+              iptables -I INPUT 4 -s "$PRIVATE_SUBNET_CIDR" -p tcp --dport "$POSTGRES_PORT" -j ACCEPT
+          fi
+
+          if ! iptables -C FORWARD -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j ACCEPT 2>/dev/null; then
+              iptables -A FORWARD -s "$PRIVATE_SUBNET_CIDR" -o "$PRIMARY_IFACE" -j ACCEPT
+          fi
+
+          if ! iptables -C FORWARD -d "$PRIVATE_SUBNET_CIDR" -m state --state ESTABLISHED,RELATED -i "$PRIMARY_IFACE" -j ACCEPT 2>/dev/null; then
+              iptables -A FORWARD -d "$PRIVATE_SUBNET_CIDR" -m state --state ESTABLISHED,RELATED -i "$PRIMARY_IFACE" -j ACCEPT
+          fi
+
+          service iptables save
+
+          if [ ! -f /var/lib/pgsql/data/PG_VERSION ]; then
+              /usr/bin/postgresql-setup --initdb
+          fi
+
+          PG_HBA="/var/lib/pgsql/data/pg_hba.conf"
+          PG_CONF="/var/lib/pgsql/data/postgresql.conf"
+
+          sed -i "s/^#\?listen_addresses.*/listen_addresses = '$LOCAL_IPV4'/" "$PG_CONF"
+          sed -i "s/^#\?port.*/port = $POSTGRES_PORT/" "$PG_CONF"
+
+          # Allow connections from the same host (SSM tunnel, localhost)
+            if ! grep -Fq "host all all samehost scram-sha-256" "$PG_HBA"; then
+            echo "host all all samehost scram-sha-256" >> "$PG_HBA"
+            fi
+            
+          # Allow connections from private subnet (future Lambda)
+          if ! grep -Fq "host all all $PRIVATE_SUBNET_CIDR scram-sha-256" "$PG_HBA"; then
+          echo "host all all $PRIVATE_SUBNET_CIDR scram-sha-256" >> "$PG_HBA"
+          fi
+
+          systemctl enable postgresql
+          systemctl restart postgresql
+
+          POSTGRES_BOOTSTRAP_PASSWORD="$(aws ssm get-parameter \
+              --name "$POSTGRES_PASSWORD_PARAMETER_NAME" \
+              --region '${AWS::Region}' \
+              --with-decryption \
+              --query 'Parameter.Value' \
+              --output text)"
+
+          runuser -u postgres -- psql \
+              --dbname=postgres \
+              --set=ON_ERROR_STOP=1 \
+              --set=app_user="$POSTGRES_BOOTSTRAP_USER" \
+              --set=app_password="$POSTGRES_BOOTSTRAP_PASSWORD" \
+              --set=app_db="$POSTGRES_BOOTSTRAP_DB" <<'SQL'
+
+          SELECT format('CREATE ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password')
+          WHERE NOT EXISTS (
+              SELECT 1
+              FROM pg_catalog.pg_roles
+              WHERE rolname = :'app_user'
+          ) \gexec
+
+          SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_password') \gexec
+
+          SELECT format('CREATE DATABASE %I OWNER %I', :'app_db', :'app_user')
+          WHERE NOT EXISTS (
+              SELECT 1
+              FROM pg_database
+              WHERE datname = :'app_db'
+          ) \gexec
+          SQL
+
+          unset POSTGRES_BOOTSTRAP_PASSWORD
+          unset POSTGRES_PASSWORD_PARAMETER_NAME
+
+  PrivateDefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      InstanceId: !Ref NatPostgresInstance
+
+  StartInstanceSchedule:
+    Type: AWS::Scheduler::Schedule
+    Condition: InstanceScheduleEnabled
+    Properties:
+      Description: Starts the PostgreSQL/NAT EC2 instance on a daily Kyiv schedule
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      ScheduleExpression: !Ref InstanceStartScheduleExpression
+      ScheduleExpressionTimezone: !Ref ScheduleTimezone
+      Target:
+        Arn: !Sub 'arn:${AWS::Partition}:scheduler:::aws-sdk:ec2:startInstances'
+        RoleArn: !GetAtt InstanceSchedulerRole.Arn
+        Input: !Sub |
+          {"InstanceIds":["${NatPostgresInstance}"]}
+
+  StopInstanceSchedule:
+    Type: AWS::Scheduler::Schedule
+    Condition: InstanceScheduleEnabled
+    Properties:
+      Description: Stops the PostgreSQL/NAT EC2 instance on a daily Kyiv schedule
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      ScheduleExpression: !Ref InstanceStopScheduleExpression
+      ScheduleExpressionTimezone: !Ref ScheduleTimezone
+      Target:
+        Arn: !Sub 'arn:${AWS::Partition}:scheduler:::aws-sdk:ec2:stopInstances'
+        RoleArn: !GetAtt InstanceSchedulerRole.Arn
+        Input: !Sub |
+          {"InstanceIds":["${NatPostgresInstance}"]}
+
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !Ref Vpc
+    Export:
+      Name: !Sub '${NamePrefix}-VpcId'
+
+  PublicSubnetId:
+    Description: Public subnet ID
+    Value: !Ref PublicSubnet
+    Export:
+      Name: !Sub '${NamePrefix}-PublicSubnetId'
+
+  PrivateSubnetId:
+    Description: Private subnet ID reserved for future Lambda placement
+    Value: !Ref PrivateSubnet
+    Export:
+      Name: !Sub '${NamePrefix}-PrivateSubnetId'
+
+  Ec2InstanceId:
+    Description: EC2 instance ID of the combined PostgreSQL/NAT host
+    Value: !Ref NatPostgresInstance
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2InstanceId'
+
+  Ec2PrivateIp:
+    Description: Private IP of the EC2 instance
+    Value: !GetAtt NatPostgresInstance.PrivateIp
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2PrivateIp'
+
+  Ec2PublicIp:
+    Description: Ephemeral public IPv4 assigned while the EC2 instance is running
+    Value: !GetAtt NatPostgresInstance.PublicIp
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2PublicIp'
+
+  Ec2PublicDnsName:
+    Description: Public DNS name of the EC2 instance
+    Value: !GetAtt NatPostgresInstance.PublicDnsName
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2PublicDnsName'
+
+  Ec2SecurityGroupId:
+    Description: Security group ID of the EC2 host
+    Value: !Ref Ec2SecurityGroup
+    Export:
+      Name: !Sub '${NamePrefix}-Ec2SecurityGroupId'
+
+  LambdaSecurityGroupId:
+    Description: Security group ID reserved for future Lambda VPC attachment
+    Value: !Ref LambdaSecurityGroup
+    Export:
+      Name: !Sub '${NamePrefix}-LambdaSecurityGroupId'
+
+  PostgresHost:
+    Description: PostgreSQL host value for future Lambda configuration
+    Value: !GetAtt NatPostgresInstance.PrivateIp
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresHost'
+
+  PostgresPort:
+    Description: PostgreSQL port value for future Lambda configuration
+    Value: !Ref PostgresPort
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresPort'
+
+  PostgresDb:
+    Description: PostgreSQL database name for Lambda configuration
+    Value: !Ref PostgresDb
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresDb'
+
+  PostgresUser:
+    Description: PostgreSQL application user for Lambda configuration
+    Value: !Ref PostgresUser
+    Export:
+      Name: !Sub '${NamePrefix}-PostgresUser'
+
+  InstanceScheduleEnabled:
+    Description: Whether the daily instance scheduler resources are enabled
+    Value: !Ref EnableInstanceSchedule
+
+  StartInstanceScheduleName:
+    Condition: InstanceScheduleEnabled
+    Description: Name of the EventBridge Scheduler resource that starts the instance
+    Value: !Ref StartInstanceSchedule
+
+  StopInstanceScheduleName:
+    Condition: InstanceScheduleEnabled
+    Description: Name of the EventBridge Scheduler resource that stops the instance
+    Value: !Ref StopInstanceSchedule
