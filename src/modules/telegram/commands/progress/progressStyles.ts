@@ -23,49 +23,130 @@ export const progressStyles = {
         height: `${PROGRESS_IMAGE_HEIGHT}px`,
         display: 'flex',
         flexDirection: 'column',
-        padding: '80px',
+        padding: '72px',
         background: progressTheme.colors.background,
         color: progressTheme.colors.foreground,
         fontFamily: PROGRESS_FONT_FAMILY,
-        gap: '42px'
+        gap: '32px'
+    } satisfies SatoriStyle,
+    header: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: '32px'
+    } satisfies SatoriStyle,
+    headerMain: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '18px',
+        flex: 1
     } satisfies SatoriStyle,
     label: {
         color: progressTheme.colors.accent,
-        fontSize: 30,
+        fontSize: 34,
         letterSpacing: 4
     } satisfies SatoriStyle,
     title: {
-        fontSize: 72,
+        fontSize: 86,
         fontWeight: 700,
         lineHeight: 1.05
     } satisfies SatoriStyle,
+    dateRange: {
+        width: '300px',
+        color: progressTheme.colors.muted,
+        fontSize: 32,
+        lineHeight: 1.2,
+        textAlign: 'right'
+    } satisfies SatoriStyle,
     cardGrid: {
         display: 'flex',
-        flexWrap: 'wrap',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        width: '100%',
+        gap: '28px'
+    } satisfies SatoriStyle,
+    cardRow: {
+        display: 'flex',
+        flex: 1,
         gap: '28px'
     } satisfies SatoriStyle,
     metricCard: {
-        width: '430px',
-        height: '210px',
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        minHeight: 0,
+        padding: '42px',
+        borderRadius: '38px',
+        background: progressTheme.colors.cardBackground,
+        border: `2px solid ${progressTheme.colors.cardBorder}`,
+        gap: '24px'
+    } satisfies SatoriStyle,
+    metricHeader: {
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '32px',
-        borderRadius: '34px',
-        background: progressTheme.colors.cardBackground,
-        border: `2px solid ${progressTheme.colors.cardBorder}`
+        alignItems: 'flex-start',
+        gap: '14px'
     } satisfies SatoriStyle,
     metricLabel: {
         color: progressTheme.colors.muted,
-        fontSize: 30
+        fontSize: 36
+    } satisfies SatoriStyle,
+    metricStatRow: {
+        display: 'flex',
+        alignItems: 'baseline',
+        flexWrap: 'nowrap',
+        gap: '18px',
+        minWidth: 0
     } satisfies SatoriStyle,
     metricValue: {
-        fontSize: 58,
-        fontWeight: 700
+        fontSize: 76,
+        fontWeight: 700,
+        lineHeight: 1
     } satisfies SatoriStyle,
     metricDelta: {
         color: progressTheme.colors.accent,
-        fontSize: 32
+        fontSize: 36,
+        lineHeight: 1
+    } satisfies SatoriStyle,
+    metricBody: {
+        display: 'flex',
+        flex: 1,
+        width: '100%',
+        minHeight: 0
+    } satisfies SatoriStyle,
+    chartWrap: {
+        display: 'flex',
+        flex: 1,
+        width: '100%',
+        minHeight: 0,
+        alignItems: 'stretch'
+    } satisfies SatoriStyle,
+    chartSvg: {
+        width: '100%',
+        height: '100%'
+    } satisfies SatoriStyle,
+    noDataState: {
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        gap: '14px',
+        paddingRight: '36px'
+    } satisfies SatoriStyle,
+    noDataTitle: {
+        color: progressTheme.colors.foreground,
+        fontSize: 46,
+        fontWeight: 600,
+        lineHeight: 1.1
+    } satisfies SatoriStyle,
+    noDataHint: {
+        color: progressTheme.colors.muted,
+        fontSize: 28,
+        lineHeight: 1.35,
+        maxWidth: '360px'
     } satisfies SatoriStyle,
     insightCard: {
         display: 'flex',
