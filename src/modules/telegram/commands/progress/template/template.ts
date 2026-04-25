@@ -108,9 +108,10 @@ function createMetricStatRow(metric: MetricViewModel): SatoriNode {
 
 function createTrendChart(metric: MetricViewModel): SatoriNode {
     const trend = metric.trend ?? [];
-    const points = createChartPoints(trend);
+    const scale = createChartScale(trend);
+    const points = createChartPoints(trend, scale);
     const xAxisTicks = createXAxisTicks(metric.trendDates);
-    const yAxisTicks = createYAxisTicks(trend);
+    const yAxisTicks = createYAxisTicks(scale);
     const gradientId = createGradientId(metric.label);
 
     return {
@@ -240,18 +241,18 @@ function createNoDataState(metric: MetricViewModel): SatoriNode {
     };
 }
 
-function createChartPoints(trend: number[]): { path: string; areaPath: string; lastPoint: { x: number; y: number } } {
+function createChartPoints(
+    trend: number[],
+    scale: ChartScale
+): { path: string; areaPath: string; lastPoint: { x: number; y: number } } {
     const chartWidth = 420;
     const chartHeight = 220;
     const paddingX = 10;
     const paddingY = 18;
     const baselineY = chartHeight - paddingY;
-    const minValue = Math.min(...trend);
-    const maxValue = Math.max(...trend);
-    const valueRange = maxValue - minValue || 1;
     const stepX = trend.length > 1 ? (chartWidth - paddingX * 2) / (trend.length - 1) : 0;
     const points = trend.map((value, index) => {
-        const normalized = (value - minValue) / valueRange;
+        const normalized = (value - scale.min) / scale.range;
 
         return {
             x: paddingX + index * stepX,
@@ -312,22 +313,39 @@ function createXAxisTicks(trendDates?: string[]): string[] {
     return [...tickIndexes].sort((left, right) => left - right).map((index) => trendDates[index]);
 }
 
-function createYAxisTicks(trend: number[]): string[] {
-    const minValue = Math.min(...trend);
-    const maxValue = Math.max(...trend);
-    const middleValue = (minValue + maxValue) / 2;
-
-    return [
-        formatAxisNumber(maxValue),
-        formatAxisNumber(middleValue),
-        formatAxisNumber(minValue)
-    ];
+function createYAxisTicks(scale: ChartScale): string[] {
+    return scale.ticks.map(formatAxisNumber);
 }
 
 function formatAxisNumber(value: number): string {
     const rounded = Math.round(value * 10) / 10;
 
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+interface ChartScale {
+    min: number;
+    max: number;
+    range: number;
+    ticks: number[];
+}
+
+function createChartScale(trend: number[]): ChartScale {
+    const minValue = Math.min(...trend);
+    const maxValue = Math.max(...trend);
+    const rawRange = maxValue - minValue || Math.max(Math.abs(maxValue) * 0.1, 1);
+    const padding = Math.max(rawRange * 0.15, 0.2);
+    const scaledMin = Math.floor(minValue - padding);
+    const scaledMax = Math.ceil(maxValue + padding);
+    const adjustedMax = scaledMax === scaledMin ? scaledMin + 1 : scaledMax;
+    const middleTick = scaledMin + (adjustedMax - scaledMin) / 2;
+
+    return {
+        min: scaledMin,
+        max: adjustedMax,
+        range: adjustedMax - scaledMin,
+        ticks: [adjustedMax, middleTick, scaledMin]
+    };
 }
 
 function createGradientId(label: string): string {

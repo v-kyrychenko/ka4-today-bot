@@ -1,5 +1,5 @@
 export const IMAGE_WIDTH = 1400;
-export const IMAGE_HEIGHT = 1600;
+export const IMAGE_HEIGHT = 2400;
 export const FONT_FAMILY = 'Inter';
 export const FONT_FILE_NAME = 'Inter-Regular.ttf';
 
