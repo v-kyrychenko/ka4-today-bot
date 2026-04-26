@@ -40,6 +40,8 @@ For small service modules, prefer placing exported service objects such as `expo
 
 Prefer KISS-oriented service code: small focused methods, with a soft maximum of 20 lines per method. If a method has branching or loop-heavy logic, keep each branch or loop body around 5 lines and extract helper methods early when readability starts to drop.
 
+When changing progress view-model behavior or template rendering, keep the root `test/modules/telegram/commands/progress/` fixtures updated in the same change so previews and future tests continue to represent production behavior.
+
 ## Testing Guidelines
 There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.
 

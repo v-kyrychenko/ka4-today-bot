@@ -7,6 +7,12 @@ export enum BodyMeasurementType {
     BICEPS = 'BICEPS',
 }
 
+export enum TrendDirection {
+    UP = 'UP',
+    DOWN = 'DOWN',
+    NEUTRAL = 'NEUTRAL',
+}
+
 export const BODY_MEASUREMENT_TYPES = [
     BodyMeasurementType.WEIGHT,
     BodyMeasurementType.WAIST,
@@ -15,3 +21,12 @@ export const BODY_MEASUREMENT_TYPES = [
     BodyMeasurementType.CALF,
     BodyMeasurementType.BICEPS,
 ] as const;
+
+export const BODY_MEASUREMENT_TREND_CONFIG = {
+    [BodyMeasurementType.WEIGHT]: TrendDirection.DOWN,
+    [BodyMeasurementType.WAIST]: TrendDirection.DOWN,
+    [BodyMeasurementType.CHEST]: TrendDirection.UP,
+    [BodyMeasurementType.THIGH]: TrendDirection.DOWN,
+    [BodyMeasurementType.CALF]: TrendDirection.UP,
+    [BodyMeasurementType.BICEPS]: TrendDirection.UP,
+} as const;

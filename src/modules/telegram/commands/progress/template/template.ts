@@ -100,10 +100,22 @@ function createMetricStatRow(metric: MetricViewModel): SatoriNode {
             style: styles.metricStatRow,
             children: [
                 createText(metric.value, styles.metricValue),
-                ...(metric.delta ? [createText(metric.delta, styles.metricDelta)] : [])
+                ...(metric.delta ? [createText(metric.delta, getMetricDeltaStyle(metric))] : [])
             ]
         }
     };
+}
+
+function getMetricDeltaStyle(metric: MetricViewModel): SatoriStyle {
+    if (metric.deltaStatus === 'BAD') {
+        return styles.metricDeltaBad;
+    }
+
+    if (metric.deltaStatus === 'NEUTRAL') {
+        return styles.metricDeltaNeutral;
+    }
+
+    return styles.metricDelta;
 }
 
 function createTrendChart(metric: MetricViewModel): SatoriNode {

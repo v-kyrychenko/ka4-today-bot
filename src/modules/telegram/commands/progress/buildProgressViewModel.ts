@@ -6,8 +6,10 @@ import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';
 import {bodyMeasurementRepository} from './bodyMeasurementRepository.js';
 import type {BodyMeasurement} from './bodyMeasurement.js';
 import {
+    BODY_MEASUREMENT_TREND_CONFIG,
     BODY_MEASUREMENT_TYPES,
     BodyMeasurementType,
+    TrendDirection,
 } from './bodyMeasurementType.js';
 import type {MetricViewModel, ViewModel} from './template/viewModel.js';
 
@@ -30,7 +32,7 @@ export async function buildProgressViewModel(context: ProcessorContext): Promise
     return {
         label: i18nService.tr(lang, I18N_KEYS.telegram.progress.header.label),
         title: buildTitle(lang, period),
-        dateRange: buildDateRange(lang, period),
+        dateRange: '',
         metrics,
         insightTitle: insight.title,
         insightText: insight.text,
@@ -74,6 +76,7 @@ function buildMetric(lang: string, type: BodyMeasurementType, measurements: Body
         label: buildMetricLabel(lang, type),
         value: formatMeasurement(latest),
         delta: buildDelta(lang, measurements),
+        deltaStatus: buildDeltaStatus(type, measurements),
         trend: measurements.map((item) => item.amount),
         trendDates: measurements.map((item) => formatDate(lang, item.createdAt)),
     };
@@ -118,6 +121,39 @@ function buildDelta(lang: string, measurements: BodyMeasurement[]): string {
     return formatDelta(lang, diff, latest.unitKey);
 }
 
+function buildDeltaStatus(type: BodyMeasurementType, measurements: BodyMeasurement[]) {
+    if (measurements.length < 2) {
+        return undefined;
+    }
+
+    const direction = getActualTrendDirection(measurements);
+    return getDeltaStatus(type, direction);
+}
+
+function getActualTrendDirection(measurements: BodyMeasurement[]): TrendDirection {
+    const first = measurements[0];
+    const latest = measurements[measurements.length - 1];
+    const diff = roundAmount(latest.amount - first.amount);
+
+    return getTrendDirection(diff);
+}
+
+function getTrendDirection(diff: number): TrendDirection {
+    if (diff === 0) {
+        return TrendDirection.NEUTRAL;
+    }
+
+    return diff > 0 ? TrendDirection.UP : TrendDirection.DOWN;
+}
+
+function getDeltaStatus(type: BodyMeasurementType, actual: TrendDirection) {
+    if (actual === TrendDirection.NEUTRAL) {
+        return 'GOOD';
+    }
+
+    return actual === BODY_MEASUREMENT_TREND_CONFIG[type] ? 'GOOD' : 'BAD';
+}
+
 function formatDelta(lang: string, diff: number, unitKey: string): string {
     if (diff === 0) {
         return i18nService.tr(lang, I18N_KEYS.telegram.progress.delta.noChange);
@@ -160,26 +196,22 @@ function buildPeriod(measurements: BodyMeasurement[]): { start?: string; end?: s
 
 function buildTitle(lang: string, period: { start?: string; end?: string }): string {
     if (!period.start || !period.end) {
-        return i18nService.tr(lang, I18N_KEYS.telegram.progress.header.emptyTitle);
-    }
-
-    return i18nService.tr(lang, I18N_KEYS.telegram.progress.header.title, {
-        days: countDays(period.start, period.end),
-    });
-}
-
-function buildDateRange(lang: string, period: { start?: string; end?: string }): string {
-    if (!period.start || !period.end) {
         return i18nService.tr(lang, I18N_KEYS.telegram.progress.dateRange.empty);
     }
 
-    return `${formatDate(lang, period.start)} - ${formatDate(lang, period.end)}`;
+    return formatDatePeriod(lang, period.start, period.end);
 }
 
-function countDays(start: string, end: string): number {
-    const diffMs = parseIsoDate(end).getTime() - parseIsoDate(start).getTime();
+function formatDatePeriod(lang: string, start: string, end: string): string {
+    if (getYear(start) === getYear(end)) {
+        return `${formatDate(lang, start)} – ${formatDateWithYear(lang, end)}`;
+    }
 
-    return Math.max(1, Math.round(diffMs / 86400000) + 1);
+    return `${formatDateWithYear(lang, start)} — ${formatDateWithYear(lang, end)}`;
+}
+
+function formatDateWithYear(lang: string, isoDate: string): string {
+    return `${formatDate(lang, isoDate)} ’${String(getYear(isoDate)).slice(-2)}`;
 }
 
 function formatDate(lang: string, isoDate: string): string {
@@ -187,6 +219,10 @@ function formatDate(lang: string, isoDate: string): string {
     const month = i18nService.tr(lang, I18N_KEYS.date.monthShort[date.getUTCMonth()]);
 
     return `${month} ${date.getUTCDate()}`;
+}
+
+function getYear(isoDate: string): number {
+    return parseIsoDate(isoDate).getUTCFullYear();
 }
 
 async function buildInsight(lang: string, measurements: BodyMeasurement[]) {
