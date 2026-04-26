@@ -39,6 +39,8 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 - **Localization support** for messages (multi-language)
 - **Prompt dictionary** stored in Postgres for consistent responses
 - **Personalized workout generation** custom daily workout plan for the user, based on their preferences and available exercise
+- **Progress image rendering** for the /progress command with Satori and resvg
+
 ---
 
 ## 🧩 Project Structure
