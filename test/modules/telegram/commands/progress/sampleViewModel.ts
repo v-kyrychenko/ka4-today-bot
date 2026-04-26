@@ -2,7 +2,7 @@ import type {ViewModel} from '../../../../../src/modules/telegram/commands/progr
 
 export const sampleViewModel: ViewModel = {
     label: 'KA4 TODAY · Прогрес тіла',
-    title: 'Січ 1 – Квіт 25 ’25',
+    title: 'Січ 1 – Квіт 25',
     dateRange: '',
     metrics: [
         {

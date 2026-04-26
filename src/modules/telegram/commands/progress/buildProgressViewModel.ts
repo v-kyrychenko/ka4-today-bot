@@ -100,30 +100,41 @@ function getMetricKey(type: BodyMeasurementType): string {
 }
 
 function buildDelta(lang: string, measurements: BodyMeasurement[]): string {
-    if (measurements.length < 2) {
+    const pair = getLatestMeasurementPair(measurements);
+
+    if (!pair) {
         return '';
     }
 
-    const first = measurements[0];
-    const latest = measurements[measurements.length - 1];
-    const diff = roundAmount(latest.amount - first.amount);
+    const diff = roundAmount(pair.latest.amount - pair.previous.amount);
 
-    return formatDelta(lang, diff, latest.unitKey);
+    return formatDelta(lang, diff, pair.latest.unitKey);
 }
 
 function buildDeltaStatus(type: BodyMeasurementType, measurements: BodyMeasurement[]) {
-    if (measurements.length < 2) {
+    const pair = getLatestMeasurementPair(measurements);
+
+    if (!pair) {
         return undefined;
     }
 
-    const direction = getActualTrendDirection(measurements);
+    const direction = getActualTrendDirection(pair);
     return getDeltaStatus(type, direction);
 }
 
-function getActualTrendDirection(measurements: BodyMeasurement[]): TrendDirection {
-    const first = measurements[0];
-    const latest = measurements[measurements.length - 1];
-    const diff = roundAmount(latest.amount - first.amount);
+function getLatestMeasurementPair(measurements: BodyMeasurement[]) {
+    if (measurements.length < 2) {
+        return null;
+    }
+
+    return {
+        previous: measurements[measurements.length - 2],
+        latest: measurements[measurements.length - 1],
+    };
+}
+
+function getActualTrendDirection(pair: { previous: BodyMeasurement; latest: BodyMeasurement }): TrendDirection {
+    const diff = roundAmount(pair.latest.amount - pair.previous.amount);
 
     return getTrendDirection(diff);
 }
@@ -194,10 +205,10 @@ function buildTitle(lang: string, period: { start?: string; end?: string }): str
 
 function formatDatePeriod(lang: string, start: string, end: string): string {
     if (getYear(start) === getYear(end)) {
-        return `${formatDate(lang, start)} – ${formatDateWithYear(lang, end)}`;
+        return `${formatDate(lang, start)} – ${formatDate(lang, end)}`;
     }
 
-    return `${formatDateWithYear(lang, start)} — ${formatDateWithYear(lang, end)}`;
+    return `${formatDateWithYear(lang, start)} — ${formatDate(lang, end)}`;
 }
 
 function formatDateWithYear(lang: string, isoDate: string): string {
