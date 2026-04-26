@@ -1,12 +1,12 @@
 import {and, asc, eq, gte} from 'drizzle-orm';
 import {
     bodyMeasurementLogMapper,
-} from '../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementLogMapper.js';
-import {getPostgresDb} from '../../../../infrastructure/persistence/postgres/postgresDb.js';
+} from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementLogMapper.js';
+import {getPostgresDb} from '../../../../../infrastructure/persistence/postgres/postgresDb.js';
 import {
     bodyMeasurementLog,
-} from '../../../../infrastructure/persistence/postgres/schema/bodyMeasurementLog.js';
-import type {BodyMeasurement} from './bodyMeasurement.js';
+} from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementLog.js';
+import type {BodyMeasurement} from '../bodyMeasurementsModel.js';
 
 export const bodyMeasurementRepository = {
     findForClientSince,

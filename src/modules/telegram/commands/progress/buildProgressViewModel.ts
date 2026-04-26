@@ -2,37 +2,56 @@ import type {ProcessorContext} from '../../domain/context.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';
-import {bodyMeasurementRepository} from './bodyMeasurementRepository.js';
-import type {BodyMeasurement} from './bodyMeasurement.js';
+import {bodyMeasurementRepository} from './repository/bodyMeasurementRepository.js';
 import {
     BODY_MEASUREMENT_TREND_CONFIG,
     BODY_MEASUREMENT_TYPES,
+    type BodyMeasurement,
     BodyMeasurementType,
     TrendDirection,
-} from './bodyMeasurementType.js';
+} from './bodyMeasurementsModel.js';
 import type {MetricViewModel, ViewModel} from './template/viewModel.js';
 
 const PROGRESS_MEASUREMENTS_LOOKBACK_DAYS = 365;
 
 export const progressViewModelService = {
+    buildProgressResult,
     buildProgressViewModel,
     buildProgressCaption,
     hasProgressData,
 };
 
+export interface ProgressResult {
+    viewModel: ViewModel;
+    clientId: number | null;
+    periodStart: string | null;
+    periodEnd: string | null;
+}
+
 export async function buildProgressViewModel(context: ProcessorContext): Promise<ViewModel> {
+    const result = await buildProgressResult(context);
+
+    return result.viewModel;
+}
+
+export async function buildProgressResult(context: ProcessorContext): Promise<ProgressResult> {
     const lang = i18nService.normalizeLang(context.user.lang);
     const measurements = await loadMeasurements(context);
     const metrics = buildMetrics(lang, measurements);
     const period = buildPeriod(measurements);
 
     return {
-        label: i18nService.tr(lang, I18N_KEYS.telegram.progress.header.label),
-        title: buildTitle(lang, period),
-        dateRange: '',
-        metrics,
-        insightTitle: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.title),
-        insightText: '',
+        viewModel: {
+            label: i18nService.tr(lang, I18N_KEYS.telegram.progress.header.label),
+            title: buildTitle(lang, period),
+            dateRange: '',
+            metrics,
+            insightTitle: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.title),
+            insightText: '',
+        },
+        clientId: context.user.clientId ?? null,
+        periodStart: period.start ?? null,
+        periodEnd: period.end ?? null,
     };
 }
 

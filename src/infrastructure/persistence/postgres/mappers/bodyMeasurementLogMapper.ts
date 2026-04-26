@@ -1,7 +1,7 @@
-import type {BodyMeasurement} from '../../../../modules/telegram/commands/progress/bodyMeasurement.js';
 import {
     BodyMeasurementType,
-} from '../../../../modules/telegram/commands/progress/bodyMeasurementType.js';
+    type BodyMeasurement,
+} from '../../../../modules/telegram/commands/progress/bodyMeasurementsModel.js';
 import type {BodyMeasurementLogRow} from '../models/bodyMeasurementLogRow.js';
 
 export const bodyMeasurementLogMapper = {

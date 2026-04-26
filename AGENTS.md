@@ -40,6 +40,8 @@ For small service modules, prefer placing exported service objects such as `expo
 
 Prefer KISS-oriented service code: small focused methods, with a soft maximum of 20 lines per method. If a method has branching or loop-heavy logic, keep each branch or loop body around 5 lines and extract helper methods early when readability starts to drop.
 
+For command classes, keep `execute(context)` as high-level orchestration only. Split detailed branches into focused helpers with names that describe the behavior, so command flow stays easy to scan and future tests can target smaller units.
+
 When changing progress view-model behavior or template rendering, keep the root `test/modules/telegram/commands/progress/` fixtures updated in the same change so previews and future tests continue to represent production behavior.
 
 ## Testing Guidelines
