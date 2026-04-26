@@ -38,6 +38,8 @@ For coach REST APIs, keep the REST model, domain model, and persistence row shap
 
 For small service modules, prefer placing exported service objects such as `export const telegramMessagingService = { ... }` near the top of the file, right after imports, so the public API is visible immediately when the file is opened. Treat this as a strong default, not a hard rule: if a different placement makes the file substantially easier to read top-to-bottom, prefer readability.
 
+Prefer KISS-oriented service code: small focused methods, with a soft maximum of 20 lines per method. If a method has branching or loop-heavy logic, keep each branch or loop body around 5 lines and extract helper methods early when readability starts to drop.
+
 ## Testing Guidelines
 There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.
 

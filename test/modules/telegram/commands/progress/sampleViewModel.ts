@@ -1,4 +1,4 @@
-import type {ViewModel} from './viewModel.js';
+import type {ViewModel} from '../../../../../src/modules/telegram/commands/progress/template/viewModel.js';
 
 export const sampleViewModel: ViewModel = {
     label: 'KA4 TODAY · Прогрес тіла',
@@ -27,14 +27,7 @@ export const sampleViewModel: ViewModel = {
             trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
         },
         {
-            label: 'Стегна',
-            value: '96 cm',
-            delta: '↓ 1.5 cm',
-            trend: [97.4, 97.1, 96.9, 96.6, 96.3, 96],
-            trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
-        },
-        {
-            label: 'Ноги',
+            label: 'Стегно',
             value: '58.5 cm',
             delta: '↑ 0.5 cm',
             trend: [58, 58.1, 58.2, 58.3, 58.4, 58.5],
@@ -51,6 +44,3 @@ export const sampleViewModel: ViewModel = {
     insightTitle: 'Insight',
     insightText: 'Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..'
 };
-
-export const sampleCaption = `📊 Динаміка показників
-${sampleViewModel.insightText}`;
