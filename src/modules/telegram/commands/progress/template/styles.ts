@@ -2,6 +2,7 @@ export const IMAGE_WIDTH = 1400;
 export const IMAGE_HEIGHT = 2400;
 export const FONT_FAMILY = 'Inter';
 export const FONT_FILE_NAME = 'Inter-Regular.ttf';
+export const LOGO_FILE_NAME = 'logo/ka4-today.svg';
 
 type SatoriStyle = Record<string, number | string>;
 
@@ -58,6 +59,12 @@ export const styles = {
         fontSize: 32,
         lineHeight: 1.2,
         textAlign: 'right'
+    } satisfies SatoriStyle,
+    logo: {
+        width: '168px',
+        height: '168px',
+        objectFit: 'contain',
+        borderRadius: '28px'
     } satisfies SatoriStyle,
     cardGrid: {
         display: 'flex',

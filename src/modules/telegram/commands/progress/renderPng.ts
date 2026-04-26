@@ -4,13 +4,14 @@ import path from 'node:path';
 import {Resvg} from '@resvg/resvg-js';
 import satori from 'satori';
 
-import {FONT_FAMILY, FONT_FILE_NAME, IMAGE_HEIGHT, IMAGE_WIDTH} from './template/styles.js';
+import {FONT_FAMILY, FONT_FILE_NAME, IMAGE_HEIGHT, IMAGE_WIDTH, LOGO_FILE_NAME} from './template/styles.js';
 import {createTemplate} from './template/template.js';
 import type {ViewModel} from './template/viewModel.js';
 
 export async function renderPng(viewModel: ViewModel): Promise<Buffer> {
     const font = loadFont();
-    const svg = await satori(createTemplate(viewModel), {
+    const logo = loadLogo();
+    const svg = await satori(createTemplate(viewModel, logo), {
         width: IMAGE_WIDTH,
         height: IMAGE_HEIGHT,
         fonts: [
@@ -28,6 +29,12 @@ export async function renderPng(viewModel: ViewModel): Promise<Buffer> {
 
 function loadFont(): Buffer {
     return fs.readFileSync(resolveAssetPath(FONT_FILE_NAME));
+}
+
+function loadLogo(): string {
+    const svg = fs.readFileSync(resolveAssetPath(LOGO_FILE_NAME), 'utf8');
+
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
 function resolveAssetPath(fileName: string): string {

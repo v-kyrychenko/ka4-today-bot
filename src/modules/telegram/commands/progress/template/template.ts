@@ -12,13 +12,13 @@ interface SatoriNode {
     } & Record<string, string | number | SatoriStyle | SatoriChild | undefined>;
 }
 
-export function createTemplate(viewModel: ViewModel): SatoriNode {
+export function createTemplate(viewModel: ViewModel, logoSrc: string): SatoriNode {
     return {
         type: 'div',
         props: {
             style: styles.root,
             children: [
-                createHeader(viewModel),
+                createHeader(viewModel, logoSrc),
                 createMetricGrid(viewModel.metrics),
             ]
         }
@@ -43,7 +43,7 @@ function createMetricGrid(metrics: MetricViewModel[]): SatoriNode {
     };
 }
 
-function createHeader(viewModel: ViewModel): SatoriNode {
+function createHeader(viewModel: ViewModel, logoSrc: string): SatoriNode {
     return {
         type: 'div',
         props: {
@@ -59,8 +59,18 @@ function createHeader(viewModel: ViewModel): SatoriNode {
                         ]
                     }
                 },
-                createText(viewModel.dateRange, styles.dateRange)
+                createLogo(logoSrc)
             ]
+        }
+    };
+}
+
+function createLogo(src: string): SatoriNode {
+    return {
+        type: 'img',
+        props: {
+            src,
+            style: styles.logo
         }
     };
 }
