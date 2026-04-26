@@ -50,23 +50,33 @@ export async function sendMessage(context: TelegramContext, message: string): Pr
 
 export async function sendWithMedia(
     context: Pick<ProcessorContext, 'chatId'>,
-    imageUrls: string[] = [],
+    media: string[] | { buffer: Buffer; filename?: string },
     caption = ''
 ): Promise<void> {
     const chatId = context.chatId;
     if (chatId == null) {
         throw new TelegramError('chatId is mandatory');
     }
-    if (!imageUrls.length) {
-        throw new TelegramError('imageUrls is mandatory');
-    }
 
     try {
-        if (imageUrls.length === 1) {
-            await telegramClient.sendPhoto(chatId, imageUrls[0], caption);
-        } else {
-            await telegramClient.sendMediaGroup(chatId, imageUrls, caption);
+        if (Array.isArray(media)) {
+            if (!media.length) {
+                throw new TelegramError('imageUrls is mandatory');
+            }
+
+            if (media.length === 1) {
+                await telegramClient.sendPhoto(chatId, media[0], caption);
+                return;
+            }
+
+            await telegramClient.sendMediaGroup(chatId, media, caption);
+            return;
         }
+
+        await telegramClient.sendPhoto(chatId, {
+            data: media.buffer,
+            filename: media.filename ?? 'image.png',
+        }, caption);
     } catch (error) {
         logError(`Failed to send media to ${chatId}`, error);
     }

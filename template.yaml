@@ -5,6 +5,8 @@ Description: ka4-today-bot – Telegram + OpenAI notification Lambda bot
 Globals:
   Function:
     Runtime: nodejs22.x
+    Architectures:
+      - arm64
     Timeout: 120
     MemorySize: 512
     Environment:
@@ -84,6 +86,8 @@ Resources:
       FunctionName: ka4today-async-telegram-processor
       Handler: src/modules/telegram/handlers/asyncTelegramProcessor.handler
       CodeUri: .
+      Layers:
+        - !Ref ResvgLayer
       VpcConfig:
         SecurityGroupIds:
           - !ImportValue
@@ -122,10 +126,13 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/modules/telegram/handlers/asyncTelegramProcessor.ts
+        External:
+          - '@resvg/resvg-js'
         Format: cjs
         Minify: false
         Sourcemap: false
         Target: es2022
+      BuildArchitecture: arm64
 
   Ka4TodayCronDailyMessageFunction:
     Type: AWS::Serverless::Function
@@ -133,6 +140,8 @@ Resources:
       FunctionName: ka4today-cron-daily-message
       Handler: src/modules/telegram/handlers/cronDailyMessage.handler
       CodeUri: .
+      Layers:
+        - !Ref ResvgLayer
       VpcConfig:
         SecurityGroupIds:
           - !ImportValue
@@ -160,10 +169,24 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/modules/telegram/handlers/cronDailyMessage.ts
+        External:
+          - '@resvg/resvg-js'
         Format: cjs
         Minify: false
         Sourcemap: false
         Target: es2022
+
+  ResvgLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ka4today-resvg
+      ContentUri: layers/resvg/dist
+      CompatibleRuntimes:
+        - nodejs22.x
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      SkipBuild: True
 
   #####################################################################
   ##                         LogGroups                               ##

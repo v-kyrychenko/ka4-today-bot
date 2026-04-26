@@ -14,6 +14,11 @@ export const telegramClient = {
     sendMediaGroup,
 };
 
+interface TelegramPhotoInput {
+    data: Buffer;
+    filename: string;
+}
+
 interface TelegramApiResponse {
     ok: boolean;
 }
@@ -39,20 +44,38 @@ export async function sendMessage(chatId: number, message: string): Promise<void
     });
 }
 
-export async function sendPhoto(chatId: number, photo: string, caption = ''): Promise<void> {
-    await httpRequest<TelegramApiResponse, { chat_id: number; photo: string; caption: string }>({
+export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInput, caption = ''): Promise<void> {
+    if (typeof photo === 'string') {
+        await httpRequest<TelegramApiResponse, { chat_id: number; photo: string; caption: string }>({
+            method: 'POST',
+            path: `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+            endpointUrl: TELEGRAM_BASE_URL,
+            headers: TELEGRAM_HEADERS,
+            body: {
+                chat_id: chatId,
+                photo,
+                caption,
+            },
+            label: TELEGRAM_API_LABEL,
+            errorClass: TelegramError,
+        });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.set('chat_id', String(chatId));
+    formData.set('caption', caption);
+    formData.set('photo', new Blob([new Uint8Array(photo.data)]), photo.filename);
+
+    const response = await fetch(`${TELEGRAM_BASE_URL}/${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
         method: 'POST',
-        path: `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
-        endpointUrl: TELEGRAM_BASE_URL,
-        headers: TELEGRAM_HEADERS,
-        body: {
-            chat_id: chatId,
-            photo,
-            caption,
-        },
-        label: TELEGRAM_API_LABEL,
-        errorClass: TelegramError,
+        body: formData,
     });
+    const responseBody = (await response.json()) as TelegramApiResponse;
+
+    if (!response.ok) {
+        throw new TelegramError(`Failed TELEGRAM request to /${TELEGRAM_BOT_TOKEN}/sendPhoto: ${JSON.stringify(responseBody)}`);
+    }
 }
 
 export async function sendMediaGroup(chatId: number, imageUrls: string[], caption = ''): Promise<void> {

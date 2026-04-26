@@ -1,0 +1,56 @@
+{
+    "telegram": {
+        "progress": {
+            "caption": {
+                "title": "📊 Metrics dynamics"
+            },
+            "header": {
+                "label": "KA4 TODAY · Body progress",
+                "title": "Last {days} days",
+                "emptyTitle": "Last year"
+            },
+            "dateRange": {
+                "empty": "No measurements yet"
+            },
+            "delta": {
+                "down": "↓ {amount}",
+                "up": "↑ {amount}",
+                "noChange": "stable"
+            },
+            "empty": {
+                "title": "No measurements yet",
+                "hint": "Add 2+ measurements to see a trend."
+            },
+            "insight": {
+                "title": "Insight",
+                "text": "Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..",
+                "noDataText": "No measurements yet. Add your first weight or body measurement, and I will start building a useful progress insight from the next check-ins."
+            },
+            "metric": {
+                "weight": "Weight",
+                "waist": "Waist",
+                "chest": "Chest",
+                "hips": "Hips",
+                "thigh": "Thigh",
+                "calf": "Calf",
+                "biceps": "Biceps"
+            }
+        }
+    },
+    "date": {
+        "monthShort": {
+            "0": "Jan",
+            "1": "Feb",
+            "2": "Mar",
+            "3": "Apr",
+            "4": "May",
+            "5": "Jun",
+            "6": "Jul",
+            "7": "Aug",
+            "8": "Sep",
+            "9": "Oct",
+            "10": "Nov",
+            "11": "Dec"
+        }
+    }
+}

@@ -38,8 +38,17 @@ For coach REST APIs, keep the REST model, domain model, and persistence row shap
 
 For small service modules, prefer placing exported service objects such as `export const telegramMessagingService = { ... }` near the top of the file, right after imports, so the public API is visible immediately when the file is opened. Treat this as a strong default, not a hard rule: if a different placement makes the file substantially easier to read top-to-bottom, prefer readability.
 
+Prefer KISS-oriented service code: small focused methods, with a soft maximum of 20 lines per method. If a method has branching or loop-heavy logic, keep each branch or loop body around 5 lines and extract helper methods early when readability starts to drop.
+
+For command classes, keep `execute(context)` as high-level orchestration only. Split detailed branches into focused helpers with names that describe the behavior, so command flow stays easy to scan and future tests can target smaller units.
+
+When changing progress view-model behavior or template rendering, keep the root `test/modules/telegram/commands/progress/` fixtures updated in the same change so previews and future tests continue to represent production behavior.
+
 ## Testing Guidelines
 There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.
+
+Local SAM verification depends on a working container runtime. `sam build` succeeds in this repo, but `sam local invoke` will fail unless Docker or Finch is installed and running; a recent attempt to run `npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/progress.json` was blocked for that reason rather than by an application error.
+For local TypeScript preview scripts, do not assume Node.js can execute repo source files directly with `--experimental-strip-types`. This codebase uses ESM imports that end in `.js`, so a direct TypeScript entrypoint can fail to resolve sibling source modules at runtime. The current progress preview works by using a small `esbuild` bootstrap script (`scripts/progressPreview.mjs`) that builds and runs the TypeScript preview entry under Node.js 22.
 
 ## Commit & Pull Request Guidelines
 Recent history uses short, imperative commit subjects such as `typescript migration`. Keep commits focused and small. For pull requests, include a concise summary, affected modules or handlers, required config changes, and verification steps. Add request/response examples for API changes and screenshots only when UI or rendered output is affected.

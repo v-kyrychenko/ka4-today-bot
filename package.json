@@ -6,6 +6,7 @@
     "gen-env": "node scripts/genEnvJson.mjs",
     "local": "node scripts/runLocal.mjs",
     "local-api": "node scripts/runLocalApi.mjs",
+    "progress-preview": "node scripts/progressPreview.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -13,14 +14,16 @@
     "@aws-sdk/client-s3": "^3.848.0",
     "@aws-sdk/client-sqs": "^3.848.0",
     "@aws-sdk/s3-request-presigner": "^3.848.0",
-    "axios": "1.15.0",
-    "drizzle-orm": "^0.45.2",
+    "@resvg/resvg-js": "^2.6.2",
+    "axios": "1.15.2",
     "dotenv": "^16.5.0",
-    "pg": "^8.16.3"
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.16.3",
+    "satori": "^0.26.0"
   },
   "devDependencies": {
     "@types/pg": "^8.15.6",
-    "typescript": "^5.8.2",
-    "esbuild": "0.27.4"
+    "esbuild": "0.27.4",
+    "typescript": "^5.8.2"
   }
 }
