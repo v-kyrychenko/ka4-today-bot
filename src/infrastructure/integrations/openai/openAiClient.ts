@@ -36,7 +36,7 @@ export async function createResponse(
     const body: OpenAiResponseCreatePayload = {
         model: DEFAULT_MODEL,
         background: true,
-        temperature: 1.0,
+        temperature: 0.8,
         input: [
             {role: 'system', content: systemPrompt},
             {role: 'user', content: userPrompt},

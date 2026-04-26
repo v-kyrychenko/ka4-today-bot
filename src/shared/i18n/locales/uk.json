@@ -15,7 +15,7 @@
             "delta": {
                 "down": "↓ {amount}",
                 "up": "↑ {amount}",
-                "noChange": "без змін"
+                "noChange": "стабільно"
             },
             "empty": {
                 "title": "Поки що немає вимірювань",

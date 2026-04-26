@@ -24,7 +24,7 @@ export const sampleViewModel: ViewModel = {
         {
             label: 'Груди',
             value: '102 cm',
-            delta: 'без змін',
+            delta: 'стабільно',
             deltaStatus: 'GOOD',
             trend: [101.8, 102.1, 101.9, 102, 102.2, 102],
             trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']

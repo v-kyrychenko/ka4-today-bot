@@ -10,7 +10,7 @@ export const theme = {
         background: '#0B0F14',
         foreground: '#E6EDF3',
         accent: '#A3FF3F',
-        danger: '#FF5A6A',
+        warning: '#FFB020',
         muted: '#8B98A5',
         cardBackground: '#121821',
         cardBorder: '#24301F',
@@ -113,7 +113,7 @@ export const styles = {
         lineHeight: 1
     } satisfies SatoriStyle,
     metricDeltaBad: {
-        color: theme.colors.danger,
+        color: theme.colors.warning,
         fontSize: 36,
         lineHeight: 1
     } satisfies SatoriStyle,
