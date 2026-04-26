@@ -1,5 +1,4 @@
 import type {ProcessorContext} from '../../domain/context.js';
-import {EMPTY_VIEW_VALUE} from '../../../../app/config/constants.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';
@@ -60,36 +59,26 @@ async function loadMeasurements(context: ProcessorContext): Promise<BodyMeasurem
 }
 
 function buildMetrics(lang: string, measurements: BodyMeasurement[]): MetricViewModel[] {
-    return BODY_MEASUREMENT_TYPES.map((type) => {
+    return BODY_MEASUREMENT_TYPES.flatMap((type) => {
         return buildMetric(lang, type, findByType(measurements, type));
     });
 }
 
-function buildMetric(lang: string, type: BodyMeasurementType, measurements: BodyMeasurement[]): MetricViewModel {
+function buildMetric(lang: string, type: BodyMeasurementType, measurements: BodyMeasurement[]): MetricViewModel[] {
     if (!measurements.length) {
-        return buildEmptyMetric(lang, type);
+        return [];
     }
 
     const latest = measurements[measurements.length - 1];
 
-    return {
+    return [{
         label: buildMetricLabel(lang, type),
         value: formatMeasurement(latest),
         delta: buildDelta(lang, measurements),
         deltaStatus: buildDeltaStatus(type, measurements),
         trend: measurements.map((item) => item.amount),
         trendDates: measurements.map((item) => formatDate(lang, item.createdAt)),
-    };
-}
-
-function buildEmptyMetric(lang: string, type: BodyMeasurementType): MetricViewModel {
-    return {
-        label: buildMetricLabel(lang, type),
-        value: EMPTY_VIEW_VALUE,
-        delta: '',
-        emptyStateTitle: i18nService.tr(lang, I18N_KEYS.telegram.progress.empty.title),
-        emptyStateHint: i18nService.tr(lang, I18N_KEYS.telegram.progress.empty.hint),
-    };
+    }];
 }
 
 function buildMetricLabel(lang: string, type: BodyMeasurementType): string {
@@ -103,6 +92,7 @@ function getMetricKey(type: BodyMeasurementType): string {
         [BodyMeasurementType.WEIGHT]: keys.weight,
         [BodyMeasurementType.WAIST]: keys.waist,
         [BodyMeasurementType.CHEST]: keys.chest,
+        [BodyMeasurementType.HIPS]: keys.hips,
         [BodyMeasurementType.THIGH]: keys.thigh,
         [BodyMeasurementType.CALF]: keys.calf,
         [BodyMeasurementType.BICEPS]: keys.biceps,

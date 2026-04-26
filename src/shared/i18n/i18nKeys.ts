@@ -46,6 +46,7 @@ export const I18N_KEYS = {
                 biceps: 'telegram.progress.metric.biceps',
                 calf: 'telegram.progress.metric.calf',
                 chest: 'telegram.progress.metric.chest',
+                hips: 'telegram.progress.metric.hips',
                 thigh: 'telegram.progress.metric.thigh',
                 waist: 'telegram.progress.metric.waist',
                 weight: 'telegram.progress.metric.weight',

@@ -30,19 +30,20 @@ export const sampleViewModel: ViewModel = {
             trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
         },
         {
+            label: 'Таз',
+            value: '96 cm',
+            delta: '↓ 1.5 cm',
+            deltaStatus: 'GOOD',
+            trend: [97.4, 97.1, 96.9, 96.6, 96.3, 96],
+            trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
+        },
+        {
             label: 'Стегно',
             value: '58.5 cm',
             delta: '↑ 0.5 cm',
             deltaStatus: 'GOOD',
             trend: [58, 58.1, 58.2, 58.3, 58.4, 58.5],
             trendDates: ['Квіт 1', 'Квіт 5', 'Квіт 10', 'Квіт 15', 'Квіт 20', 'Квіт 25']
-        },
-        {
-            label: 'Біцепс',
-            value: '--',
-            delta: '',
-            emptyStateTitle: 'Поки що немає вимірювань',
-            emptyStateHint: 'Додайте 2+ заміри, щоб побачити тенденцію.'
         }
     ],
     insightTitle: 'Insight',
