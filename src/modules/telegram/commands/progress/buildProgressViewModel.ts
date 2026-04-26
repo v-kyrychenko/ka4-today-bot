@@ -23,25 +23,23 @@ export const progressViewModelService = {
 export async function buildProgressViewModel(context: ProcessorContext): Promise<ViewModel> {
     const lang = i18nService.normalizeLang(context.user.lang);
     const measurements = await loadMeasurements(context);
-    const insightPromise = buildInsight(lang, measurements);
     const metrics = buildMetrics(lang, measurements);
     const period = buildPeriod(measurements);
-    const insight = await insightPromise;
 
     return {
         label: i18nService.tr(lang, I18N_KEYS.telegram.progress.header.label),
         title: buildTitle(lang, period),
         dateRange: '',
         metrics,
-        insightTitle: insight.title,
-        insightText: insight.text,
+        insightTitle: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.title),
+        insightText: '',
     };
 }
 
 export function buildProgressCaption(viewModel: ViewModel, lang: string): string {
     const title = i18nService.tr(lang, I18N_KEYS.telegram.progress.caption.title);
 
-    return `${title}\n${viewModel.insightText}`;
+    return viewModel.insightText ? `${title}\n${viewModel.insightText}` : title;
 }
 
 export function hasProgressData(viewModel: ViewModel): boolean {
@@ -224,32 +222,6 @@ function formatDate(lang: string, isoDate: string): string {
 
 function getYear(isoDate: string): number {
     return parseIsoDate(isoDate).getUTCFullYear();
-}
-
-async function buildInsight(lang: string, measurements: BodyMeasurement[]) {
-    if (!measurements.length) {
-        return buildNoDataInsight(lang);
-    }
-
-    await collectInsightData(measurements);
-
-    return {
-        title: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.title),
-        text: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.text),
-    };
-}
-
-async function buildNoDataInsight(lang: string) {
-    await collectInsightData([]);
-
-    return {
-        title: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.title),
-        text: i18nService.tr(lang, I18N_KEYS.telegram.progress.insight.noDataText),
-    };
-}
-
-async function collectInsightData(measurements: BodyMeasurement[]): Promise<BodyMeasurement[]> {
-    return Promise.resolve(measurements);
 }
 
 function getPastYearStart(): string {
