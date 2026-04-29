@@ -11,6 +11,7 @@ export const DEFAULT_MODEL = 'gpt-4o-mini';
 export const EMPTY_VIEW_VALUE = '--';
 
 export const POSTGRES_TIMEOUT_MS = 5000;
+export const TELEGRAM_MINI_APP_INIT_DATA_MAX_LENGTH = 4096;
 
 export const TG_ERROR_POSTGRES_UNAVAILABLE = '🌐 💥 🔁 ⏳';
-export const TG_ERROR_DEFAULT = '🧠💥🪄🐞';
+export const TG_ERROR_DEFAULT = '🧠 💥 🪄 🐞';

@@ -49,37 +49,8 @@ Parameters:
     Default: ka4-today
 Resources:
   #####################################################################
-  ##                         Bot                                     ##
+  ##                         Function                                     ##
   #####################################################################
-  Ka4TodayTelegramWebhook:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ka4today-telegram-webhook-handler
-      Handler: src/modules/telegram/handlers/ka4TodayTelegramWebhook.handler
-      CodeUri: .
-      Events:
-        Webhook:
-          Type: HttpApi
-          Properties:
-            Path: /ka4-today-webhook
-            Method: POST
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource: !GetAtt MainMessageQueue.Arn
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/modules/telegram/handlers/ka4TodayTelegramWebhook.ts
-        Format: cjs
-        Minify: false
-        Sourcemap: false
-        Target: es2022
-
   Ka4TodayAsyncTelegramProcessor:
     Type: AWS::Serverless::Function
     Properties:
@@ -216,6 +187,11 @@ Resources:
     Properties:
       LogGroupName: /aws/lambda/ka4today-http-api-exercise-routes
       RetentionInDays: 7
+  TelegramMiniAppApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-telegram-miniapp-api
+      RetentionInDays: 7
 
   #####################################################################
   ##                         SQS                                     ##
@@ -235,8 +211,68 @@ Resources:
         maxReceiveCount: 5
 
   #####################################################################
-  ##                        UI API                                   ##
+  ##                         API                                    ##
   #####################################################################
+  Ka4TodayTelegramWebhook:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-telegram-webhook-handler
+      Handler: src/modules/telegram/handlers/ka4TodayTelegramWebhook.handler
+      CodeUri: .
+      Events:
+        Webhook:
+          Type: HttpApi
+          Properties:
+            Path: /ka4-today-webhook
+            Method: POST
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt MainMessageQueue.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/modules/telegram/handlers/ka4TodayTelegramWebhook.ts
+        Format: cjs
+        Minify: false
+        Sourcemap: false
+        Target: es2022
+
+  TelegramMiniAppApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-telegram-miniapp-api
+      Handler: src/modules/telegram/api/index.handler
+      CodeUri: .
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+        SubnetIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+      Events:
+        CreateBodyMeasurements:
+          Type: HttpApi
+          Properties:
+            Path: /tg/body-measurements
+            Method: POST
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/modules/telegram/api/index.ts
+        Format: cjs
+        Minify: false
+        Sourcemap: false
+        Target: es2022
 #  HttpApiClientRoutes:
 #    Type: AWS::Serverless::Function
 #    Properties:
