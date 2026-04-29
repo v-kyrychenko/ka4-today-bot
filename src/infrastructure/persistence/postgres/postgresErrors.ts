@@ -29,6 +29,12 @@ export function isPostgresUnavailableError(error: unknown): error is PostgresErr
     return isDirectPostgresUnavailableError(error.cause);
 }
 
+export function isPostgresError(error: unknown): error is PostgresError {
+    return isPostgresUnavailableError(error)
+        || isPostgresUniqueViolation(error)
+        || isDrizzleQueryError(error);
+}
+
 function isDirectPostgresUnavailableError(error: unknown): error is PostgresError {
     if (!error || typeof error !== 'object') {
         return false;
@@ -43,4 +49,12 @@ function isDirectPostgresUnavailableError(error: unknown): error is PostgresErro
     return message.includes('connect ETIMEDOUT')
         || message.includes('connect ECONNREFUSED')
         || message.includes('Connection terminated unexpectedly');
+}
+
+function isDrizzleQueryError(error: unknown): error is PostgresError {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    return error.message.startsWith('Failed query:');
 }
