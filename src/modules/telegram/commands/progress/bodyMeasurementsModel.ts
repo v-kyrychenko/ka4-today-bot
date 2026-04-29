@@ -71,3 +71,4 @@ export const BODY_MEASUREMENT_TREND_CONFIG = {
     [BodyMeasurementType.CALF]: TrendDirection.UP,
     [BodyMeasurementType.BICEPS]: TrendDirection.UP,
 } as const;
+
