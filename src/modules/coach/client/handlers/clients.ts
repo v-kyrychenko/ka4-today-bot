@@ -4,7 +4,16 @@ import {
     PAGINATION_MAX_LIMIT,
 } from '../../../../app/config/constants.js';
 import {BadRequestError} from '../../../../shared/errors';
-import {getPathParam, getQueryParam, jsonResponse, parseOptionalInteger} from '../../../../shared/http/apiHelpers.js';
+import {
+    assertAllowedKeys,
+    getPathParam,
+    getQueryParam,
+    jsonResponse,
+    parseOptionalInteger,
+    parseOptionalNullableString,
+    parseRequiredDate,
+    parseRequiredString,
+} from '../../../../shared/http/apiHelpers.js';
 import {parseJsonBody} from '../../../../shared/http/requestBody.js';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../../shared/types/aws.js';
 import {createClient} from '../application/createClient.js';
@@ -147,42 +156,6 @@ function parseRequiredPositiveIntegerPathParam(event: ApiGatewayHttpEvent, name:
     return parsed;
 }
 
-function assertAllowedKeys(body: Record<string, unknown>, allowedKeys: string[]): void {
-    const unsupportedKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key));
-
-    if (unsupportedKeys.length > 0) {
-        throw new BadRequestError(`Unsupported fields: ${unsupportedKeys.join(', ')}`);
-    }
-}
-
-function parseRequiredString(body: Record<string, unknown>, name: string, maxLength: number): string {
-    const value = body[name];
-
-    if (typeof value !== 'string') {
-        throw new BadRequestError(`Field '${name}' must be a string`);
-    }
-
-    const normalized = value.trim();
-    if (!normalized) {
-        throw new BadRequestError(`Field '${name}' is required`);
-    }
-    if (normalized.length > maxLength) {
-        throw new BadRequestError(`Field '${name}' must be at most ${maxLength} characters`);
-    }
-
-    return normalized;
-}
-
-function parseRequiredDate(body: Record<string, unknown>, name: string): string {
-    const value = parseRequiredString(body, name, 10);
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        throw new BadRequestError(`Field '${name}' must be a date in YYYY-MM-DD format`);
-    }
-
-    return value;
-}
-
 function parseClientStatus(body: Record<string, unknown>, name: string): ClientStatus {
     const value = parseRequiredString(body, name, 20);
 
@@ -191,20 +164,4 @@ function parseClientStatus(body: Record<string, unknown>, name: string): ClientS
     }
 
     return value as ClientStatus;
-}
-
-function parseOptionalNullableString(body: Record<string, unknown>, name: string): string | null | undefined {
-    if (!(name in body)) {
-        return undefined;
-    }
-
-    const value = body[name];
-    if (value === null) {
-        return null;
-    }
-    if (typeof value !== 'string') {
-        throw new BadRequestError(`Field '${name}' must be a string or null`);
-    }
-
-    return value;
 }

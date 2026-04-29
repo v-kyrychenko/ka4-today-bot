@@ -7,6 +7,18 @@ export class BadRequestError extends Error {
     }
 }
 
+export class HttpApiError extends Error {
+    statusCode: number;
+    code: string;
+
+    constructor(statusCode: number, code: string, message = 'HTTP API error') {
+        super(message);
+        this.name = 'HttpApiError';
+        this.statusCode = statusCode;
+        this.code = code;
+    }
+}
+
 export class NotFoundError extends Error {
     statusCode = 404;
 

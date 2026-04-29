@@ -18,6 +18,8 @@ export const telegramUserRepository = {
     getUsersScheduledForDay,
     getUserScheduledForDay,
     getOrCreateUser,
+    findByChatId,
+    findActiveByChatId,
     markInactive,
 };
 
@@ -102,6 +104,19 @@ async function findByChatId(chatId: number) {
         .select()
         .from(tgUser)
         .where(eq(tgUser.chat_id, chatId))
+        .limit(1);
+
+    return row ? tgUserMapper.toAppModel(row) : null;
+}
+
+async function findActiveByChatId(chatId: number) {
+    const [row] = await getPostgresDb()
+        .select()
+        .from(tgUser)
+        .where(and(
+            eq(tgUser.chat_id, chatId),
+            eq(tgUser.is_active, true),
+        ))
         .limit(1);
 
     return row ? tgUserMapper.toAppModel(row) : null;

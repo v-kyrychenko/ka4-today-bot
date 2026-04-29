@@ -7,6 +7,14 @@ export interface BodyMeasurement {
     unitKey: string;
 }
 
+export interface BodyMeasurementCreateInput {
+    clientId: number;
+    createdAt: string;
+    amount: number;
+    type: BodyMeasurementType;
+    unitKey: string;
+}
+
 export interface BodyMeasurementSummary {
     id: number;
     clientId: number;
