@@ -13,8 +13,8 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 
 - **Telegram webhook flow** uses **API Gateway (HTTP API)** to invoke a lightweight Lambda.
   That handler validates the Telegram secret token and pushes inbound updates to **Amazon SQS**.
-- **Amazon SQS** decouples delivery from processing and acts as the buffer between Telegram and
-  the async worker Lambda.
+- **Amazon SQS FIFO** decouples delivery from processing, keeps messages ordered per Telegram
+  `chat.id`, and deduplicates webhook and daily scheduled messages.
 - The **async processor Lambda** consumes queue messages with controlled concurrency
   (`MaximumConcurrency: 2`) before routing each update through the Telegram command pipeline.
 - **Daily scheduled delivery** runs through a dedicated cron Lambda that loads the users scheduled

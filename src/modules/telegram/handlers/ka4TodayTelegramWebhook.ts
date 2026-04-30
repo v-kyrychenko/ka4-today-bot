@@ -2,6 +2,7 @@ import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {MAIN_MESSAGE_QUEUE_URL, TELEGRAM_SECURITY_TOKEN} from '../../../app/config/env.js';
 import {logError} from '../../../shared/logging';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../shared/types/aws.js';
+import {buildWebhookFifoMessageMetadata} from '../application/sqsFifoMessageMetadata.js';
 import {QueueRequestEnvelope} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
 
@@ -51,6 +52,7 @@ async function sendToQueue(payload: QueueRequestEnvelope): Promise<void> {
     const command = new SendMessageCommand({
         QueueUrl: MAIN_MESSAGE_QUEUE_URL,
         MessageBody: JSON.stringify(payload),
+        ...buildWebhookFifoMessageMetadata(payload),
     });
 
     await sqsClient.send(command);
