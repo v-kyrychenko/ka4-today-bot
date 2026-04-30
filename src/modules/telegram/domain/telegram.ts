@@ -35,6 +35,7 @@ export class TelegramMessage {
 }
 
 export class TelegramWebhookRequest {
+    update_id?: number;
     message?: TelegramMessage;
 
     constructor(init?: Partial<TelegramWebhookRequest>) {

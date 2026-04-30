@@ -204,12 +204,14 @@ Resources:
   MainMessageDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: ka4today-main-message-dlq
+      QueueName: ka4today-main-message-dlq-fifo.fifo
+      FifoQueue: true
 
   MainMessageQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: ka4today-main-message-queue
+      QueueName: ka4today-main-message-fifo.fifo
+      FifoQueue: true
       VisibilityTimeout: 300 #  Queue visibility timeout should be > Lambda execution timeout
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt MainMessageDeadLetterQueue.Arn
