@@ -43,6 +43,11 @@ Parameters:
   PostgresPassword:
     Type: String
     NoEcho: true
+  FrontendOrigin:
+    Type: String
+    Description: CloudFront origin allowed to call the Telegram Mini App API
+    Default: https://dxxxxx.cloudfront.net
+    NoEcho: true
   NetworkStackExportPrefix:
     Type: String
     Description: Export name prefix used by the standalone network-postgres-nat stack
@@ -213,6 +218,20 @@ Resources:
   #####################################################################
   ##                         API                                    ##
   #####################################################################
+#  UiApiConfig:
+#    Type: AWS::Serverless::HttpApi
+#    Properties:
+#      CorsConfiguration:
+#        AllowOrigins:
+#          - !Ref FrontendOrigin
+#        AllowMethods:
+#          - OPTIONS
+#          - POST
+#        AllowHeaders:
+#          - Content-Type
+#          - Authorization
+#        MaxAge: 86400
+
   Ka4TodayTelegramWebhook:
     Type: AWS::Serverless::Function
     Properties:
@@ -259,6 +278,7 @@ Resources:
         CreateBodyMeasurements:
           Type: HttpApi
           Properties:
+            #ApiId: !Ref UiApiConfig
             Path: /tg/body-measurements
             Method: POST
       Policies:
