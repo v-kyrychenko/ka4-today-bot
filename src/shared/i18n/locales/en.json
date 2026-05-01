@@ -1,5 +1,15 @@
 {
     "telegram": {
+        "conversations": {
+            "bodyMeasurements": {
+                "initialMessage": "Send me your fresh body measurements, and we’ll check your progress like a coach would.",
+                "unavailable": "Measurement check-in is warming up. For now, keep tracking your numbers and we’ll plug them in soon."
+            },
+            "cancelled": "Check-in cancelled. No stress, we can come back to it when you’re ready.",
+            "safeError": "Something went off plan. Let’s reset and start this check-in again.",
+            "unsupportedAction": "That action isn’t available in this check-in yet.",
+            "unsupportedInput": "I can’t use that input for this check-in yet."
+        },
         "progress": {
             "caption": {
                 "title": "📊 Metrics dynamics"

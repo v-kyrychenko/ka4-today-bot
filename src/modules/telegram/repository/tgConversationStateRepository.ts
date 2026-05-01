@@ -8,6 +8,8 @@ const DEFAULT_TTL_MINUTES = 30;
 const EXPIRED_STEP = 'EXPIRED';
 const REPLACED_STEP = 'REPLACED';
 
+type PostgresTransaction = Parameters<Parameters<ReturnType<typeof getPostgresDb>['transaction']>[0]>[0];
+
 export interface TgConversationStateRow {
     id: number;
     chat_id: number;
@@ -97,31 +99,11 @@ export async function startConversation(input: StartConversationInput): Promise<
     return getPostgresDb().transaction(async (tx) => {
         const now = nowIso();
 
-        await tx
-            .update(tgConversationState)
-            .set({
-                is_active: false,
-                current_step: REPLACED_STEP,
-                updated_at: now,
-            })
-            .where(and(
-                eq(tgConversationState.chat_id, input.chatId),
-                eq(tgConversationState.is_active, true),
-            ));
+        await deactivatePreviousActiveConversations(tx, input.chatId, now);
 
         const [row] = await tx
             .insert(tgConversationState)
-            .values({
-                chat_id: input.chatId,
-                type: input.type,
-                current_step: input.currentStep ?? DEFAULT_CURRENT_STEP,
-                data: input.data ?? {},
-                last_bot_msg_id: input.lastBotMsgId ?? null,
-                is_active: true,
-                expires_at: expiresAtIso(input.ttlMinutes ?? DEFAULT_TTL_MINUTES),
-                created_at: now,
-                updated_at: now,
-            })
+            .values(toCreateValues(input, now))
             .returning();
 
         return row as TgConversationStateRow;
@@ -175,6 +157,38 @@ export async function expireOutdated(): Promise<TgConversationStateRow[]> {
         .returning();
 
     return rows as TgConversationStateRow[];
+}
+
+async function deactivatePreviousActiveConversations(
+    tx: PostgresTransaction,
+    chatId: number,
+    now: string,
+): Promise<void> {
+    await tx
+        .update(tgConversationState)
+        .set({
+            is_active: false,
+            current_step: REPLACED_STEP,
+            updated_at: now,
+        })
+        .where(and(
+            eq(tgConversationState.chat_id, chatId),
+            eq(tgConversationState.is_active, true),
+        ));
+}
+
+function toCreateValues(input: StartConversationInput, now: string) {
+    return {
+        chat_id: input.chatId,
+        type: input.type,
+        current_step: input.currentStep ?? DEFAULT_CURRENT_STEP,
+        data: input.data ?? {},
+        last_bot_msg_id: input.lastBotMsgId ?? null,
+        is_active: true,
+        expires_at: expiresAtIso(input.ttlMinutes ?? DEFAULT_TTL_MINUTES),
+        created_at: now,
+        updated_at: now,
+    };
 }
 
 function toUpdateValues(input: UpdateConversationInput) {
