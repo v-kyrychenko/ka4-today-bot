@@ -2,7 +2,7 @@ import {BaseRoute} from './BaseRoute.js';
 import {DAILY_GREETING_ROUTE} from './registry.js';
 import {BadRequestError} from '../../../shared/errors';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
-import {telegramMessagingService} from '../application/telegramMessagingService.js';
+import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import type {ProcessorContext} from '../domain/context.js';
 
 export class DailyGreetingRoute extends BaseRoute {

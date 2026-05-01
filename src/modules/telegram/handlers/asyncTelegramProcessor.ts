@@ -1,8 +1,8 @@
 import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {log, logError} from '../../../shared/logging';
 import type {LambdaResponse, SqsEvent} from '../../../shared/types/aws.js';
-import {mainProcessor} from '../application/mainProcessor.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
+import {routesProcessor} from '../routes/routesProcessor.js';
 
 export const handler = withAppInitialization(async (event: SqsEvent): Promise<LambdaResponse | undefined> => {
     log('[telegram.async] Processing SQS batch', {recordCount: event.Records.length});
@@ -22,8 +22,8 @@ export const handler = withAppInitialization(async (event: SqsEvent): Promise<La
         const payload = JSON.parse(record.body) as { request?: unknown };
         const body = extractBody(payload.request);
 
-        log('[telegram.async] Executing main processor', {recordIndex, body});
-        await mainProcessor.execute(body);
+        log('[telegram.async] Executing routes processor', {recordIndex, body});
+        await routesProcessor.execute(body);
         log('[telegram.async] Record processed successfully', {recordIndex});
 
         return buildResponse(200, 'OK');

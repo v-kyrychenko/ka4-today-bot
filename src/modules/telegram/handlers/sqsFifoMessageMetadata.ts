@@ -1,4 +1,5 @@
 import {BadRequestError} from '../../../shared/errors';
+import {toIsoDate} from '../../../shared/utils/dateUtils.js';
 import {QueueRequestEnvelope} from '../domain/context.js';
 
 export interface SqsFifoMessageMetadata {
@@ -33,7 +34,7 @@ export function buildDailyFifoMessageMetadata(
 
     return {
         MessageGroupId: String(chatId),
-        MessageDeduplicationId: `daily-${chatId}-${promptRef}-${toUtcDate(date)}`,
+        MessageDeduplicationId: `daily-${chatId}-${promptRef}-${toIsoDate(date)}`,
     };
 }
 
@@ -49,8 +50,4 @@ function extractChatId(payload: QueueRequestEnvelope): number {
 
 function isValidId(value: unknown): value is number {
     return typeof value === 'number' && Number.isSafeInteger(value) && value !== 0;
-}
-
-function toUtcDate(date: Date): string {
-    return date.toISOString().slice(0, 10);
 }

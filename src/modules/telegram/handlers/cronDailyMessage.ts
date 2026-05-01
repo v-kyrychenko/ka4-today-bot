@@ -2,7 +2,7 @@ import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {MAIN_MESSAGE_QUEUE_URL} from '../../../app/config/env.js';
 import {log} from '../../../shared/logging';
-import {buildDailyFifoMessageMetadata} from '../application/sqsFifoMessageMetadata.js';
+import {buildDailyFifoMessageMetadata} from './sqsFifoMessageMetadata.js';
 import {DAILY_GREETING_ROUTE} from '../routes/registry.js';
 import {QueueRequestEnvelope} from '../domain/context.js';
 import {WorkoutSchedule} from '../domain/workout.js';

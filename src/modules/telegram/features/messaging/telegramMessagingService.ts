@@ -1,12 +1,12 @@
-import {telegramClient} from '../../../infrastructure/integrations/telegram/telegramClient.js';
-import {tgMessageLogRepository} from '../repository/tgMessageLogRepository.js';
-import {tgUserRepository} from '../repository/tgUserRepository.js';
-import {TelegramError} from '../../../shared/errors';
-import {log, logError} from '../../../shared/logging';
-import type {ProcessorContext} from '../domain/context.js';
+import {telegramClient} from '../../../../infrastructure/integrations/telegram/telegramClient.js';
+import {tgMessageLogRepository} from '../../repository/tgMessageLogRepository.js';
+import {tgUserRepository} from '../../repository/tgUserRepository.js';
+import {TelegramError} from '../../../../shared/errors';
+import {log, logError} from '../../../../shared/logging';
+import type {ProcessorContext} from '../../domain/context.js';
 import type {
     TelegramSentMessageLogInput
-} from '../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
+} from '../../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
 
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
 

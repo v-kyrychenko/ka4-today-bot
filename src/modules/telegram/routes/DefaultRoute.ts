@@ -1,7 +1,7 @@
 import {BaseRoute} from './BaseRoute.js';
 import {DEFAULT_ROUTE} from './registry.js';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
-import {telegramMessagingService} from '../application/telegramMessagingService.js';
+import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import type {ProcessorContext} from '../domain/context.js';
 
 export class DefaultRoute extends BaseRoute {

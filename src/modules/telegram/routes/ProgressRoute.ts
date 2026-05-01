@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {telegramMessagingService} from '../application/telegramMessagingService.js';
+import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import type {ProcessorContext} from '../domain/context.js';
 import {log, logError} from '../../../shared/logging';

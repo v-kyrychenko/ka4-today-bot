@@ -1,12 +1,17 @@
-import {routeRegistry} from '../routes/registry.js';
+import {
+    TG_ERROR_POSTGRES_UNAVAILABLE,
+    TG_ERROR_DEFAULT,
+} from '../../../app/config/constants.js';
+import {isPostgresUnavailableError} from '../../../infrastructure/persistence/postgres/postgresErrors.js';
 import {BadRequestError, OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {ProcessorContext} from '../domain/context.js';
 import {TelegramWebhookRequest} from '../domain/telegram.js';
+import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
-import {errorHandler} from './errorHandler.js';
+import {routeRegistry} from './registry.js';
 
-export const mainProcessor = {
+export const routesProcessor = {
     execute: async (inputRequest: TelegramWebhookRequest): Promise<void> => {
         const request = new TelegramWebhookRequest(inputRequest);
         const message = request.message;
@@ -23,16 +28,24 @@ export const mainProcessor = {
             const route = routeRegistry.find((item) => item.canHandle(text, context));
 
             if (!route) {
-                log('[telegram.main] No route found', {chatId, text});
+                log('[telegram.routes] No route found', {chatId, text});
                 return;
             }
 
             const routeName = route.constructor?.name ?? 'AnonymousRoute';
-            log('[telegram.main] Executing route', {chatId, routeName});
+            log('[telegram.routes] Executing route', {chatId, routeName});
             await route.execute(context);
         } catch (error) {
-            await errorHandler(chatId, error);
+            await sendRouteError(chatId, error);
             throw error as BadRequestError | OpenAIError;
         }
     },
 };
+
+async function sendRouteError(chatId: number, error: unknown): Promise<void> {
+    const message = isPostgresUnavailableError(error)
+        ? TG_ERROR_POSTGRES_UNAVAILABLE
+        : TG_ERROR_DEFAULT;
+
+    await telegramMessagingService.sendErrorMessage(chatId, message);
+}
