@@ -1,6 +1,6 @@
 import {BadRequestError} from '../../../shared/errors';
 import {toIsoDate} from '../../../shared/utils/dateUtils.js';
-import {TelegramWebhookRequest} from '../domain/telegram.js';
+import {TelegramWebhookRequest} from '../routes/context.js';
 
 export interface SqsFifoMessageMetadata {
     MessageGroupId: string;

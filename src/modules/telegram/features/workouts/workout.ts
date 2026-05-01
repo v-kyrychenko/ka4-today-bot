@@ -1,5 +1,5 @@
 import {PromptDict} from '../prompts/prompt.js';
-import {TelegramUser} from '../../domain/user.js';
+import {TelegramUser} from '../../routes/context.js';
 
 export class Exercise {
     name = '';

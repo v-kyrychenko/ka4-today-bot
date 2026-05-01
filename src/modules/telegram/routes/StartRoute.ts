@@ -2,7 +2,7 @@ import {BaseRoute} from './BaseRoute.js';
 import {START_ROUTE} from './registry.js';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import type {ProcessorContext} from '../domain/context.js';
+import type {ProcessorContext} from './context.js';
 
 export class StartRoute extends BaseRoute {
     canHandle(text: string | null): boolean {

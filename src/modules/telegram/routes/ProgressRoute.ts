@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
-import type {ProcessorContext} from '../domain/context.js';
+import type {ProcessorContext} from './context.js';
 import {log, logError} from '../../../shared/logging';
 import {BaseRoute} from './BaseRoute.js';
 import {PROGRESS_ROUTE} from './registry.js';

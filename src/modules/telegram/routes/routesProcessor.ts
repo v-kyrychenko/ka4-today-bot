@@ -5,10 +5,9 @@ import {
 import {isPostgresUnavailableError} from '../../../infrastructure/persistence/postgres/postgresErrors.js';
 import {BadRequestError, OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
-import {ProcessorContext} from '../domain/context.js';
-import {TelegramWebhookRequest} from '../domain/telegram.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
+import {ProcessorContext, TelegramWebhookRequest} from './context.js';
 import {routeRegistry} from './registry.js';
 
 export const routesProcessor = {

@@ -6,7 +6,7 @@ import {OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import {ProcessorContext} from '../domain/context.js';
+import {ProcessorContext} from './context.js';
 import {Exercise, ExerciseWithSignedImages} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 

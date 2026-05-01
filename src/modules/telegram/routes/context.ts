@@ -43,3 +43,30 @@ export class TelegramWebhookRequest {
         this.message = init?.message ? new TelegramMessage(init.message) : undefined;
     }
 }
+
+export class TelegramUser {
+    chatId = 0;
+    clientId?: number | null;
+    username = '';
+    phone?: string | null;
+    lang = '';
+    isActive = true;
+    isBot = false;
+
+    constructor(init?: Partial<TelegramUser>) {
+        Object.assign(this, init);
+    }
+}
+
+export class ProcessorContext {
+    chatId: number | null = null;
+    text: string | null = null;
+    user = new TelegramUser();
+    message = new TelegramMessage();
+
+    constructor(init?: Partial<ProcessorContext>) {
+        Object.assign(this, init);
+        this.user = new TelegramUser(init?.user);
+        this.message = new TelegramMessage(init?.message);
+    }
+}

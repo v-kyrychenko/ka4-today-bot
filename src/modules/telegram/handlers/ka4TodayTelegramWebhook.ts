@@ -3,7 +3,7 @@ import {MAIN_MESSAGE_QUEUE_URL, TELEGRAM_SECURITY_TOKEN} from '../../../app/conf
 import {logError} from '../../../shared/logging';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../shared/types/aws.js';
 import {buildWebhookFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
-import {TelegramWebhookRequest} from '../domain/telegram.js';
+import {TelegramWebhookRequest} from '../routes/context.js';
 
 const sqsClient = new SQSClient();
 

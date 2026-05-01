@@ -5,7 +5,7 @@ import {getPostgresDb} from '../../../infrastructure/persistence/postgres/postgr
 import {dictPrompt} from '../../../infrastructure/persistence/postgres/schema/dictPrompt.js';
 import {BadRequestError} from '../../../shared/errors';
 
-export const tgPromptRepository = {
+export const dictPromptRepository = {
     getPromptByKey,
 };
 

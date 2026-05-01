@@ -1,4 +1,4 @@
-import type {ProcessorContext} from '../domain/context.js';
+import type {ProcessorContext} from './context.js';
 
 export abstract class BaseRoute {
     abstract canHandle(text: string | null, context: ProcessorContext): boolean;

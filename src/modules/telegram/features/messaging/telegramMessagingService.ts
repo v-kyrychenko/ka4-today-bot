@@ -3,7 +3,7 @@ import {tgMessageLogRepository} from '../../repository/tgMessageLogRepository.js
 import {tgUserRepository} from '../../repository/tgUserRepository.js';
 import {TelegramError} from '../../../../shared/errors';
 import {log, logError} from '../../../../shared/logging';
-import type {ProcessorContext} from '../../domain/context.js';
+import type {ProcessorContext} from '../../routes/context.js';
 import type {
     TelegramSentMessageLogInput
 } from '../../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';

@@ -11,8 +11,8 @@ import {workout} from '../../../infrastructure/persistence/postgres/schema/worko
 import {workoutSchedule} from '../../../infrastructure/persistence/postgres/schema/workoutSchedule.js';
 import {BadRequestError} from '../../../shared/errors';
 import {getCurrentDayCode} from '../../../shared/utils/dayOfWeek.js';
-import {TelegramMessage} from '../domain/telegram.js';
 import {WorkoutSchedule} from '../features/workouts/workout.js';
+import {TelegramMessage} from '../routes/context.js';
 
 export const tgUserRepository = {
     getUsersScheduledForDay,

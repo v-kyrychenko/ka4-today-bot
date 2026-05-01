@@ -1,7 +1,7 @@
 import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {log, logError} from '../../../shared/logging';
 import type {LambdaResponse, SqsEvent} from '../../../shared/types/aws.js';
-import {TelegramWebhookRequest} from '../domain/telegram.js';
+import {TelegramWebhookRequest} from '../routes/context.js';
 import {routesProcessor} from '../routes/routesProcessor.js';
 
 export const handler = withAppInitialization(async (event: SqsEvent): Promise<LambdaResponse | undefined> => {
