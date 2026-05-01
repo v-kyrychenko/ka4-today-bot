@@ -12,7 +12,7 @@ import {workoutSchedule} from '../../../infrastructure/persistence/postgres/sche
 import {BadRequestError} from '../../../shared/errors';
 import {getCurrentDayCode} from '../../../shared/utils/dayOfWeek.js';
 import {TelegramMessage} from '../domain/telegram.js';
-import {WorkoutSchedule} from '../domain/workout.js';
+import {WorkoutSchedule} from '../features/workouts/workout.js';
 
 export const tgUserRepository = {
     getUsersScheduledForDay,

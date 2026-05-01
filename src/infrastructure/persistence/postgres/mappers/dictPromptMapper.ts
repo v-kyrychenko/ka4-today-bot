@@ -1,4 +1,4 @@
-import {PromptDict, PromptDictSystem} from '../../../../modules/telegram/domain/prompt.js';
+import {PromptDict, PromptDictSystem} from '../../../../modules/telegram/features/prompts/prompt.js';
 import type {DictPromptRow} from '../models/dictPromptRow.js';
 
 export const dictPromptMapper = {

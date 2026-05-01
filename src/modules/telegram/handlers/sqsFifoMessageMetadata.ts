@@ -1,10 +1,19 @@
 import {BadRequestError} from '../../../shared/errors';
 import {toIsoDate} from '../../../shared/utils/dateUtils.js';
-import {QueueRequestEnvelope} from '../domain/context.js';
+import {TelegramWebhookRequest} from '../domain/telegram.js';
 
 export interface SqsFifoMessageMetadata {
     MessageGroupId: string;
     MessageDeduplicationId: string;
+}
+
+export class QueueRequestEnvelope {
+    request = new TelegramWebhookRequest();
+
+    constructor(init?: Partial<QueueRequestEnvelope>) {
+        Object.assign(this, init);
+        this.request = new TelegramWebhookRequest(init?.request);
+    }
 }
 
 export function buildWebhookFifoMessageMetadata(payload: QueueRequestEnvelope): SqsFifoMessageMetadata {

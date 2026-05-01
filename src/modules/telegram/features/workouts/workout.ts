@@ -1,5 +1,5 @@
-import {PromptDict} from './prompt.js';
-import {TelegramUser} from './user.js';
+import {PromptDict} from '../prompts/prompt.js';
+import {TelegramUser} from '../../domain/user.js';
 
 export class Exercise {
     name = '';

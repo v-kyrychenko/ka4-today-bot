@@ -7,7 +7,7 @@ import {log} from '../../../shared/logging';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {ProcessorContext} from '../domain/context.js';
-import {Exercise, ExerciseWithSignedImages} from '../domain/workout.js';
+import {Exercise, ExerciseWithSignedImages} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 
 const s3 = new S3Client();
