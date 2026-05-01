@@ -1,4 +1,4 @@
-import type {ViewModel} from '../../../../../src/modules/telegram/commands/progress/template/viewModel.js';
+import type {ViewModel} from '../../../../../src/modules/telegram/features/progress/template/viewModel.js';
 
 export const sampleViewModel: ViewModel = {
     label: 'KA4 TODAY · Прогрес тіла',

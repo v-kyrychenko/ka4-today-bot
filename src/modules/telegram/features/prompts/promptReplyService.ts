@@ -1,10 +1,10 @@
-import {DEFAULT_LANG} from '../../../app/config/constants.js';
-import {openAiClient} from '../../../infrastructure/integrations/openai/openAiClient.js';
-import {BadRequestError, OpenAIError} from '../../../shared/errors';
-import {OpenAiResponseDetails} from '../../../shared/types/openai.js';
-import type {ProcessorContext} from '../domain/context.js';
-import {telegramPromptRepository} from '../repository/telegramPromptRepository.js';
-import {log} from '../../../shared/logging';
+import {DEFAULT_LANG} from '../../../../app/config/constants.js';
+import {openAiClient} from '../../../../infrastructure/integrations/openai/openAiClient.js';
+import {BadRequestError, OpenAIError} from '../../../../shared/errors';
+import {OpenAiResponseDetails} from '../../../../shared/types/openai.js';
+import type {ProcessorContext} from '../../domain/context.js';
+import {tgPromptRepository} from '../../repository/tgPromptRepository.js';
+import {log} from '../../../../shared/logging';
 
 type TemplateVariableValue = unknown;
 
@@ -20,7 +20,7 @@ export async function fetchOpenAiReply({
                                            variables = {},
                                        }: FetchOpenAiReplyRequest): Promise<string> {
     const lang = context.user.lang || DEFAULT_LANG;
-    const prompt = await telegramPromptRepository.getPromptByKey(promptRef);
+    const prompt = await tgPromptRepository.getPromptByKey(promptRef);
 
     const systemPromptDict = prompt.systemPrompt;
     if (!systemPromptDict) {

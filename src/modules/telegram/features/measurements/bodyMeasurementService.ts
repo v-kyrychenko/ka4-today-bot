@@ -1,11 +1,11 @@
-import {HttpApiError} from '../../../shared/errors';
-import {parseIsoDate} from '../../../shared/utils/dateUtils.js';
+import {HttpApiError} from '../../../../shared/errors';
+import {parseIsoDate} from '../../../../shared/utils/dateUtils.js';
 import {
     type BodyMeasurementCreateInput,
-} from '../commands/progress/bodyMeasurementsModel.js';
+} from './bodyMeasurementsModel.js';
 import {
     bodyMeasurementRepository,
-} from '../commands/progress/repository/bodyMeasurementRepository.js';
+} from './repository/bodyMeasurementRepository.js';
 
 const MIN_DAYS_BETWEEN_MEASUREMENTS = 30;
 const MS_IN_DAY = 24 * 60 * 60 * 1000;

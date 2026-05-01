@@ -3,9 +3,9 @@ import {dictPromptMapper} from '../../../infrastructure/persistence/postgres/map
 import type {DictPromptRow} from '../../../infrastructure/persistence/postgres/models/dictPromptRow.js';
 import {getPostgresDb} from '../../../infrastructure/persistence/postgres/postgresDb.js';
 import {dictPrompt} from '../../../infrastructure/persistence/postgres/schema/dictPrompt.js';
-import {BadRequestError} from '../../../shared/errors/index.js';
+import {BadRequestError} from '../../../shared/errors';
 
-export const telegramPromptRepository = {
+export const tgPromptRepository = {
     getPromptByKey,
 };
 

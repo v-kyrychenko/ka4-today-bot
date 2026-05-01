@@ -2,14 +2,14 @@ import type {ProcessorContext} from '../../domain/context.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';
-import {bodyMeasurementRepository} from './repository/bodyMeasurementRepository.js';
+import {bodyMeasurementRepository} from '../measurements/repository/bodyMeasurementRepository.js';
 import {
     BODY_MEASUREMENT_TREND_CONFIG,
     BODY_MEASUREMENT_TYPES,
     type BodyMeasurement,
     BodyMeasurementType,
     TrendDirection,
-} from './bodyMeasurementsModel.js';
+} from '../measurements/bodyMeasurementsModel.js';
 import type {MetricViewModel, ViewModel} from './template/viewModel.js';
 
 const PROGRESS_MEASUREMENTS_LOOKBACK_DAYS = 365;

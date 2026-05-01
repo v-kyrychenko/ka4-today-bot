@@ -1,6 +1,6 @@
 import {telegramClient} from '../../../infrastructure/integrations/telegram/telegramClient.js';
-import {telegramMessageLogRepository} from '../repository/telegramMessageLogRepository.js';
-import {telegramUserRepository} from '../repository/telegramUserRepository.js';
+import {tgMessageLogRepository} from '../repository/tgMessageLogRepository.js';
+import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {TelegramError} from '../../../shared/errors';
 import {log, logError} from '../../../shared/logging';
 import type {ProcessorContext} from '../domain/context.js';
@@ -84,7 +84,7 @@ export async function sendWithMedia(
 
 async function logSentMessage(input: TelegramSentMessageLogInput): Promise<void> {
     try {
-        await telegramMessageLogRepository.logSentMessage(input);
+        await tgMessageLogRepository.logSentMessage(input);
     } catch (error) {
         logError(`Failed to log sent Telegram message for ${input.chatId}`, error);
         throw error;
@@ -93,7 +93,7 @@ async function logSentMessage(input: TelegramSentMessageLogInput): Promise<void>
 
 async function markUserInactive(chatId: number): Promise<void> {
     try {
-        const updated = await telegramUserRepository.markInactive(chatId);
+        const updated = await tgUserRepository.markInactive(chatId);
 
         if (!updated) {
             logError(`Telegram user ${chatId} not found in Postgres while marking inactive`);

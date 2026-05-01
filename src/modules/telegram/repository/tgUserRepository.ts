@@ -14,7 +14,7 @@ import {getCurrentDayCode} from '../../../shared/utils/dayOfWeek.js';
 import {TelegramMessage} from '../domain/telegram.js';
 import {WorkoutSchedule} from '../domain/workout.js';
 
-export const telegramUserRepository = {
+export const tgUserRepository = {
     getUsersScheduledForDay,
     getUserScheduledForDay,
     getOrCreateUser,

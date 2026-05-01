@@ -9,14 +9,14 @@ import {
 import {parseJsonBody} from '../../../shared/http/requestBody.js';
 import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../shared/types/aws.js';
 import {toIsoDate} from '../../../shared/utils/dateUtils.js';
-import {bodyMeasurementService} from '../application/bodyMeasurementService.js';
-import {miniAppService} from '../application/miniAppService.js';
+import {bodyMeasurementService} from '../features/measurements/bodyMeasurementService.js';
+import {miniAppService} from '../features/web/miniAppService.js';
 import {
     BODY_MEASUREMENT_TYPES,
     BodyMeasurementType,
     type BodyMeasurementCreateInput,
-} from '../commands/progress/bodyMeasurementsModel.js';
-import {telegramUserRepository} from '../repository/telegramUserRepository.js';
+} from '../features/measurements/bodyMeasurementsModel.js';
+import {tgUserRepository} from '../repository/tgUserRepository.js';
 
 const REQUEST_KEYS = ['initData', 'measuredAt', 'measurements'];
 const MAX_MEASUREMENT_VALUE = 9999.9;
@@ -24,7 +24,7 @@ const MAX_MEASUREMENT_VALUE = 9999.9;
 export async function handleBodyMeasurementsCreate(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     const request = parseRequest(event);
     const miniAppUser = miniAppService.validate(request.initData);
-    const user = await telegramUserRepository.findActiveByChatId(miniAppUser.id);
+    const user = await tgUserRepository.findActiveByChatId(miniAppUser.id);
 
     if (!user) {
         throw new HttpApiError(404, 'TELEGRAM_USER_NOT_FOUND', 'Telegram user was not found');

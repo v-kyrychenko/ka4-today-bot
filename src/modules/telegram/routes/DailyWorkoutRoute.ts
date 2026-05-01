@@ -1,14 +1,14 @@
-import {DAILY_WORKOUT_COMMAND} from './registry.js';
-import {BaseCommand} from './BaseCommand.js';
+import {DAILY_WORKOUT_ROUTE} from './registry.js';
+import {BaseRoute} from './BaseRoute.js';
 import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
-import {promptReplyService} from '../application/promptReplyService.js';
+import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../application/telegramMessagingService.js';
 import {ProcessorContext} from '../domain/context.js';
 import {Exercise, ExerciseWithSignedImages} from '../domain/workout.js';
-import {telegramUserRepository} from '../repository/telegramUserRepository.js';
+import {tgUserRepository} from '../repository/tgUserRepository.js';
 
 const s3 = new S3Client();
 
@@ -16,9 +16,9 @@ const PROMPT_REF = 'daily_workout';
 const PROMPT_REF_NOT_TODAY = 'no_training_for_today';
 const PROMPT_REF_NOT_NO_PLAN = 'no_plan_for_training';
 
-export class DailyWorkoutCommand extends BaseCommand {
+export class DailyWorkoutRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
-        return text === DAILY_WORKOUT_COMMAND;
+        return text === DAILY_WORKOUT_ROUTE;
     }
 
     async execute(context: ProcessorContext): Promise<void> {
@@ -27,7 +27,7 @@ export class DailyWorkoutCommand extends BaseCommand {
             throw new OpenAIError('chatId is mandatory');
         }
 
-        const scheduled = await telegramUserRepository.getUserScheduledForDay(chatId);
+        const scheduled = await tgUserRepository.getUserScheduledForDay(chatId);
         log(`ChatId:${chatId}, found scheduled training for today:${JSON.stringify(scheduled)}`);
 
         if (!scheduled) {

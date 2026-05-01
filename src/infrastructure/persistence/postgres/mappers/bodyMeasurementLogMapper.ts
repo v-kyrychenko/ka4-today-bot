@@ -2,7 +2,7 @@ import {
     BodyMeasurementType,
     type BodyMeasurement,
     type BodyMeasurementCreateInput,
-} from '../../../../modules/telegram/commands/progress/bodyMeasurementsModel.js';
+} from '../../../../modules/telegram/features/measurements/bodyMeasurementsModel.js';
 import type {BodyMeasurementLogRow} from '../models/bodyMeasurementLogRow.js';
 
 export interface BodyMeasurementLogCreateRow {

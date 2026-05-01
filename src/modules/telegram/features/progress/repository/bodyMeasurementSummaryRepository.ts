@@ -9,7 +9,7 @@ import {
 import type {
     BodyMeasurementSummary,
     BodyMeasurementSummaryCreateInput,
-} from '../bodyMeasurementsModel.js';
+} from '../../measurements/bodyMeasurementsModel.js';
 
 export const bodyMeasurementSummaryRepository = {
     findByDataHash,
@@ -52,4 +52,3 @@ async function findExisting(dataHash: string): Promise<BodyMeasurementSummary> {
 
     return existing;
 }
-

@@ -1,12 +1,12 @@
-import {BaseCommand} from './BaseCommand.js';
-import {START_COMMAND} from './registry.js';
-import {promptReplyService} from '../application/promptReplyService.js';
+import {BaseRoute} from './BaseRoute.js';
+import {START_ROUTE} from './registry.js';
+import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../application/telegramMessagingService.js';
 import type {ProcessorContext} from '../domain/context.js';
 
-export class StartCommand extends BaseCommand {
+export class StartRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
-        return text === START_COMMAND;
+        return text === START_ROUTE;
     }
 
     async execute(context: ProcessorContext): Promise<void> {

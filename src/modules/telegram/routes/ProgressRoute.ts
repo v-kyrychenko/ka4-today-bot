@@ -1,29 +1,29 @@
-import {telegramMessagingService} from '../../application/telegramMessagingService.js';
-import {promptReplyService} from '../../application/promptReplyService.js';
-import type {ProcessorContext} from '../../domain/context.js';
-import {log, logError} from '../../../../shared/logging';
-import {BaseCommand} from '../BaseCommand';
-import {PROGRESS_COMMAND} from '../registry';
+import {createHash} from 'node:crypto';
+import {telegramMessagingService} from '../application/telegramMessagingService.js';
+import {promptReplyService} from '../features/prompts/promptReplyService.js';
+import type {ProcessorContext} from '../domain/context.js';
+import {log, logError} from '../../../shared/logging';
+import {BaseRoute} from './BaseRoute.js';
+import {PROGRESS_ROUTE} from './registry.js';
 import {
     buildProgressCaption,
     buildProgressResult,
     hasProgressData,
     type ProgressResult,
-} from './buildProgressViewModel.js';
-import type {BodyMeasurementSummary} from './bodyMeasurementsModel.js';
-import {bodyMeasurementSummaryRepository} from './repository/bodyMeasurementSummaryRepository.js';
-import {renderPng} from './renderPng.js';
-import type {MetricViewModel, ViewModel} from './template/viewModel.js';
-import {createHash} from "node:crypto";
+} from '../features/progress/buildProgressViewModel.js';
+import type {BodyMeasurementSummary} from '../features/measurements/bodyMeasurementsModel.js';
+import {bodyMeasurementSummaryRepository} from '../features/progress/repository/bodyMeasurementSummaryRepository.js';
+import {renderPng} from '../features/progress/renderPng.js';
+import type {MetricViewModel, ViewModel} from '../features/progress/template/viewModel.js';
 
-const COMMAND_PROGRESS_PROMPT_REF = 'command_progress';
+const PROGRESS_PROMPT_REF = 'command_progress';
 const NO_MEASUREMENTS_PROMPT_REF = 'no_measurements';
 const BODY_MEASUREMENT_SUMMARY_VARIABLE = 'BODY_MEASUREMENT_SUMMARY';
 const PROGRESS_IMAGE_FILENAME = 'progress-poc.png';
 
-export class ProgressCommand extends BaseCommand {
+export class ProgressRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
-        return text === PROGRESS_COMMAND;
+        return text === PROGRESS_ROUTE;
     }
 
     async execute(context: ProcessorContext): Promise<void> {
@@ -132,10 +132,10 @@ function fetchNoMeasurementsInsight(context: ProcessorContext): Promise<string> 
 
 async function fetchProgressInsight(context: ProcessorContext, metrics: MetricViewModel[]): Promise<string> {
     try {
-        context.message.promptRef = COMMAND_PROGRESS_PROMPT_REF;
+        context.message.promptRef = PROGRESS_PROMPT_REF;
         return await promptReplyService.fetchOpenAiReply({
             context,
-            promptRef: COMMAND_PROGRESS_PROMPT_REF,
+            promptRef: PROGRESS_PROMPT_REF,
             variables: {
                 [BODY_MEASUREMENT_SUMMARY_VARIABLE]: JSON.stringify(metrics),
             },

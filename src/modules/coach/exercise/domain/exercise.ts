@@ -1,4 +1,4 @@
-import type {JsonObject} from '../../../../shared/types/app.js';
+export type JsonObject = Record<string, unknown>;
 
 export class ExerciseItem {
     id = 0;

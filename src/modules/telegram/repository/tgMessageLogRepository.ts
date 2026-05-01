@@ -7,7 +7,7 @@ import {getPostgresDb} from '../../../infrastructure/persistence/postgres/postgr
 import {dictPrompt} from '../../../infrastructure/persistence/postgres/schema/dictPrompt.js';
 import {tgMsg} from '../../../infrastructure/persistence/postgres/schema/tgMsg.js';
 
-export const telegramMessageLogRepository = {
+export const tgMessageLogRepository = {
     logSentMessage,
 };
 
