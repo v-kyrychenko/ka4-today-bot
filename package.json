@@ -7,6 +7,7 @@
     "local": "node scripts/runLocal.mjs",
     "local-api": "node scripts/runLocalApi.mjs",
     "progress-preview": "node scripts/progressPreview.mjs",
+    "test": "node --test \"test/**/*.test.mjs\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
