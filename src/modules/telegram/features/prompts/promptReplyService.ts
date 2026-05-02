@@ -19,7 +19,7 @@ export async function fetchOpenAiReply({
                                            promptRef,
                                            variables = {},
                                        }: FetchOpenAiReplyRequest): Promise<string> {
-    const lang = context.user.lang || DEFAULT_LANG;
+    const lang = normalizeLang(context.user.lang || DEFAULT_LANG);
     const prompt = await dictPromptRepository.getPromptByKey(promptRef);
 
     const systemPromptDict = prompt.systemPrompt;
@@ -109,6 +109,17 @@ function formatNested(value: unknown): string {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+//FIXME consider migrate prompts in db to uk instead of ua
+function normalizeLang(lang: string | null | undefined): string {
+    const normalized = (lang || DEFAULT_LANG).trim().toLowerCase();
+
+    if (normalized === 'uk') {
+        return 'ua';
+    } else {
+        return normalized
+    }
 }
 
 export const promptReplyService = {
