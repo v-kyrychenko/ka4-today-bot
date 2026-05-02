@@ -20,7 +20,8 @@ export const mainProcessor = {
         try {
             const user = await telegramUserRepository.getOrCreateUser(chatId, message);
             const context = new ProcessorContext({chatId, text, user, message});
-            const command = commandRegistry.find((item) => item.canHandle(text, context));
+            const command = commandRegistry
+                .find((item) => item.canHandle(text, context));
 
             if (!command) {
                 log('[telegram.main] No command found', {chatId, text});
