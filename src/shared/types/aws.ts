@@ -3,6 +3,20 @@ export interface LambdaResponse {
     body: string;
 }
 
+export function buildSuccessResponse(): LambdaResponse {
+    return {
+        statusCode: 200,
+        body: JSON.stringify({ok: true}),
+    };
+}
+
+export function buildResponse(statusCode: number, message: string): LambdaResponse {
+    return {
+        statusCode,
+        body: JSON.stringify({message}),
+    };
+}
+
 export interface ApiGatewayHttpEvent {
     requestContext?: {
         routeKey?: string;

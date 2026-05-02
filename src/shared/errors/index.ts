@@ -47,3 +47,16 @@ export class TelegramError extends Error {
         this.statusCode = statusCode;
     }
 }
+
+export function toShortErrorLog(error: unknown): Record<string, unknown> {
+    if (error instanceof Error) {
+        return {
+            name: error.name,
+            message: error.message,
+        };
+    }
+
+    return {
+        error,
+    };
+}
