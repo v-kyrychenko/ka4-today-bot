@@ -3,6 +3,7 @@ import {log, logError} from '../../../shared/logging';
 import type {LambdaResponse, SqsEvent} from '../../../shared/types/aws.js';
 import {TelegramWebhookRequest} from '../routes/context.js';
 import {routesProcessor} from '../routes/routesProcessor.js';
+import {buildResponse} from "../../../shared/types/aws.js";
 
 export const handler = withAppInitialization(async (event: SqsEvent): Promise<LambdaResponse | undefined> => {
     log('[telegram.async] Processing SQS batch', {recordCount: event.Records.length});
@@ -54,11 +55,4 @@ export function extractBody(input: unknown): TelegramWebhookRequest {
     }
 
     throw new Error('Unsupported body format');
-}
-
-function buildResponse(statusCode: number, message: string): LambdaResponse {
-    return {
-        statusCode,
-        body: JSON.stringify({message}),
-    };
 }
