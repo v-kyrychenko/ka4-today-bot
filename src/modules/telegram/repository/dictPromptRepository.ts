@@ -7,24 +7,22 @@ import {BadRequestError} from '../../../shared/errors';
 import type {PromptDict} from '../features/prompts/prompt.js';
 
 export const dictPromptRepository = {
-    getPromptByKey,
+    async getPromptByKey(key: string): Promise<PromptDict> {
+        const prompt = await findPromptByKey(key);
+        if (!prompt) {
+            throw new BadRequestError(`Prompt: ${key} not found in db`);
+        }
+
+        const systemPrompt = prompt.sys_prompt_id != null
+            ? await findPromptById(prompt.sys_prompt_id)
+            : null;
+
+        return dictPromptMapper.toAppModel(
+            prompt,
+            systemPrompt ? dictPromptMapper.toSystemPromptModel(systemPrompt) : null
+        );
+    },
 };
-
-export async function getPromptByKey(key: string): Promise<PromptDict> {
-    const prompt = await findPromptByKey(key);
-    if (!prompt) {
-        throw new BadRequestError(`Prompt: ${key} not found in db`);
-    }
-
-    const systemPrompt = prompt.sys_prompt_id != null
-        ? await findPromptById(prompt.sys_prompt_id)
-        : null;
-
-    return dictPromptMapper.toAppModel(
-        prompt,
-        systemPrompt ? dictPromptMapper.toSystemPromptModel(systemPrompt) : null
-    );
-}
 
 async function findPromptByKey(key: string): Promise<DictPromptRow | null> {
     const [row] = await getPostgresDb()

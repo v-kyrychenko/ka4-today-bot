@@ -41,10 +41,10 @@ function resolvePromptTemplates(prompt: PromptDict, lang: string): PromptTemplat
     const systemPrompt = systemPromptDict.prompts[lang];
     const userPrompt = prompt.prompts[lang];
 
-    if (!systemPrompt) {
+    if (systemPrompt == null) {
         throw new BadRequestError(`Prompt '${systemPromptDict.key}' has no translation for language '${lang}'.`);
     }
-    if (!userPrompt) {
+    if (userPrompt == null) {
         throw new BadRequestError(`Prompt '${prompt.key}' has no translation for language '${lang}'.`);
     }
 
