@@ -7,7 +7,6 @@ export const POLLING = {
 } as const;
 
 export const DEFAULT_LANG = 'ua';
-export const DEFAULT_MODEL = 'gpt-4o-mini';
 export const EMPTY_VIEW_VALUE = '--';
 
 export const POSTGRES_TIMEOUT_MS = 5000;

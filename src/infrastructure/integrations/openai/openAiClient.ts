@@ -1,9 +1,14 @@
-import {DEFAULT_MODEL, POLLING} from '../../../app/config/constants.js';
+import {POLLING} from '../../../app/config/constants.js';
 import {OPENAI_API_KEY, OPENAI_PROJECT_ID} from '../../../app/config/env.js';
 import {OpenAIError} from '../../../shared/errors';
 import {httpRequest} from '../../../shared/http/httpClient.js';
 import {log} from '../../../shared/logging';
-import {OpenAiResponseDetails, type OpenAiCreateResponseInput} from '../../../shared/types/openai.js';
+import {
+    OpenAiResponseDetails,
+    type OpenAiCreateResponseInput,
+    DEFAULT_MODEL,
+    DEFAULT_TEMPERATURE
+} from '../../../shared/types/openai.js';
 import {pollUntil} from '../../../shared/utils/poller.js';
 
 const OPEN_AI_API_LABEL = 'OPEN-AI';
@@ -22,6 +27,7 @@ export const openAiClient = {
 
 interface OpenAiResponseCreatePayload {
     model: string;
+    store: boolean;
     background: boolean;
     temperature: number;
     input: Array<{ role: 'system' | 'user'; content: string }>;
@@ -31,8 +37,9 @@ interface OpenAiResponseCreatePayload {
 export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
     const body: OpenAiResponseCreatePayload = {
         model: DEFAULT_MODEL,
+        store: false,
         background: true,
-        temperature: 0.8,
+        temperature: DEFAULT_TEMPERATURE,
         input: [
             {role: 'system', content: request.systemPrompt},
             {role: 'user', content: request.userPrompt},
