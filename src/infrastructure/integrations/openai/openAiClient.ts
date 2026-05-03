@@ -3,7 +3,7 @@ import {OPENAI_API_KEY, OPENAI_PROJECT_ID} from '../../../app/config/env.js';
 import {OpenAIError} from '../../../shared/errors';
 import {httpRequest} from '../../../shared/http/httpClient.js';
 import {log} from '../../../shared/logging';
-import {OpenAiResponseDetails} from '../../../shared/types/openai.js';
+import {OpenAiResponseDetails, type OpenAiCreateResponseInput} from '../../../shared/types/openai.js';
 import {pollUntil} from '../../../shared/utils/poller.js';
 
 const OPEN_AI_API_LABEL = 'OPEN-AI';
@@ -28,21 +28,18 @@ interface OpenAiResponseCreatePayload {
     tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
 }
 
-export async function createResponse(
-    systemPrompt: string,
-    userPrompt: string,
-    vectorStoreIds: string[] = []
-): Promise<OpenAiResponseDetails> {
+export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
     const body: OpenAiResponseCreatePayload = {
         model: DEFAULT_MODEL,
         background: true,
         temperature: 0.8,
         input: [
-            {role: 'system', content: systemPrompt},
-            {role: 'user', content: userPrompt},
+            {role: 'system', content: request.systemPrompt},
+            {role: 'user', content: request.userPrompt},
         ],
     };
 
+    const vectorStoreIds = request.vectorStoreIds ?? [];
     if (vectorStoreIds.length > 0) {
         body.tools = [{type: 'file_search', vector_store_ids: vectorStoreIds}];
     }

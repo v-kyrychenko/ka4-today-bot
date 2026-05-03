@@ -10,6 +10,12 @@ export interface OpenAiRequiredAction {
     type: string;
 }
 
+export interface OpenAiCreateResponseInput {
+    systemPrompt: string;
+    userPrompt: string;
+    vectorStoreIds?: string[];
+}
+
 export interface OpenAiOutputTextPart {
     type: 'output_text';
     text: string;

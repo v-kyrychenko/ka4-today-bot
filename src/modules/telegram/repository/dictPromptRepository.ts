@@ -4,12 +4,13 @@ import type {DictPromptRow} from '../../../infrastructure/persistence/postgres/m
 import {getPostgresDb} from '../../../infrastructure/persistence/postgres/postgresDb.js';
 import {dictPrompt} from '../../../infrastructure/persistence/postgres/schema/dictPrompt.js';
 import {BadRequestError} from '../../../shared/errors';
+import type {PromptDict} from '../features/prompts/prompt.js';
 
 export const dictPromptRepository = {
     getPromptByKey,
 };
 
-export async function getPromptByKey(key: string) {
+export async function getPromptByKey(key: string): Promise<PromptDict> {
     const prompt = await findPromptByKey(key);
     if (!prompt) {
         throw new BadRequestError(`Prompt: ${key} not found in db`);
