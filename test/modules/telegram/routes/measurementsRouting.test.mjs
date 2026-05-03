@@ -7,13 +7,14 @@ import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const chatId = 42;
+const user = {chatId, clientId: 777, lang: 'en'};
 
 test('/measurements route starts the body measurements conversation', async () => {
     const calls = [];
     const {MeasurementsRoute} = await loadModule('src/modules/telegram/routes/MeasurementsRoute.ts', {
         conversationEngine: {
-            async start(inputChatId, type) {
-                calls.push(['start', inputChatId, type]);
+            async start(input) {
+                calls.push(['start', input.user.chatId, input.type]);
                 return {text: 'initial'};
             },
         },
@@ -23,7 +24,7 @@ test('/measurements route starts the body measurements conversation', async () =
     const route = new MeasurementsRoute();
     assert.equal(route.canHandle('/measurements'), true);
 
-    await route.execute({chatId, text: '/measurements', message: {}});
+    await route.execute({chatId, text: '/measurements', user, message: {}});
 
     assert.deepEqual(calls, [
         ['start', chatId, 'BODY_MEASUREMENTS'],
@@ -85,12 +86,12 @@ test('measurement callback reaches the conversation handler', async () => {
 async function loadRoutesProcessor(options) {
     return loadModule('src/modules/telegram/routes/routesProcessor.ts', {
         conversationEngine: {
-            async handleText(inputChatId, text) {
-                options.calls.push(['handleText', inputChatId, text]);
+            async handleText(input) {
+                options.calls.push(['handleText', input.user.chatId, input.text]);
                 return options.textResponse ?? null;
             },
-            async handleCallback(inputChatId, data, messageId) {
-                options.calls.push(['handleCallback', inputChatId, data, messageId]);
+            async handleCallback(input) {
+                options.calls.push(['handleCallback', input.user.chatId, input.callbackData, input.messageId]);
                 return options.callbackResponse ?? null;
             },
             async cancel(inputChatId) {

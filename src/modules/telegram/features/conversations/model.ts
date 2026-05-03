@@ -1,4 +1,5 @@
 import type {TgConversationStateRow} from '../../repository/tgConversationStateRepository.js';
+import type {TelegramUserAccount} from '../../model/telegram.js';
 import type {ConversationType} from '../measurements/bodyMeasurementsModel.js';
 
 export const CONVERSATION_STEP_WAITING_INPUT = 'WAITING_INPUT';
@@ -23,16 +24,27 @@ export interface ConversationResponse {
     replyMarkup?: unknown;
 }
 
-export interface ConversationTextContext {
-    chatId: number;
+export interface ConversationTextInput {
     text: string;
+    user: TelegramUserAccount;
+}
+
+export interface ConversationCallbackInput {
+    callbackData: string;
+    messageId: number;
+    user: TelegramUserAccount;
+}
+
+export interface ConversationStartInput {
+    type: ConversationType | string;
+    user: TelegramUserAccount;
+}
+
+export interface ConversationTextContext extends ConversationTextInput {
     state: TgConversationStateRow;
 }
 
-export interface ConversationCallbackContext {
-    chatId: number;
-    callbackData: string;
-    messageId: number;
+export interface ConversationCallbackContext extends ConversationCallbackInput {
     state: TgConversationStateRow;
 }
 
@@ -46,5 +58,5 @@ export interface ConversationDefinition {
     initialStep: ConversationStepName;
     ttlMinutes?: number;
     steps: Record<string, ConversationStep>;
-    getInitialMessage: () => ConversationResponse;
+    getInitialMessage: (user: TelegramUserAccount) => ConversationResponse;
 }

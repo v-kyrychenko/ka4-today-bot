@@ -4,6 +4,7 @@ import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';
 import {bodyMeasurementRepository} from '../measurements/repository/bodyMeasurementRepository.js';
 import {
+    BODY_MEASUREMENT_METRIC_I18N_KEYS,
     BODY_MEASUREMENT_TREND_CONFIG,
     BODY_MEASUREMENT_TYPES,
     type BodyMeasurement,
@@ -99,21 +100,7 @@ function buildMetric(lang: string, type: BodyMeasurementType, measurements: Body
 }
 
 function buildMetricLabel(lang: string, type: BodyMeasurementType): string {
-    return i18nService.tr(lang, getMetricKey(type));
-}
-
-function getMetricKey(type: BodyMeasurementType): string {
-    const keys = I18N_KEYS.telegram.progress.metric;
-
-    return {
-        [BodyMeasurementType.WEIGHT]: keys.weight,
-        [BodyMeasurementType.WAIST]: keys.waist,
-        [BodyMeasurementType.CHEST]: keys.chest,
-        [BodyMeasurementType.HIPS]: keys.hips,
-        [BodyMeasurementType.THIGH]: keys.thigh,
-        [BodyMeasurementType.CALF]: keys.calf,
-        [BodyMeasurementType.BICEPS]: keys.biceps,
-    }[type];
+    return i18nService.tr(lang, BODY_MEASUREMENT_METRIC_I18N_KEYS[type]);
 }
 
 function buildDelta(lang: string, measurements: BodyMeasurement[]): string {

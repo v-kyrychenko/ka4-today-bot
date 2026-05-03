@@ -1,4 +1,3 @@
-import {OpenAIError} from '../../../shared/errors';
 import {conversationEngine} from '../features/conversations/engine.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {CONVERSATION_TYPE_BODY_MEASUREMENTS} from '../features/measurements/bodyMeasurementsModel.js';
@@ -12,12 +11,10 @@ export class MeasurementsRoute extends BaseRoute {
     }
 
     async execute(context: ProcessorContext): Promise<void> {
-        const chatId = context.chatId;
-        if (chatId == null) {
-            throw new OpenAIError('chatId is mandatory');
-        }
-
-        const response = await conversationEngine.start(chatId, CONVERSATION_TYPE_BODY_MEASUREMENTS);
+        const response = await conversationEngine.start({
+            type: CONVERSATION_TYPE_BODY_MEASUREMENTS,
+            user: context.user,
+        });
         await telegramMessagingService.sendMessage(context, response.text, response.replyMarkup);
     }
 }

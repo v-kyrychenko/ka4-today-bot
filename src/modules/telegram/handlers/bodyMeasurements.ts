@@ -14,6 +14,7 @@ import {miniAppService} from '../features/web/miniAppService.js';
 import {
     BODY_MEASUREMENT_TYPES,
     BodyMeasurementType,
+    getExpectedBodyMeasurementUnit,
     type BodyMeasurementCreateInput,
 } from '../features/measurements/bodyMeasurementsModel.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
@@ -123,7 +124,7 @@ function parseMeasurementUnit(
     index: number
 ): string {
     const value = item.unit;
-    const expected = getExpectedUnit(type);
+    const expected = getExpectedBodyMeasurementUnit(type);
 
     if (value !== expected) {
         throw new BadRequestError(`Field 'measurements[${index}].unit' must be '${expected}'`);
@@ -149,10 +150,6 @@ function parseMeasurementValue(item: Record<string, unknown>, index: number): nu
 
 function hasSingleDecimalPlace(value: number): boolean {
     return Math.abs(value * 10 - Math.round(value * 10)) < Number.EPSILON * 10;
-}
-
-function getExpectedUnit(type: BodyMeasurementType): string {
-    return type === BodyMeasurementType.WEIGHT ? 'kg' : 'cm';
 }
 
 function toCreateInput(clientId: number, request: ReturnType<typeof parseRequest>): BodyMeasurementCreateInput[] {

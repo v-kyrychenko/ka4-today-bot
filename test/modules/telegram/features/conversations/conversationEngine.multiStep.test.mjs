@@ -7,29 +7,30 @@ import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const chatId = 42;
+const user = {chatId, clientId: 777, lang: 'en'};
 
 test('conversation engine can drive a multi-step conversation', async () => {
     const repository = createConversationRepository();
     const engine = await loadConversationEngine(repository, createConversationDefinitions(repository));
 
-    assert.deepEqual(await engine.start(chatId, 'TEST_MULTI_STEP'), {text: 'What is your name?'});
+    assert.deepEqual(await engine.start({type: 'TEST_MULTI_STEP', user}), {text: 'What is your name?'});
     assert.equal(repository.activeState()?.current_step, 'ASK_NAME');
 
-    assert.deepEqual(await engine.handleText(chatId, 'Alice'), {text: 'How old are you, Alice?'});
+    assert.deepEqual(await engine.handleText({text: 'Alice', user}), {text: 'How old are you, Alice?'});
     assert.deepEqual(repository.activeState()?.data, {name: 'Alice'});
     assert.equal(repository.activeState()?.current_step, 'ASK_AGE');
 
-    assert.deepEqual(await engine.handleText(chatId, '34'), {
+    assert.deepEqual(await engine.handleText({text: '34', user}), {
         text: 'Confirm: Alice, 34?',
         replyMarkup: {inline_keyboard: [[{text: 'Yes', callback_data: 'yes'}]]},
     });
     assert.deepEqual(repository.activeState()?.data, {name: 'Alice', age: 34});
     assert.equal(repository.activeState()?.current_step, 'CONFIRM');
 
-    assert.deepEqual(await engine.handleCallback(chatId, 'yes', 1001), {text: 'Done, Alice.'});
+    assert.deepEqual(await engine.handleCallback({callbackData: 'yes', messageId: 1001, user}), {text: 'Done, Alice.'});
     assert.equal(repository.activeState(), null);
     assert.equal(repository.lastState()?.current_step, 'COMPLETED');
-    assert.equal(await engine.handleText(chatId, 'ignored'), null);
+    assert.equal(await engine.handleText({text: 'ignored', user}), null);
 });
 
 async function loadConversationEngine(repository, definitions) {

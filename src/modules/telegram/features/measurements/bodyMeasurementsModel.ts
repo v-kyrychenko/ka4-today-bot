@@ -1,3 +1,5 @@
+import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
+
 export const CONVERSATION_TYPE_BODY_MEASUREMENTS = 'BODY_MEASUREMENTS';
 export type ConversationType = typeof CONVERSATION_TYPE_BODY_MEASUREMENTS;
 
@@ -44,7 +46,7 @@ export enum BodyMeasurementType {
     CHEST = 'CHEST',
     HIPS = 'HIPS',
     THIGH = 'THIGH',
-    CALF = 'CALF',
+    //CALF = 'CALF',
     BICEPS = 'BICEPS',
 }
 
@@ -60,9 +62,23 @@ export const BODY_MEASUREMENT_TYPES = [
     BodyMeasurementType.CHEST,
     BodyMeasurementType.HIPS,
     BodyMeasurementType.THIGH,
-    BodyMeasurementType.CALF,
+    //BodyMeasurementType.CALF,
     BodyMeasurementType.BICEPS,
 ] as const satisfies readonly BodyMeasurementType[];
+
+export const BODY_MEASUREMENT_METRIC_I18N_KEYS = {
+    [BodyMeasurementType.WEIGHT]: I18N_KEYS.telegram.progress.metric.weight,
+    [BodyMeasurementType.WAIST]: I18N_KEYS.telegram.progress.metric.waist,
+    [BodyMeasurementType.CHEST]: I18N_KEYS.telegram.progress.metric.chest,
+    [BodyMeasurementType.HIPS]: I18N_KEYS.telegram.progress.metric.hips,
+    [BodyMeasurementType.THIGH]: I18N_KEYS.telegram.progress.metric.thigh,
+    //[BodyMeasurementType.CALF]: I18N_KEYS.telegram.progress.metric.calf,
+    [BodyMeasurementType.BICEPS]: I18N_KEYS.telegram.progress.metric.biceps,
+} as const satisfies Record<BodyMeasurementType, string>;
+
+export function getExpectedBodyMeasurementUnit(type: BodyMeasurementType): string {
+    return type === BodyMeasurementType.WEIGHT ? 'kg' : 'cm';
+}
 
 //TODO trend should be user oriented, should be moved to DB (client.goals)
 export const BODY_MEASUREMENT_TREND_CONFIG = {
@@ -71,6 +87,6 @@ export const BODY_MEASUREMENT_TREND_CONFIG = {
     [BodyMeasurementType.CHEST]: TrendDirection.UP,
     [BodyMeasurementType.HIPS]: TrendDirection.DOWN,
     [BodyMeasurementType.THIGH]: TrendDirection.DOWN,
-    [BodyMeasurementType.CALF]: TrendDirection.UP,
+    //[BodyMeasurementType.CALF]: TrendDirection.UP,
     [BodyMeasurementType.BICEPS]: TrendDirection.UP,
 } as const;

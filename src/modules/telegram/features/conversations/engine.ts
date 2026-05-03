@@ -8,38 +8,18 @@ import {log, logError} from '../../../../shared/logging';
 import {
     CONVERSATION_STEP_CANCELLED,
     CONVERSATION_STEP_FAILED,
-    type ConversationResponse
+    type ConversationCallbackInput,
+    type ConversationResponse,
+    type ConversationStartInput,
+    type ConversationTextInput,
 } from './model.js';
-import type {ConversationType} from '../measurements/bodyMeasurementsModel.js';
 import {getConversationDefinition} from './registry.js';
 
-const SAFE_ERROR_RESPONSE: ConversationResponse = {
-    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.safeError),
-};
-
-const UNSUPPORTED_ACTION_RESPONSE: ConversationResponse = {
-    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.unsupportedAction),
-};
-
-const UNSUPPORTED_INPUT_RESPONSE: ConversationResponse = {
-    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.unsupportedInput),
-};
-
-const CANCELLED_RESPONSE: ConversationResponse = {
-    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.cancelled),
-};
-
-export const conversationEngine = {
-    start,
-    handleText,
-    handleCallback,
-    cancel,
-};
-
-export async function start(chatId: number, type: ConversationType | string): Promise<ConversationResponse> {
-    const definition = getConversationDefinition(type);
+export async function start(input: ConversationStartInput): Promise<ConversationResponse> {
+    const chatId = input.user.chatId;
+    const definition = getConversationDefinition(input.type);
     if (!definition) {
-        logError('### CONVERSATION:error', {chatId, type, reason: 'definition_not_found'});
+        logError('### CONVERSATION:error', {chatId, type: input.type, reason: 'definition_not_found'});
         return SAFE_ERROR_RESPONSE;
     }
 
@@ -51,10 +31,11 @@ export async function start(chatId: number, type: ConversationType | string): Pr
         ttlMinutes: definition.ttlMinutes,
     });
 
-    return definition.getInitialMessage();
+    return definition.getInitialMessage(input.user);
 }
 
-export async function handleText(chatId: number, text: string): Promise<ConversationResponse | null> {
+export async function handleText(input: ConversationTextInput): Promise<ConversationResponse | null> {
+    const chatId = input.user.chatId;
     const state = await tgConversationStateRepository.findActiveByChatId(chatId);
     if (!state) {
         // Let the normal route processor handle messages outside conversations.
@@ -73,14 +54,15 @@ export async function handleText(chatId: number, text: string): Promise<Conversa
 
     try {
         log('### CONVERSATION:step', {chatId, type: state.type, step: state.current_step, input: 'text'});
-        return await step.onText({chatId, text, state});
+        return await step.onText({...input, state});
     } catch (error) {
         logError('### CONVERSATION:error', {chatId, type: state.type, step: state.current_step, error});
         throw error;
     }
 }
 
-export async function handleCallback(chatId: number, callbackData: string, messageId: number): Promise<ConversationResponse | null> {
+export async function handleCallback(input: ConversationCallbackInput): Promise<ConversationResponse | null> {
+    const chatId = input.user.chatId;
     const state = await tgConversationStateRepository.findActiveByChatId(chatId);
     if (!state) {
         // Callback may belong to an old message after the conversation ended.
@@ -99,7 +81,7 @@ export async function handleCallback(chatId: number, callbackData: string, messa
 
     try {
         log('### CONVERSATION:step', {chatId, type: state.type, step: state.current_step, input: 'callback'});
-        return await step.onCallback({chatId, callbackData, messageId, state});
+        return await step.onCallback({...input, state});
     } catch (error) {
         logError('### CONVERSATION:error', {chatId, type: state.type, step: state.current_step, error});
         throw error;
@@ -135,3 +117,26 @@ async function resolveStepOrFail(state: TgConversationStateRow) {
 
     return step;
 }
+
+const SAFE_ERROR_RESPONSE: ConversationResponse = {
+    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.safeError),
+};
+
+const UNSUPPORTED_ACTION_RESPONSE: ConversationResponse = {
+    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.unsupportedAction),
+};
+
+const UNSUPPORTED_INPUT_RESPONSE: ConversationResponse = {
+    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.unsupportedInput),
+};
+
+const CANCELLED_RESPONSE: ConversationResponse = {
+    text: i18nService.tr(null, I18N_KEYS.telegram.conversations.cancelled),
+};
+
+export const conversationEngine = {
+    start,
+    handleText,
+    handleCallback,
+    cancel,
+};

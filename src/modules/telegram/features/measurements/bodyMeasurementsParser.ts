@@ -1,5 +1,9 @@
 import {parseJsonFromText} from '../../../../shared/utils/json.js';
-import {BODY_MEASUREMENT_TYPES, BodyMeasurementType} from './bodyMeasurementsModel.js';
+import {
+    BODY_MEASUREMENT_TYPES,
+    BodyMeasurementType,
+    getExpectedBodyMeasurementUnit,
+} from './bodyMeasurementsModel.js';
 
 const MAX_MEASUREMENT_VALUE = 9999.9;
 
@@ -67,8 +71,10 @@ function parseMeasurement(value: unknown): MeasurementDraft | null {
         return null;
     }
 
-    const unit = typeof value.unit === 'string' ? value.unit.trim().toLowerCase() : getExpectedUnit(type);
-    return unit === getExpectedUnit(type) ? {type, value: amount, unit} : null;
+    const expectedUnit = getExpectedBodyMeasurementUnit(type);
+    const unit = typeof value.unit === 'string' ? value.unit.trim().toLowerCase() : expectedUnit;
+
+    return unit === expectedUnit ? {type, value: amount, unit} : null;
 }
 
 function parseMeasurementType(value: unknown): BodyMeasurementType | null {
@@ -98,10 +104,6 @@ function isMeasurementDraft(value: unknown): value is MeasurementDraft {
         typeof value.value === 'number' &&
         typeof value.unit === 'string'
     );
-}
-
-function getExpectedUnit(type: BodyMeasurementType): string {
-    return type === BodyMeasurementType.WEIGHT ? 'kg' : 'cm';
 }
 
 function hasSingleDecimalPlace(value: number): boolean {

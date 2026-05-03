@@ -32,6 +32,7 @@ This repository uses TypeScript with ESM (`"type": "module"`). Follow the existi
 For the shared logging module, prefer the shortened import path without `/index.js`, for example `import {log, logError} from '../shared/logging';`.
 Prefer keeping imports on one line when they fit within 120 symbols; wrap import lists only when needed for readability or line length.
 Prefer keeping function signatures on one line when the function name and parameters fit within 120 symbols; wrap only when needed for readability or line length.
+Use destructured function parameters only for very small functions that need a few fields. For workflow code, branching logic, or functions that pass context onward, prefer a named parameter such as `context` or `request` and read fields as `context.user`, `request.text`, and so on.
 Prefer `log(...)` and `logError(...)` calls on a single line when they fit within 120 symbols; only wrap them
 when needed to stay under the line-length limit.
 

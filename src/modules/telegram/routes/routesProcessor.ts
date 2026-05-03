@@ -72,11 +72,11 @@ async function handleCallback(request: ParsedTelegramRequest, context: Processor
         return false;
     }
 
-    const response = await conversationEngine.handleCallback(
-        request.chatId,
-        request.callbackData,
-        request.callbackMessageId ?? 0,
-    );
+    const response = await conversationEngine.handleCallback({
+        callbackData: request.callbackData,
+        messageId: request.callbackMessageId ?? 0,
+        user: context.user,
+    });
     await sendConversationResponse(context, response);
     return true;
 }
@@ -96,7 +96,10 @@ async function continueConversation(request: ParsedTelegramRequest, context: Pro
         return false;
     }
 
-    const response = await conversationEngine.handleText(request.chatId, context.text);
+    const response = await conversationEngine.handleText({
+        text: context.text,
+        user: context.user,
+    });
     if (!response) {
         return false;
     }
