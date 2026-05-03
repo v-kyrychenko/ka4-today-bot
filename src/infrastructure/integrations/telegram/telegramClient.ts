@@ -7,6 +7,7 @@ const TELEGRAM_BASE_URL = 'https://api.telegram.org';
 const TELEGRAM_HEADERS = {
     'Content-Type': 'application/json',
 };
+const REDACTED_TELEGRAM_TOKEN = '****';
 
 export const telegramClient = {
     sendMessage,
@@ -30,6 +31,7 @@ interface TelegramMediaItem {
 }
 
 export async function sendMessage(chatId: number, message: string, replyMarkup?: unknown): Promise<void> {
+    const telegramRequest = buildTelegramRequest('sendMessage');
     const body: { chat_id: number; text: string; reply_markup?: unknown } = {
         chat_id: chatId,
         text: message,
@@ -41,8 +43,9 @@ export async function sendMessage(chatId: number, message: string, replyMarkup?:
 
     await httpRequest<TelegramApiResponse, typeof body>({
         method: 'POST',
-        path: `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        path: telegramRequest.path,
         endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
         headers: TELEGRAM_HEADERS,
         body,
         label: TELEGRAM_API_LABEL,
@@ -51,11 +54,14 @@ export async function sendMessage(chatId: number, message: string, replyMarkup?:
 }
 
 export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInput, caption = ''): Promise<void> {
+    const telegramRequest = buildTelegramRequest('sendPhoto');
+
     if (typeof photo === 'string') {
         await httpRequest<TelegramApiResponse, { chat_id: number; photo: string; caption: string }>({
             method: 'POST',
-            path: `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+            path: telegramRequest.path,
             endpointUrl: TELEGRAM_BASE_URL,
+            logUrl: telegramRequest.logUrl,
             headers: TELEGRAM_HEADERS,
             body: {
                 chat_id: chatId,
@@ -73,18 +79,19 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
     formData.set('caption', caption);
     formData.set('photo', new Blob([new Uint8Array(photo.data)]), photo.filename);
 
-    const response = await fetch(`${TELEGRAM_BASE_URL}/${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+    await httpRequest<TelegramApiResponse, FormData>({
         method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
         body: formData,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
     });
-    const responseBody = (await response.json()) as TelegramApiResponse;
-
-    if (!response.ok) {
-        throw new TelegramError(`Failed TELEGRAM request to /${TELEGRAM_BOT_TOKEN}/sendPhoto: ${JSON.stringify(responseBody)}`);
-    }
 }
 
 export async function sendMediaGroup(chatId: number, imageUrls: string[], caption = ''): Promise<void> {
+    const telegramRequest = buildTelegramRequest('sendMediaGroup');
     const media: TelegramMediaItem[] = imageUrls.map((url, index) => ({
         type: 'photo',
         media: url,
@@ -93,8 +100,9 @@ export async function sendMediaGroup(chatId: number, imageUrls: string[], captio
 
     await httpRequest<TelegramApiResponse, { chat_id: number; media: TelegramMediaItem[] }>({
         method: 'POST',
-        path: `/${TELEGRAM_BOT_TOKEN}/sendMediaGroup`,
+        path: telegramRequest.path,
         endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
         headers: TELEGRAM_HEADERS,
         body: {
             chat_id: chatId,
@@ -103,4 +111,11 @@ export async function sendMediaGroup(chatId: number, imageUrls: string[], captio
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
     });
+}
+
+function buildTelegramRequest(methodName: string): {path: string; logUrl: string} {
+    return {
+        path: `/${TELEGRAM_BOT_TOKEN}/${methodName}`,
+        logUrl: `${TELEGRAM_BASE_URL}/${REDACTED_TELEGRAM_TOKEN}/${methodName}`,
+    };
 }

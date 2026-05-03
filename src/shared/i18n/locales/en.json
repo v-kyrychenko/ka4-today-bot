@@ -1,75 +1,74 @@
 {
-    "telegram": {
-        "conversations": {
-            "bodyMeasurements": {
-                "initialMessage": "📏 Send your measurements in one message In free format.\nExample:\n78.4 kg, waist 84, chest 101, hips 97, thigh 56",
-                "missingFields": "Got it. Please send the missing measurements only: {fields}.",
-                "confirmation": "Please check these measurements:\n{measurements}",
-                "editPrompt": "Send the corrected measurements in one message.",
-                "saveSuccess": "Measurements saved.",
-                "invalidInput": "I could not read the measurements. Please send them again in free format.",
-                "cancel": "Measurement input cancelled.",
-                "buttonSave": "✅ Save",
-                "buttonEdit": "✏️ Edit",
-                "buttonCancel": "❌ Cancel",
-                "unavailable": "Measurement check-in is warming up. For now, keep tracking your numbers and we’ll plug them in soon."
-            },
-            "cancelled": "Check-in cancelled. No stress, we can come back to it when you’re ready.",
-            "safeError": "Something went off plan. Let’s reset and start this check-in again.",
-            "unsupportedAction": "That action isn’t available in this check-in yet.",
-            "unsupportedInput": "I can’t use that input for this check-in yet."
-        },
-        "progress": {
-            "caption": {
-                "title": "📊 Metrics dynamics"
-            },
-            "header": {
-                "label": "KA4 TODAY · Body progress",
-                "title": "Last {days} days",
-                "emptyTitle": "Last year"
-            },
-            "dateRange": {
-                "empty": "No measurements yet"
-            },
-            "delta": {
-                "down": "↓ {amount}",
-                "up": "↑ {amount}",
-                "noChange": "stable"
-            },
-            "empty": {
-                "title": "No measurements yet",
-                "hint": "Add 2+ measurements to see a trend."
-            },
-            "insight": {
-                "title": "Insight",
-                "text": "Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..",
-                "noDataText": "No measurements yet. Add your first weight or body measurement, and I will start building a useful progress insight from the next check-ins."
-            },
-            "metric": {
-                "weight": "Weight",
-                "waist": "Waist",
-                "chest": "Chest",
-                "hips": "Hips",
-                "thigh": "Thigh",
-                "calf": "Calf",
-                "biceps": "Biceps"
-            }
-        }
+  "telegram": {
+    "conversations": {
+      "bodyMeasurements": {
+        "initialMessage": "📏 Send your body measurements.\n\nYou can write everything in one message in any format — I’ll figure it out.\n\nFor example:\nweight 78.4, waist 84, chest 101, hips 97, thigh 56",
+        "confirmation": "✅ Here’s what I understood from your message.\n\nPlease check if everything looks right:\n\n{measurements}",
+        "editPrompt": "✏️ Send the corrected body measurements in one message — I’ll parse them.",
+        "saveSuccess": "✅ Done, body measurements saved.",
+        "invalidInput": "❌ I couldn’t recognize the body measurements.\n\nSend them again in one message in any format — I’ll figure it out.",
+        "cancel": "👌 Body measurement entry cancelled.",
+        "buttonSave": "✅ Save",
+        "buttonEdit": "✏️ Edit",
+        "buttonCancel": "❌ Cancel",
+        "unavailable": "🚧 Body measurements are still getting ready for launch.\n\nFor now, keep tracking your numbers — we’ll connect them here soon."
+      },
+      "cancelled": "👌 OK, body measurements were not saved.\n\nWe can come back to them when it’s convenient.",
+      "safeError": "Something didn’t go as planned.\n\nTry sending your body measurements again.",
+      "unsupportedAction": "This action is not available for body measurements yet.",
+      "unsupportedInput": "I can’t use this message for body measurements yet."
     },
-    "date": {
-        "monthShort": {
-            "0": "Jan",
-            "1": "Feb",
-            "2": "Mar",
-            "3": "Apr",
-            "4": "May",
-            "5": "Jun",
-            "6": "Jul",
-            "7": "Aug",
-            "8": "Sep",
-            "9": "Oct",
-            "10": "Nov",
-            "11": "Dec"
-        }
+    "progress": {
+      "caption": {
+        "title": "📊 Metrics dynamics"
+      },
+      "header": {
+        "label": "KA4 TODAY · Body progress",
+        "title": "Last {days} days",
+        "emptyTitle": "Last year"
+      },
+      "dateRange": {
+        "empty": "No measurements yet"
+      },
+      "delta": {
+        "down": "↓ {amount}",
+        "up": "↑ {amount}",
+        "noChange": "stable"
+      },
+      "empty": {
+        "title": "No measurements yet",
+        "hint": "Add 2+ measurements to see a trend."
+      },
+      "insight": {
+        "title": "Insight",
+        "text": "Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..",
+        "noDataText": "No measurements yet. Add your first weight or body measurement, and I will start building a useful progress insight from the next check-ins."
+      },
+      "metric": {
+        "weight": "Weight",
+        "waist": "Waist",
+        "chest": "Chest",
+        "hips": "Hips",
+        "thigh": "Thigh",
+        "calf": "Calf",
+        "biceps": "Biceps"
+      }
     }
+  },
+  "date": {
+    "monthShort": {
+      "0": "Jan",
+      "1": "Feb",
+      "2": "Mar",
+      "3": "Apr",
+      "4": "May",
+      "5": "Jun",
+      "6": "Jul",
+      "7": "Aug",
+      "8": "Sep",
+      "9": "Oct",
+      "10": "Nov",
+      "11": "Dec"
+    }
+  }
 }
