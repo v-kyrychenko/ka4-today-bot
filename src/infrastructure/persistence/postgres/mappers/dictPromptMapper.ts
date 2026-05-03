@@ -68,9 +68,5 @@ function toTextFormat(value: unknown): OpenAiTextFormat | null {
         return null;
     }
 
-    if (!('format' in value) || typeof value.format !== 'object' || value.format == null || Array.isArray(value.format)) {
-        return null;
-    }
-
-    return {format: value.format as Record<string, unknown>};
+    return {format: value as Record<string, unknown>};
 }
