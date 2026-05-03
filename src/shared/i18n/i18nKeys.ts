@@ -18,7 +18,16 @@ export const I18N_KEYS = {
     telegram: {
         conversations: {
             bodyMeasurements: {
+                buttonCancel: 'telegram.conversations.bodyMeasurements.buttonCancel',
+                buttonEdit: 'telegram.conversations.bodyMeasurements.buttonEdit',
+                buttonSave: 'telegram.conversations.bodyMeasurements.buttonSave',
+                cancel: 'telegram.conversations.bodyMeasurements.cancel',
+                confirmation: 'telegram.conversations.bodyMeasurements.confirmation',
+                editPrompt: 'telegram.conversations.bodyMeasurements.editPrompt',
                 initialMessage: 'telegram.conversations.bodyMeasurements.initialMessage',
+                invalidInput: 'telegram.conversations.bodyMeasurements.invalidInput',
+                missingFields: 'telegram.conversations.bodyMeasurements.missingFields',
+                saveSuccess: 'telegram.conversations.bodyMeasurements.saveSuccess',
                 unavailable: 'telegram.conversations.bodyMeasurements.unavailable',
             },
             cancelled: 'telegram.conversations.cancelled',

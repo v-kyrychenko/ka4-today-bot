@@ -29,16 +29,22 @@ interface TelegramMediaItem {
     caption?: string;
 }
 
-export async function sendMessage(chatId: number, message: string): Promise<void> {
-    await httpRequest<TelegramApiResponse, { chat_id: number; text: string }>({
+export async function sendMessage(chatId: number, message: string, replyMarkup?: unknown): Promise<void> {
+    const body: { chat_id: number; text: string; reply_markup?: unknown } = {
+        chat_id: chatId,
+        text: message,
+    };
+
+    if (replyMarkup !== undefined) {
+        body.reply_markup = replyMarkup;
+    }
+
+    await httpRequest<TelegramApiResponse, typeof body>({
         method: 'POST',
         path: `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
         endpointUrl: TELEGRAM_BASE_URL,
         headers: TELEGRAM_HEADERS,
-        body: {
-            chat_id: chatId,
-            text: message,
-        },
+        body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
     });

@@ -9,7 +9,7 @@ import {
     type LambdaResponse,
 } from '../../../shared/types/aws.js';
 import {buildWebhookFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
-import {TelegramWebhookRequest} from '../routes/context.js';
+import {TelegramWebhookUpdate} from '../model/telegram.js';
 
 const sqsClient = new SQSClient();
 
@@ -19,7 +19,7 @@ export const handler = async (event: ApiGatewayHttpEvent): Promise<LambdaRespons
     }
 
     try {
-        const request = new TelegramWebhookRequest(parseJsonBody<TelegramWebhookRequest>(event.body));
+        const request = new TelegramWebhookUpdate(parseJsonBody<TelegramWebhookUpdate>(event.body));
         await sendToQueue(new QueueRequestEnvelope({request}));
 
         return buildSuccessResponse();

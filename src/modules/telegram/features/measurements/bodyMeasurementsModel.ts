@@ -1,3 +1,6 @@
+export const CONVERSATION_TYPE_BODY_MEASUREMENTS = 'BODY_MEASUREMENTS';
+export type ConversationType = typeof CONVERSATION_TYPE_BODY_MEASUREMENTS;
+
 export interface BodyMeasurement {
     id: number;
     clientId: number;
@@ -59,7 +62,7 @@ export const BODY_MEASUREMENT_TYPES = [
     BodyMeasurementType.THIGH,
     BodyMeasurementType.CALF,
     BodyMeasurementType.BICEPS,
-] as const;
+] as const satisfies readonly BodyMeasurementType[];
 
 //TODO trend should be user oriented, should be moved to DB (client.goals)
 export const BODY_MEASUREMENT_TREND_CONFIG = {
@@ -71,4 +74,3 @@ export const BODY_MEASUREMENT_TREND_CONFIG = {
     [BodyMeasurementType.CALF]: TrendDirection.UP,
     [BodyMeasurementType.BICEPS]: TrendDirection.UP,
 } as const;
-

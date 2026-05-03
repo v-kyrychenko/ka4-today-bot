@@ -3,7 +3,7 @@ import {DAILY_GREETING_ROUTE} from './registry.js';
 import {BadRequestError} from '../../../shared/errors';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import type {ProcessorContext} from './context.js';
+import type {ProcessorContext} from '../model/context.js';
 
 export class DailyGreetingRoute extends BaseRoute {
     canHandle(text: string | null): boolean {

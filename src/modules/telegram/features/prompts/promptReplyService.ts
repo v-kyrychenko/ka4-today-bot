@@ -2,7 +2,7 @@ import {DEFAULT_LANG} from '../../../../app/config/constants.js';
 import {openAiClient} from '../../../../infrastructure/integrations/openai/openAiClient.js';
 import {BadRequestError, OpenAIError} from '../../../../shared/errors';
 import {OpenAiResponseDetails} from '../../../../shared/types/openai.js';
-import type {ProcessorContext} from '../../routes/context.js';
+import type {ProcessorContext} from '../../model/context.js';
 import {dictPromptRepository} from '../../repository/dictPromptRepository.js';
 import {log} from '../../../../shared/logging';
 

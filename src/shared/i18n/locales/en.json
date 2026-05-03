@@ -2,7 +2,16 @@
     "telegram": {
         "conversations": {
             "bodyMeasurements": {
-                "initialMessage": "Send me your fresh body measurements, and we’ll check your progress like a coach would.",
+                "initialMessage": "📏 Send your measurements in one message In free format.\nExample:\n78.4 kg, waist 84, chest 101, hips 97, thigh 56",
+                "missingFields": "Got it. Please send the missing measurements only: {fields}.",
+                "confirmation": "Please check these measurements:\n{measurements}",
+                "editPrompt": "Send the corrected measurements in one message.",
+                "saveSuccess": "Measurements saved.",
+                "invalidInput": "I could not read the measurements. Please send them again in free format.",
+                "cancel": "Measurement input cancelled.",
+                "buttonSave": "✅ Save",
+                "buttonEdit": "✏️ Edit",
+                "buttonCancel": "❌ Cancel",
                 "unavailable": "Measurement check-in is warming up. For now, keep tracking your numbers and we’ll plug them in soon."
             },
             "cancelled": "Check-in cancelled. No stress, we can come back to it when you’re ready.",

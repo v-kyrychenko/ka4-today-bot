@@ -3,7 +3,7 @@ import {tgMessageLogRepository} from '../../repository/tgMessageLogRepository.js
 import {tgUserRepository} from '../../repository/tgUserRepository.js';
 import {TelegramError} from '../../../../shared/errors';
 import {log, logError} from '../../../../shared/logging';
-import type {ProcessorContext} from '../../routes/context.js';
+import type {ProcessorContext} from '../../model/context.js';
 import type {
     TelegramSentMessageLogInput
 } from '../../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
@@ -24,14 +24,14 @@ export async function sendErrorMessage(chatId: number, message: string): Promise
     }
 }
 
-export async function sendMessage(context: TelegramContext, message: string): Promise<void> {
+export async function sendMessage(context: TelegramContext, message: string, replyMarkup?: unknown): Promise<void> {
     const chatId = context.chatId;
     if (chatId == null) {
         throw new TelegramError('chatId is mandatory');
     }
 
     try {
-        await telegramClient.sendMessage(chatId, message);
+        await telegramClient.sendMessage(chatId, message, replyMarkup);
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         if (err.message.includes('Forbidden') || err.message.includes('user is deactivated')) {

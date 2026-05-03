@@ -6,9 +6,10 @@ import {OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import {ProcessorContext} from './context.js';
+import {ProcessorContext} from '../model/context.js';
 import {Exercise, ExerciseWithSignedImages} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
+import {parseJsonArrayFromText} from '../../../shared/utils/json.js';
 
 const s3 = new S3Client();
 
@@ -91,17 +92,9 @@ async function generateSignedUrls(exercises: Exercise[]): Promise<ExerciseWithSi
 
 function parseSafeJsonExercises(text: string): Exercise[] {
     try {
-        const jsonStart = text.indexOf('[');
-        const jsonEnd = text.lastIndexOf(']');
+        const parsed = parseJsonArrayFromText(text);
 
-        if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-            return [];
-        }
-
-        const jsonString = text.slice(jsonStart, jsonEnd + 1);
-        const parsed = JSON.parse(jsonString) as unknown;
-
-        if (!Array.isArray(parsed)) return [];
+        if (!parsed) return [];
 
         return parsed
             .filter(isExerciseCandidate)

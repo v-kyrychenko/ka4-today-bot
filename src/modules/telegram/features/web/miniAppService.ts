@@ -2,7 +2,7 @@ import {createHmac, timingSafeEqual} from 'node:crypto';
 import {TELEGRAM_BOT_TOKEN} from '../../../../app/config/env.js';
 import {HttpApiError} from '../../../../shared/errors';
 import {log} from '../../../../shared/logging';
-import {TelegramUserProfile} from '../../routes/context.js';
+import {TelegramUserProfile} from '../../model/telegram.js';
 
 const TELEGRAM_WEB_APP_DATA_PUBLIC_KEY = 'WebAppData';
 const MAX_INIT_DATA_AGE_SECONDS = 24 * 60 * 60;

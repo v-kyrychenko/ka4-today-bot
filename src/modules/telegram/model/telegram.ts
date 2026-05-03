@@ -34,17 +34,32 @@ export class TelegramMessage {
     }
 }
 
-export class TelegramWebhookRequest {
-    update_id?: number;
+export class TelegramCallbackQuery {
+    id = '';
+    data?: string;
+    from?: TelegramUserProfile;
     message?: TelegramMessage;
 
-    constructor(init?: Partial<TelegramWebhookRequest>) {
+    constructor(init?: Partial<TelegramCallbackQuery>) {
         Object.assign(this, init);
+        this.from = init?.from ? new TelegramUserProfile(init.from) : undefined;
         this.message = init?.message ? new TelegramMessage(init.message) : undefined;
     }
 }
 
-export class TelegramUser {
+export class TelegramWebhookUpdate {
+    update_id?: number;
+    message?: TelegramMessage;
+    callback_query?: TelegramCallbackQuery;
+
+    constructor(init?: Partial<TelegramWebhookUpdate>) {
+        Object.assign(this, init);
+        this.message = init?.message ? new TelegramMessage(init.message) : undefined;
+        this.callback_query = init?.callback_query ? new TelegramCallbackQuery(init.callback_query) : undefined;
+    }
+}
+
+export class TelegramUserAccount {
     chatId = 0;
     clientId?: number | null;
     username = '';
@@ -53,20 +68,7 @@ export class TelegramUser {
     isActive = true;
     isBot = false;
 
-    constructor(init?: Partial<TelegramUser>) {
+    constructor(init?: Partial<TelegramUserAccount>) {
         Object.assign(this, init);
-    }
-}
-
-export class ProcessorContext {
-    chatId: number | null = null;
-    text: string | null = null;
-    user = new TelegramUser();
-    message = new TelegramMessage();
-
-    constructor(init?: Partial<ProcessorContext>) {
-        Object.assign(this, init);
-        this.user = new TelegramUser(init?.user);
-        this.message = new TelegramMessage(init?.message);
     }
 }

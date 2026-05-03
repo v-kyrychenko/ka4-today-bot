@@ -1,4 +1,4 @@
-import type {ProcessorContext} from '../../routes/context.js';
+import type {ProcessorContext} from '../../model/context.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';

@@ -1,5 +1,5 @@
 import {DEFAULT_LANG} from '../../../../app/config/constants.js';
-import {TelegramUser, TelegramUserProfile} from '../../../../modules/telegram/routes/context.js';
+import {TelegramUserAccount, TelegramUserProfile} from '../../../../modules/telegram/model/telegram.js';
 import type {TgUserRow} from '../models/tgUserRow.js';
 
 export interface TgUserCreateRow {
@@ -17,8 +17,8 @@ export const tgUserMapper = {
     toCreateRow,
 };
 
-export function toAppModel(row: TgUserRow): TelegramUser {
-    return new TelegramUser({
+export function toAppModel(row: TgUserRow): TelegramUserAccount {
+    return new TelegramUserAccount({
         chatId: row.chat_id,
         clientId: row.client_id,
         username: row.username,

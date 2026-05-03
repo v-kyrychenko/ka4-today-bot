@@ -30,6 +30,8 @@ Install dependencies with `npm install`.
 This repository uses TypeScript with ESM (`"type": "module"`). Follow the existing style: 4-space indentation, semicolons, single quotes, and named exports for shared modules. Keep handlers thin and push orchestration into module `application/` code or repositories as appropriate. Put generic helpers in `shared`, low-level external integration code in `infrastructure`, and product behavior in the owning module under `modules`.
 
 For the shared logging module, prefer the shortened import path without `/index.js`, for example `import {log, logError} from '../shared/logging';`.
+Prefer keeping imports on one line when they fit within 120 symbols; wrap import lists only when needed for readability or line length.
+Prefer keeping function signatures on one line when the function name and parameters fit within 120 symbols; wrap only when needed for readability or line length.
 Prefer `log(...)` and `logError(...)` calls on a single line when they fit within 120 symbols; only wrap them
 when needed to stay under the line-length limit.
 

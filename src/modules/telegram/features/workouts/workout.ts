@@ -1,5 +1,5 @@
 import {PromptDict} from '../prompts/prompt.js';
-import {TelegramUser} from '../../routes/context.js';
+import {TelegramUserAccount} from '../../model/telegram.js';
 
 export class Exercise {
     name = '';
@@ -33,13 +33,13 @@ export class Workout {
 export class WorkoutSchedule {
     id = 0;
     dayOfWeek = '';
-    client = new TelegramUser();
+    client = new TelegramUserAccount();
     dictPrompt = new PromptDict();
     workout: Workout | null = null;
 
     constructor(init?: Partial<WorkoutSchedule>) {
         Object.assign(this, init);
-        this.client = new TelegramUser(init?.client);
+        this.client = new TelegramUserAccount(init?.client);
         this.dictPrompt = new PromptDict(init?.dictPrompt);
         this.workout = init?.workout ? new Workout(init.workout) : null;
     }

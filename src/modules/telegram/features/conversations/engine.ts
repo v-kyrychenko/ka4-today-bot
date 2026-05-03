@@ -1,15 +1,16 @@
 import {
     tgConversationStateRepository,
-    type TgConversationStateRow,
+    type TgConversationStateRow
 } from '../../repository/tgConversationStateRepository.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
+import {log, logError} from '../../../../shared/logging';
 import {
     CONVERSATION_STEP_CANCELLED,
     CONVERSATION_STEP_FAILED,
-    type ConversationResponse,
-    type ConversationType,
+    type ConversationResponse
 } from './model.js';
+import type {ConversationType} from '../measurements/bodyMeasurementsModel.js';
 import {getConversationDefinition} from './registry.js';
 
 const SAFE_ERROR_RESPONSE: ConversationResponse = {
@@ -38,13 +39,16 @@ export const conversationEngine = {
 export async function start(chatId: number, type: ConversationType | string): Promise<ConversationResponse> {
     const definition = getConversationDefinition(type);
     if (!definition) {
+        logError('### CONVERSATION:error', {chatId, type, reason: 'definition_not_found'});
         return SAFE_ERROR_RESPONSE;
     }
 
+    log('### CONVERSATION:start', {chatId, type: definition.type, initialStep: definition.initialStep});
     await tgConversationStateRepository.startConversation({
         chatId,
         type: definition.type,
         currentStep: definition.initialStep,
+        ttlMinutes: definition.ttlMinutes,
     });
 
     return definition.getInitialMessage();
@@ -57,6 +61,7 @@ export async function handleText(chatId: number, text: string): Promise<Conversa
         return null;
     }
 
+    log('### CONVERSATION:loaded', {chatId, type: state.type, step: state.current_step});
     const step = await resolveStepOrFail(state);
     if (!step) {
         return SAFE_ERROR_RESPONSE;
@@ -66,20 +71,23 @@ export async function handleText(chatId: number, text: string): Promise<Conversa
         return UNSUPPORTED_INPUT_RESPONSE;
     }
 
-    return step.onText({chatId, text, state});
+    try {
+        log('### CONVERSATION:step', {chatId, type: state.type, step: state.current_step, input: 'text'});
+        return await step.onText({chatId, text, state});
+    } catch (error) {
+        logError('### CONVERSATION:error', {chatId, type: state.type, step: state.current_step, error});
+        throw error;
+    }
 }
 
-export async function handleCallback(
-    chatId: number,
-    callbackData: string,
-    messageId: number
-): Promise<ConversationResponse | null> {
+export async function handleCallback(chatId: number, callbackData: string, messageId: number): Promise<ConversationResponse | null> {
     const state = await tgConversationStateRepository.findActiveByChatId(chatId);
     if (!state) {
         // Callback may belong to an old message after the conversation ended.
         return null;
     }
 
+    log('### CONVERSATION:loaded', {chatId, type: state.type, step: state.current_step});
     const step = await resolveStepOrFail(state);
     if (!step) {
         return SAFE_ERROR_RESPONSE;
@@ -89,7 +97,13 @@ export async function handleCallback(
         return UNSUPPORTED_ACTION_RESPONSE;
     }
 
-    return step.onCallback({chatId, callbackData, messageId, state});
+    try {
+        log('### CONVERSATION:step', {chatId, type: state.type, step: state.current_step, input: 'callback'});
+        return await step.onCallback({chatId, callbackData, messageId, state});
+    } catch (error) {
+        logError('### CONVERSATION:error', {chatId, type: state.type, step: state.current_step, error});
+        throw error;
+    }
 }
 
 export async function cancel(chatId: number): Promise<ConversationResponse | null> {
@@ -97,6 +111,10 @@ export async function cancel(chatId: number): Promise<ConversationResponse | nul
         chatId,
         CONVERSATION_STEP_CANCELLED,
     );
+
+    if (state) {
+        log('### CONVERSATION:cancel', {chatId, type: state.type});
+    }
 
     return state ? CANCELLED_RESPONSE : null;
 }
@@ -107,6 +125,7 @@ async function resolveStepOrFail(state: TgConversationStateRow) {
 
     if (!definition || !step) {
         // Stored state is no longer supported by the registered conversation definitions.
+        logError('### CONVERSATION:error', {chatId: state.chat_id, type: state.type, step: state.current_step});
         await tgConversationStateRepository.deactivateConversation({
             id: state.id,
             finalStep: CONVERSATION_STEP_FAILED,

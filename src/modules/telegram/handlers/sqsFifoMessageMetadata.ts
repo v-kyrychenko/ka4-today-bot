@@ -1,6 +1,6 @@
 import {BadRequestError} from '../../../shared/errors';
 import {toIsoDate} from '../../../shared/utils/dateUtils.js';
-import {TelegramWebhookRequest} from '../routes/context.js';
+import {TelegramWebhookUpdate} from '../model/telegram.js';
 
 export interface SqsFifoMessageMetadata {
     MessageGroupId: string;
@@ -8,11 +8,11 @@ export interface SqsFifoMessageMetadata {
 }
 
 export class QueueRequestEnvelope {
-    request = new TelegramWebhookRequest();
+    request = new TelegramWebhookUpdate();
 
     constructor(init?: Partial<QueueRequestEnvelope>) {
         Object.assign(this, init);
-        this.request = new TelegramWebhookRequest(init?.request);
+        this.request = new TelegramWebhookUpdate(init?.request);
     }
 }
 
@@ -48,7 +48,8 @@ export function buildDailyFifoMessageMetadata(
 }
 
 function extractChatId(payload: QueueRequestEnvelope): number {
-    const chatId = payload.request.message?.chat.id;
+    const message = payload.request.message ?? payload.request.callback_query?.message;
+    const chatId = message?.chat.id;
 
     if (!isValidId(chatId)) {
         throw new BadRequestError('Telegram request message.chat.id is mandatory for FIFO grouping');
