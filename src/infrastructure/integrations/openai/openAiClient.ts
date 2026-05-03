@@ -31,19 +31,21 @@ interface OpenAiResponseCreatePayload {
     background: boolean;
     temperature: number;
     input: Array<{ role: 'system' | 'user'; content: string }>;
+    text: OpenAiCreateResponseInput['textFormat'] | null;
     tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
 }
 
 export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
     const body: OpenAiResponseCreatePayload = {
-        model: DEFAULT_MODEL,
+        model: request.model ?? DEFAULT_MODEL,
         store: false,
         background: true,
-        temperature: DEFAULT_TEMPERATURE,
+        temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         input: [
             {role: 'system', content: request.systemPrompt},
             {role: 'user', content: request.userPrompt},
         ],
+        text: request.textFormat ?? null,
     };
 
     const vectorStoreIds = request.vectorStoreIds ?? [];

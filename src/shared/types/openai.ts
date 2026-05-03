@@ -13,10 +13,17 @@ export interface OpenAiRequiredAction {
     type: string;
 }
 
+export interface OpenAiTextFormat {
+    format: Record<string, unknown>;
+}
+
 export interface OpenAiCreateResponseInput {
     systemPrompt: string;
     userPrompt: string;
     vectorStoreIds?: string[];
+    model: string | null;
+    temperature: number | null;
+    textFormat: OpenAiTextFormat | null;
 }
 
 export interface OpenAiOutputTextPart {

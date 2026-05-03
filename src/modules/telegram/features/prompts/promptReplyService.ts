@@ -1,7 +1,7 @@
 import {DEFAULT_LANG} from '../../../../app/config/constants.js';
 import {openAiClient} from '../../../../infrastructure/integrations/openai/openAiClient.js';
 import {BadRequestError, OpenAIError} from '../../../../shared/errors';
-import {OpenAiResponseDetails} from '../../../../shared/types/openai.js';
+import {OpenAiCreateResponseInput, OpenAiResponseDetails} from '../../../../shared/types/openai.js';
 import {dictPromptRepository} from '../../repository/dictPromptRepository.js';
 import {log} from '../../../../shared/logging';
 import type {PromptDict} from './prompt.js';
@@ -52,11 +52,8 @@ function resolvePromptTemplates(prompt: PromptDict, lang: string): PromptTemplat
 }
 
 async function runOpenAiReply(systemPrompt: string, userPrompt: string, dictPrompt: PromptDict): Promise<string> {
-    const response = await openAiClient.createResponse({
-        systemPrompt,
-        userPrompt,
-        vectorStoreIds: dictPrompt.vectorStoreIds,
-    });
+    const response = await openAiClient.createResponse(
+        buildOpenAiCreateResponseInput(systemPrompt, userPrompt, dictPrompt));
 
     const responseId = response.id;
 
@@ -67,6 +64,21 @@ async function runOpenAiReply(systemPrompt: string, userPrompt: string, dictProm
 
     const messages = await openAiClient.getResponse(responseId);
     return extractAssistantReply(messages);
+}
+
+function buildOpenAiCreateResponseInput(systemPrompt: string, userPrompt: string, dictPrompt: PromptDict): OpenAiCreateResponseInput {
+    return {
+        systemPrompt,
+        userPrompt,
+        vectorStoreIds: dictPrompt.vectorStoreIds,
+        model: resolvePromptSetting(dictPrompt.model, dictPrompt.systemPrompt?.model ?? null),
+        temperature: resolvePromptSetting(dictPrompt.temperature, dictPrompt.systemPrompt?.temperature ?? null),
+        textFormat: resolvePromptSetting(dictPrompt.textFormat, dictPrompt.systemPrompt?.textFormat ?? null),
+    };
+}
+
+function resolvePromptSetting<T>(value: T | null, fallback: T | null): T | null {
+    return value ?? fallback ?? null;
 }
 
 function extractAssistantReply(messages: OpenAiResponseDetails): string {
