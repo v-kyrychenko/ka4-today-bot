@@ -2,43 +2,38 @@ import {DEFAULT_LANG} from '../../../../app/config/constants.js';
 import {openAiClient} from '../../../../infrastructure/integrations/openai/openAiClient.js';
 import {BadRequestError, OpenAIError} from '../../../../shared/errors';
 import {OpenAiResponseDetails} from '../../../../shared/types/openai.js';
-import type {ProcessorContext} from '../../model/context.js';
 import {dictPromptRepository} from '../../repository/dictPromptRepository.js';
 import {log} from '../../../../shared/logging';
 
 type TemplateVariableValue = unknown;
 
 export interface FetchOpenAiReplyRequest {
-    context: ProcessorContext;
+    lang?: string | null;
     promptRef: string;
     variables?: Record<string, TemplateVariableValue>;
 }
 
-export async function fetchOpenAiReply({
-                                           context,
-                                           promptRef,
-                                           variables = {},
-                                       }: FetchOpenAiReplyRequest): Promise<string> {
-    const lang = normalizeLang(context.user.lang || DEFAULT_LANG);
-    const prompt = await dictPromptRepository.getPromptByKey(promptRef);
+export async function fetchOpenAiReply(request: FetchOpenAiReplyRequest): Promise<string> {
+    const promptLang = normalizeLang(request.lang ?? DEFAULT_LANG);
+    const prompt = await dictPromptRepository.getPromptByKey(request.promptRef);
 
     const systemPromptDict = prompt.systemPrompt;
     if (!systemPromptDict) {
-        throw new BadRequestError(`Prompt '${promptRef}' has no systemPromptRef configuration`);
+        throw new BadRequestError(`Prompt '${request.promptRef}' has no systemPromptRef configuration`);
     }
-    const systemPromptTemplate = systemPromptDict.prompts[lang];
-    const userPromptTemplate = prompt.prompts[lang];
+    const systemPromptTemplate = systemPromptDict.prompts[promptLang];
+    const userPromptTemplate = prompt.prompts[promptLang];
 
     if (!systemPromptTemplate) {
-        throw new BadRequestError(`Prompt '${systemPromptDict.key}' has no translation for language '${lang}'.`);
+        throw new BadRequestError(`Prompt '${systemPromptDict.key}' has no translation for language '${promptLang}'.`);
     }
     if (!userPromptTemplate) {
-        throw new BadRequestError(`Prompt '${prompt.key}' has no translation for language '${lang}'.`);
+        throw new BadRequestError(`Prompt '${prompt.key}' has no translation for language '${promptLang}'.`);
     }
     log(`Fetched prompt: ${prompt.key}, system prompt: ${systemPromptDict.key}`);
 
-    const systemPrompt = renderPromptTemplate(systemPromptTemplate, variables);
-    const userPrompt = renderPromptTemplate(userPromptTemplate, variables);
+    const systemPrompt = renderPromptTemplate(systemPromptTemplate, request.variables);
+    const userPrompt = renderPromptTemplate(userPromptTemplate, request.variables);
 
     const response = await openAiClient.createResponse(systemPrompt, userPrompt, prompt.vectorStoreIds);
     const responseId = response.id;

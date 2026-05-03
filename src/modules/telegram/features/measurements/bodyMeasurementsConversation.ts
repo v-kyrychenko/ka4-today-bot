@@ -4,7 +4,6 @@ import {log} from '../../../../shared/logging';
 import {toIsoDate} from '../../../../shared/utils/dateUtils.js';
 import {tgConversationStateRepository} from '../../repository/tgConversationStateRepository.js';
 import {tgUserRepository} from '../../repository/tgUserRepository.js';
-import {ProcessorContext} from '../../model/context.js';
 import * as conversations from '../conversations/model.js';
 import {promptReplyService} from '../prompts/promptReplyService.js';
 import {bodyMeasurementService} from './bodyMeasurementService.js';
@@ -54,8 +53,7 @@ async function handleMeasurementInput(
     existingMeasurements: MeasurementDraft[],
 ): Promise<conversations.ConversationResponse> {
     const user = await tgUserRepository.findActiveByChatId(chatId);
-    const promptContext = new ProcessorContext({chatId, text, user: user ?? undefined});
-    const parsed = await parseMeasurementsFromText(text, promptContext);
+    const parsed = await parseMeasurementsFromText(text, user?.lang);
 
     if (!parsed.length) {
         return localizedResponse(user?.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.invalidInput);
@@ -142,9 +140,9 @@ async function cancelMeasurements(
     return localizedResponse(user?.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.cancel);
 }
 
-async function parseMeasurementsFromText(text: string, context: ProcessorContext): Promise<MeasurementDraft[]> {
+async function parseMeasurementsFromText(text: string, lang: string | null | undefined): Promise<MeasurementDraft[]> {
     const reply = await promptReplyService.fetchOpenAiReply({
-        context,
+        lang,
         promptRef: MEASUREMENT_PARSER_PROMPT_REF,
         variables: {USER_INPUT: text},
     });

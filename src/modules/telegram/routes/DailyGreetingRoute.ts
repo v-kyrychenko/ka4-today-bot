@@ -17,7 +17,7 @@ export class DailyGreetingRoute extends BaseRoute {
             throw new BadRequestError('promptRef missing in context.message');
         }
 
-        const reply = await promptReplyService.fetchOpenAiReply({context, promptRef});
+        const reply = await promptReplyService.fetchOpenAiReply({lang: context.user.lang, promptRef});
         await telegramMessagingService.sendMessage(context, reply);
     }
 }

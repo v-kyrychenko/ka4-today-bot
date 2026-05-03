@@ -33,7 +33,7 @@ export class DailyWorkoutRoute extends BaseRoute {
 
         if (!scheduled) {
             const reply = await promptReplyService.fetchOpenAiReply({
-                context,
+                lang: context.user.lang,
                 promptRef: PROMPT_REF_NOT_TODAY,
             });
             await telegramMessagingService.sendMessage(context, reply);
@@ -43,7 +43,7 @@ export class DailyWorkoutRoute extends BaseRoute {
         const plan = scheduled.workout?.plan;
         if (plan == null) {
             const message = await promptReplyService.fetchOpenAiReply({
-                context,
+                lang: context.user.lang,
                 promptRef: PROMPT_REF_NOT_NO_PLAN,
             });
             await telegramMessagingService.sendMessage(context, message);
@@ -51,7 +51,7 @@ export class DailyWorkoutRoute extends BaseRoute {
         }
 
         const reply = await promptReplyService.fetchOpenAiReply({
-            context,
+            lang: context.user.lang,
             promptRef: PROMPT_REF,
             variables: {plan},
         });

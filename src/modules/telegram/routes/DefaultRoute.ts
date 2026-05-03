@@ -14,7 +14,7 @@ export class DefaultRoute extends BaseRoute {
         context.message.promptRef = promptRef;
         // TODO remove promptRef from input params of fetchOpenAiReply., and put it to ProcessorContext
 
-        const reply = await promptReplyService.fetchOpenAiReply({context, promptRef});
+        const reply = await promptReplyService.fetchOpenAiReply({lang: context.user.lang, promptRef});
         await telegramMessagingService.sendMessage(context, reply);
     }
 }

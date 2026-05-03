@@ -11,7 +11,7 @@ export class StartRoute extends BaseRoute {
 
     async execute(context: ProcessorContext): Promise<void> {
         const promptRef = 'welcome_greeting';
-        const reply = await promptReplyService.fetchOpenAiReply({context, promptRef});
+        const reply = await promptReplyService.fetchOpenAiReply({lang: context.user.lang, promptRef});
         await telegramMessagingService.sendMessage(context, reply);
     }
 }

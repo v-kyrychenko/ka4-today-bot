@@ -23,6 +23,8 @@ export class TelegramUserProfile {
 export class TelegramMessage {
     message_id?: number;
     text?: string;
+
+    //FIXME should be reviewd and removed
     promptRef?: string;
     chat = new TelegramChat();
     from?: TelegramUserProfile;

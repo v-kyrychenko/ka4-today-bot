@@ -125,7 +125,7 @@ function fetchNoMeasurementsInsight(context: ProcessorContext): Promise<string> 
     context.message.promptRef = NO_MEASUREMENTS_PROMPT_REF;
 
     return promptReplyService.fetchOpenAiReply({
-        context,
+        lang: context.user.lang,
         promptRef: NO_MEASUREMENTS_PROMPT_REF,
     });
 }
@@ -134,7 +134,7 @@ async function fetchProgressInsight(context: ProcessorContext, metrics: MetricVi
     try {
         context.message.promptRef = PROGRESS_PROMPT_REF;
         return await promptReplyService.fetchOpenAiReply({
-            context,
+            lang: context.user.lang,
             promptRef: PROGRESS_PROMPT_REF,
             variables: {
                 [BODY_MEASUREMENT_SUMMARY_VARIABLE]: JSON.stringify(metrics),
