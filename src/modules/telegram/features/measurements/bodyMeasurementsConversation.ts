@@ -14,7 +14,7 @@ import {
     type ConversationResponse,
     type ConversationTextContext,
 } from '../conversations/model.js';
-import {localizedButton, localizedResponse} from '../conversations/response.js';
+import {localizedButton, localizedResponse} from '../conversations/conversationResponses.js';
 import {promptReplyService} from '../prompts/promptReplyService.js';
 import {bodyMeasurementService} from './bodyMeasurementService.js';
 import {
