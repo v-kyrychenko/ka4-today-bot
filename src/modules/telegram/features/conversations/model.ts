@@ -10,6 +10,7 @@ export const CONVERSATION_STEP_FAILED = 'FAILED';
 export interface ConversationResponse {
     text: string;
     replyMarkup?: unknown;
+    removeReplyMarkup?: boolean;
 }
 
 export interface ConversationTextInput {

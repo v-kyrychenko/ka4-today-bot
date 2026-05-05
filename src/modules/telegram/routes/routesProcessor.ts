@@ -34,6 +34,7 @@ interface ParsedTelegramRequest {
     text: string | null;
     message: TelegramMessage;
     callbackData?: string;
+    callbackQueryId?: string;
     callbackMessageId?: number;
 }
 
@@ -52,6 +53,7 @@ function parseRequest(inputRequest: TelegramWebhookUpdate): ParsedTelegramReques
         message,
         text: request.message?.text ?? null,
         callbackData: callback?.data,
+        callbackQueryId: callback?.id,
         callbackMessageId: callback?.message?.message_id,
     };
 }
@@ -72,12 +74,19 @@ async function handleCallback(request: ParsedTelegramRequest, context: Processor
         return false;
     }
 
+    if (request.callbackQueryId) {
+        await telegramMessagingService.answerCallbackQuery(request.callbackQueryId);
+    }
+
     const response = await conversationEngine.handleCallback({
         callbackData: request.callbackData,
         messageId: request.callbackMessageId ?? 0,
         user: context.user,
     });
     await sendConversationResponse(context, response);
+    if (response?.removeReplyMarkup && request.callbackMessageId) {
+        await telegramMessagingService.removeReplyMarkup(context, request.callbackMessageId);
+    }
     return true;
 }
 

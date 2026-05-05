@@ -98,7 +98,9 @@ async function saveMeasurementsSafely(context: ConversationCallbackContext): Pro
             });
             log('### CONVERSATION:cancel_too_soon', {chatId: context.user.chatId, type: context.state.type});
 
-            return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.tooSoon);
+            return withReplyMarkupRemoval(
+                localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.tooSoon)
+            );
         }
 
         throw error;
@@ -117,7 +119,9 @@ async function saveMeasurements(context: ConversationCallbackContext): Promise<C
     });
     log('### CONVERSATION:complete', {chatId: context.user.chatId, type: context.state.type});
 
-    return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.saveSuccess);
+    return withReplyMarkupRemoval(
+        localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.saveSuccess)
+    );
 }
 
 async function requestMeasurementsEdit(context: ConversationCallbackContext): Promise<ConversationResponse> {
@@ -137,7 +141,9 @@ async function cancelMeasurements(context: ConversationCallbackContext): Promise
     });
     log('### CONVERSATION:cancel', {chatId: context.user.chatId, type: context.state.type});
 
-    return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.cancel);
+    return withReplyMarkupRemoval(
+        localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.cancel)
+    );
 }
 
 async function parseMeasurementsFromText(text: string, lang: string | null | undefined): Promise<MeasurementDraft[]> {
@@ -163,6 +169,10 @@ function buildConfirmationResponse(lang: string | null | undefined, measurements
             ]],
         },
     };
+}
+
+function withReplyMarkupRemoval(response: ConversationResponse): ConversationResponse {
+    return {...response, removeReplyMarkup: true};
 }
 
 function toCreateInput(clientId: number, data: unknown): BodyMeasurementCreateInput[] {

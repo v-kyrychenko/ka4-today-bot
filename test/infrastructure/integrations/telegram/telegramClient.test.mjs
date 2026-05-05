@@ -20,27 +20,40 @@ test('telegram client routes all methods through httpRequest with masked logUrl'
         },
     };
 
+    await module.answerCallbackQuery('callback-id');
+    await module.editMessageReplyMarkup(7, 1001);
     await module.sendMessage(7, 'hello');
     await module.sendPhoto(7, 'https://example.com/photo.jpg', 'caption');
     await module.sendPhoto(7, {data: Buffer.from('image-bytes'), filename: 'photo.png'}, 'caption');
     await module.sendMediaGroup(7, ['https://example.com/1.jpg', 'https://example.com/2.jpg'], 'group');
 
-    assert.equal(calls.length, 4);
+    assert.equal(calls.length, 6);
     assert.deepEqual(
         calls.map((call) => call.path),
-        [`/${TELEGRAM_BOT_TOKEN}/sendMessage`, `/${TELEGRAM_BOT_TOKEN}/sendPhoto`, `/${TELEGRAM_BOT_TOKEN}/sendPhoto`, `/${TELEGRAM_BOT_TOKEN}/sendMediaGroup`]
+        [
+            `/${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`,
+            `/${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`,
+            `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
+            `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+            `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+            `/${TELEGRAM_BOT_TOKEN}/sendMediaGroup`,
+        ]
     );
     assert.deepEqual(
         calls.map((call) => call.logUrl),
         [
+            'https://api.telegram.org/****/answerCallbackQuery',
+            'https://api.telegram.org/****/editMessageReplyMarkup',
             'https://api.telegram.org/****/sendMessage',
             'https://api.telegram.org/****/sendPhoto',
             'https://api.telegram.org/****/sendPhoto',
             'https://api.telegram.org/****/sendMediaGroup',
         ]
     );
-    assert.equal(calls[2].body instanceof FormData, true);
-    assert.equal(calls[2].headers, undefined);
+    assert.deepEqual(calls[0].body, {callback_query_id: 'callback-id'});
+    assert.deepEqual(calls[1].body, {chat_id: 7, message_id: 1001, reply_markup: {inline_keyboard: []}});
+    assert.equal(calls[4].body instanceof FormData, true);
+    assert.equal(calls[4].headers, undefined);
 });
 
 test('telegram client logs and errors never expose the real bot token', async () => {

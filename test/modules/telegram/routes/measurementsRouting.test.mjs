@@ -68,18 +68,36 @@ test('/cancel and /stop cancel active conversations', async () => {
 
 test('measurement callback reaches the conversation handler', async () => {
     const calls = [];
-    const replyMarkup = {inline_keyboard: []};
     const processor = await loadRoutesProcessor({
         calls,
-        callbackResponse: {text: 'saved', replyMarkup},
+        callbackResponse: {text: 'edit prompt'},
+    });
+
+    await processor.routesProcessor.execute(callbackRequest('MEASUREMENTS:EDIT'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['answerCallbackQuery', 'callback-id'],
+        ['handleCallback', chatId, 'MEASUREMENTS:EDIT', 1001],
+        ['send', chatId, 'edit prompt', undefined],
+    ]);
+});
+
+test('terminal measurement callback removes old inline buttons', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        callbackResponse: {text: 'saved', removeReplyMarkup: true},
     });
 
     await processor.routesProcessor.execute(callbackRequest('MEASUREMENTS:SAVE'));
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
+        ['answerCallbackQuery', 'callback-id'],
         ['handleCallback', chatId, 'MEASUREMENTS:SAVE', 1001],
-        ['send', chatId, 'saved', replyMarkup],
+        ['send', chatId, 'saved', undefined],
+        ['removeReplyMarkup', chatId, 1001],
     ]);
 });
 
@@ -167,6 +185,12 @@ function mockModule(buildContext, filter, contents) {
 
 function createMessagingService(calls) {
     return {
+        async answerCallbackQuery(callbackQueryId) {
+            calls.push(['answerCallbackQuery', callbackQueryId]);
+        },
+        async removeReplyMarkup(context, messageId) {
+            calls.push(['removeReplyMarkup', context.chatId, messageId]);
+        },
         async sendMessage(context, text, replyMarkup) {
             calls.push(['send', context.chatId, text, replyMarkup]);
         },

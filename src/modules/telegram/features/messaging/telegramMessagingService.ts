@@ -11,10 +11,33 @@ import type {
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
 
 export const telegramMessagingService = {
+    answerCallbackQuery,
+    removeReplyMarkup,
     sendErrorMessage,
     sendMessage,
     sendWithMedia,
 };
+
+export async function answerCallbackQuery(callbackQueryId: string): Promise<void> {
+    try {
+        await telegramClient.answerCallbackQuery(callbackQueryId);
+    } catch (error) {
+        logError(`Failed to answer Telegram callback query ${callbackQueryId}`, error);
+    }
+}
+
+export async function removeReplyMarkup(context: TelegramContext, messageId: number): Promise<void> {
+    const chatId = context.chatId;
+    if (chatId == null) {
+        throw new TelegramError('chatId is mandatory');
+    }
+
+    try {
+        await telegramClient.editMessageReplyMarkup(chatId, messageId);
+    } catch (error) {
+        logError(`Failed to remove Telegram reply markup for ${chatId}:${messageId}`, error);
+    }
+}
 
 export async function sendErrorMessage(chatId: number, message: string): Promise<void> {
     try {

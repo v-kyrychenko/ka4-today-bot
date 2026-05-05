@@ -10,6 +10,8 @@ const TELEGRAM_HEADERS = {
 const REDACTED_TELEGRAM_TOKEN = '****';
 
 export const telegramClient = {
+    answerCallbackQuery,
+    editMessageReplyMarkup,
     sendMessage,
     sendPhoto,
     sendMediaGroup,
@@ -28,6 +30,44 @@ interface TelegramMediaItem {
     type: 'photo';
     media: string;
     caption?: string;
+}
+
+export async function answerCallbackQuery(callbackQueryId: string): Promise<void> {
+    const telegramRequest = buildTelegramRequest('answerCallbackQuery');
+    const body = {
+        callback_query_id: callbackQueryId,
+    };
+
+    await httpRequest<TelegramApiResponse, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+}
+
+export async function editMessageReplyMarkup(chatId: number, messageId: number, replyMarkup: unknown = {inline_keyboard: []}): Promise<void> {
+    const telegramRequest = buildTelegramRequest('editMessageReplyMarkup');
+    const body = {
+        chat_id: chatId,
+        message_id: messageId,
+        reply_markup: replyMarkup,
+    };
+
+    await httpRequest<TelegramApiResponse, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
 }
 
 export async function sendMessage(chatId: number, message: string, replyMarkup?: unknown): Promise<void> {
