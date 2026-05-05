@@ -263,38 +263,39 @@ Resources:
         Sourcemap: false
         Target: es2022
 
-  TelegramMiniAppApi:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ka4today-telegram-miniapp-api
-      Handler: src/modules/telegram/api/index.handler
-      CodeUri: .
-      VpcConfig:
-        SecurityGroupIds:
-          - !ImportValue
-              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
-        SubnetIds:
-          - !ImportValue
-              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
-      Events:
-        CreateBodyMeasurements:
-          Type: HttpApi
-          Properties:
-            #ApiId: !Ref UiApiConfig
-            Path: /tg/body-measurements
-            Method: POST
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - AWSLambdaVPCAccessExecutionRole
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/modules/telegram/api/index.ts
-        Format: cjs
-        Minify: false
-        Sourcemap: false
-        Target: es2022
+# Disabled for now
+#  TelegramMiniAppApi:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: ka4today-telegram-miniapp-api
+#      Handler: src/modules/telegram/api/index.handler
+#      CodeUri: .
+#      VpcConfig:
+#        SecurityGroupIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+#        SubnetIds:
+#          - !ImportValue
+#              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+#      Events:
+#        CreateBodyMeasurements:
+#          Type: HttpApi
+#          Properties:
+#            #ApiId: !Ref UiApiConfig
+#            Path: /tg/body-measurements
+#            Method: POST
+#      Policies:
+#        - AWSLambdaBasicExecutionRole
+#        - AWSLambdaVPCAccessExecutionRole
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        EntryPoints:
+#          - src/modules/telegram/api/index.ts
+#        Format: cjs
+#        Minify: false
+#        Sourcemap: false
+#        Target: es2022
 #  HttpApiClientRoutes:
 #    Type: AWS::Serverless::Function
 #    Properties:
