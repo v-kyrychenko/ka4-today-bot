@@ -1,9 +1,14 @@
-import {DEFAULT_MODEL, POLLING} from '../../../app/config/constants.js';
+import {POLLING} from '../../../app/config/constants.js';
 import {OPENAI_API_KEY, OPENAI_PROJECT_ID} from '../../../app/config/env.js';
 import {OpenAIError} from '../../../shared/errors';
 import {httpRequest} from '../../../shared/http/httpClient.js';
 import {log} from '../../../shared/logging';
-import {OpenAiResponseDetails} from '../../../shared/types/openai.js';
+import {
+    OpenAiResponseDetails,
+    type OpenAiCreateResponseInput,
+    DEFAULT_MODEL,
+    DEFAULT_TEMPERATURE
+} from '../../../shared/types/openai.js';
 import {pollUntil} from '../../../shared/utils/poller.js';
 
 const OPEN_AI_API_LABEL = 'OPEN-AI';
@@ -22,27 +27,28 @@ export const openAiClient = {
 
 interface OpenAiResponseCreatePayload {
     model: string;
+    store: boolean;
     background: boolean;
     temperature: number;
     input: Array<{ role: 'system' | 'user'; content: string }>;
+    text: OpenAiCreateResponseInput['textFormat'] | null;
     tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
 }
 
-export async function createResponse(
-    systemPrompt: string,
-    userPrompt: string,
-    vectorStoreIds: string[] = []
-): Promise<OpenAiResponseDetails> {
+export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
     const body: OpenAiResponseCreatePayload = {
-        model: DEFAULT_MODEL,
+        model: request.model ?? DEFAULT_MODEL,
+        store: false,
         background: true,
-        temperature: 0.8,
+        temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         input: [
-            {role: 'system', content: systemPrompt},
-            {role: 'user', content: userPrompt},
+            {role: 'system', content: request.systemPrompt},
+            {role: 'user', content: request.userPrompt},
         ],
+        text: request.textFormat ?? null,
     };
 
+    const vectorStoreIds = request.vectorStoreIds ?? [];
     if (vectorStoreIds.length > 0) {
         body.tools = [{type: 'file_search', vector_store_ids: vectorStoreIds}];
     }

@@ -1,5 +1,4 @@
-import type {JsonObject} from '../../../../shared/types/app.js';
-import {ExerciseItem} from '../../../../modules/coach/exercise/domain/exercise.js';
+import {ExerciseItem, type JsonObject} from '../../../../modules/coach/exercise/domain/exercise.js';
 import type {DictExerciseRow} from '../models/exerciseRow.js';
 
 export const exerciseMapper = {

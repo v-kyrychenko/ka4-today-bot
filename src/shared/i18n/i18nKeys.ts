@@ -16,6 +16,25 @@ export const I18N_KEYS = {
         ],
     },
     telegram: {
+        conversations: {
+            bodyMeasurements: {
+                buttonCancel: 'telegram.conversations.bodyMeasurements.buttonCancel',
+                buttonEdit: 'telegram.conversations.bodyMeasurements.buttonEdit',
+                buttonSave: 'telegram.conversations.bodyMeasurements.buttonSave',
+                cancel: 'telegram.conversations.bodyMeasurements.cancel',
+                confirmation: 'telegram.conversations.bodyMeasurements.confirmation',
+                editPrompt: 'telegram.conversations.bodyMeasurements.editPrompt',
+                initialMessage: 'telegram.conversations.bodyMeasurements.initialMessage',
+                invalidInput: 'telegram.conversations.bodyMeasurements.invalidInput',
+                saveSuccess: 'telegram.conversations.bodyMeasurements.saveSuccess',
+                tooSoon: 'telegram.conversations.bodyMeasurements.tooSoon',
+                unavailable: 'telegram.conversations.bodyMeasurements.unavailable',
+            },
+            cancelled: 'telegram.conversations.cancelled',
+            safeError: 'telegram.conversations.safeError',
+            unsupportedAction: 'telegram.conversations.unsupportedAction',
+            unsupportedInput: 'telegram.conversations.unsupportedInput',
+        },
         progress: {
             caption: {
                 title: 'telegram.progress.caption.title',

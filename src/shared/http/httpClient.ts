@@ -8,6 +8,7 @@ export interface HttpRequestParams<TBody = unknown> {
     method?: HttpMethod;
     path: string;
     endpointUrl?: string;
+    logUrl?: string;
     headers?: Record<string, string>;
     body?: TBody | null;
     label?: string;
@@ -17,6 +18,7 @@ export interface HttpRequestParams<TBody = unknown> {
 
 interface HandleFetchParams {
     fullUrl: string;
+    logUrl: string;
     requestInit: RequestInit;
     method: HttpMethod;
     label: string;
@@ -24,12 +26,14 @@ interface HandleFetchParams {
     errorClass: ErrorClassConstructor;
     start: number;
     path: string;
+    errorTarget: string;
 }
 
 export async function httpRequest<TResponse, TBody = unknown>({
     method = 'GET',
     path,
     endpointUrl = '',
+    logUrl,
     headers = {},
     body = null,
     label = 'HTTP',
@@ -37,14 +41,17 @@ export async function httpRequest<TResponse, TBody = unknown>({
     hideResponse = true,
 }: HttpRequestParams<TBody>): Promise<TResponse> {
     const fullUrl = endpointUrl ? `${endpointUrl}${path}` : path;
+    const safeLogUrl = logUrl ?? fullUrl;
+    const errorTarget = logUrl ?? path;
     const {requestInit, printableBody} = buildRequest(method, headers, body);
 
-    log(`### ${label}:start: ${method} request to url = ${fullUrl}, body = ${printableBody}`);
+    log(`### ${label}:start: ${method} request to url = ${safeLogUrl}, body = ${printableBody}`);
     const start = Date.now();
 
     try {
         return await handleFetch<TResponse>({
             fullUrl,
+            logUrl: safeLogUrl,
             requestInit,
             method,
             label,
@@ -52,6 +59,7 @@ export async function httpRequest<TResponse, TBody = unknown>({
             errorClass,
             start,
             path,
+            errorTarget,
         });
     } catch (error) {
         if (error instanceof errorClass) {
@@ -61,21 +69,22 @@ export async function httpRequest<TResponse, TBody = unknown>({
         const duration = Date.now() - start;
         const errorMessage = error instanceof Error ? error.message : String(error);
         const normalized = errorMessage.replace(/\s+/g, ' ').trim();
-        logError(`### ${label}:stop: low-level error: ${method} response from url = ${fullUrl},
+        logError(`### ${label}:stop: low-level error: ${method} response from url = ${safeLogUrl},
          status = n/a, time = ${duration} ms, response = ${normalized}`);
-        throw new errorClass(`Failed ${label} request to ${path}: ${normalized}`);
+        throw new errorClass(`Failed ${label} request to ${errorTarget}: ${normalized}`);
     }
 }
 
 async function handleFetch<TResponse>({
     fullUrl,
+    logUrl,
     requestInit,
     method,
     label,
     hideResponse,
     errorClass,
     start,
-    path,
+    errorTarget,
 }: HandleFetchParams): Promise<TResponse> {
     const response = await fetch(fullUrl, requestInit);
     const duration = Date.now() - start;
@@ -85,14 +94,14 @@ async function handleFetch<TResponse>({
     const logResponse = hideResponse ? '#hidden' : truncate(rawText);
 
     if (!response.ok) {
-        logError(`### ${label}:stop: api-level error: ${method} response from url = ${fullUrl},
+        logError(`### ${label}:stop: api-level error: ${method} response from url = ${logUrl},
         status = ${response.status}, time = ${duration} ms, response = ${rawText}`);
-        const err = new errorClass(`Failed ${label} request to ${path}: ${rawText}`);
+        const err = new errorClass(`Failed ${label} request to ${errorTarget}: ${rawText}`);
         err.status = response.status;
         throw err;
     }
 
-    log(`### ${label}:stop: ${method} response from url = ${fullUrl},
+    log(`### ${label}:stop: ${method} response from url = ${logUrl},
     status = ${response.status}, time = ${duration} ms, response = ${logResponse}`);
     return responseBody;
 }
@@ -106,18 +115,28 @@ export function buildRequest<TBody = unknown>(
     headers: Record<string, string> = {},
     body: TBody | null = null
 ): {requestInit: RequestInit; printableBody: string} {
-    const normalizedBody =
-        method !== 'GET' && body
-            ? typeof body === 'string'
-                ? body
-                : JSON.stringify(body)
-            : null;
+    const isFormData = body instanceof FormData;
+    let requestBody: BodyInit | null = null;
+    let printableBody = 'null';
+
+    if (method !== 'GET' && body) {
+        if (isFormData) {
+            requestBody = body;
+            printableBody = '#form-data';
+        } else if (typeof body === 'string') {
+            requestBody = body;
+            printableBody = body;
+        } else {
+            requestBody = JSON.stringify(body);
+            printableBody = requestBody;
+        }
+    }
 
     const requestInit: RequestInit = {
         method,
         headers,
-        ...(normalizedBody ? {body: normalizedBody} : {}),
+        ...(requestBody ? {body: requestBody} : {}),
     };
 
-    return {requestInit, printableBody: normalizedBody ?? 'null'};
+    return {requestInit, printableBody};
 }

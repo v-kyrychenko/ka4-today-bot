@@ -1,5 +1,5 @@
-import {PromptDict} from '../../../../modules/telegram/domain/prompt.js';
-import {Workout, WorkoutSchedule} from '../../../../modules/telegram/domain/workout.js';
+import {PromptDict} from '../../../../modules/telegram/features/prompts/prompt.js';
+import {Workout, WorkoutSchedule} from '../../../../modules/telegram/features/workouts/workout.js';
 import type {TgUserRow} from '../models/tgUserRow.js';
 import type {WorkoutRow} from '../models/workoutRow.js';
 import type {WorkoutScheduleRow} from '../models/workoutScheduleRow.js';

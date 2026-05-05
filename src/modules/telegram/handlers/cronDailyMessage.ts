@@ -2,11 +2,10 @@ import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {MAIN_MESSAGE_QUEUE_URL} from '../../../app/config/env.js';
 import {log} from '../../../shared/logging';
-import {buildDailyFifoMessageMetadata} from '../application/sqsFifoMessageMetadata.js';
-import {DAILY_GREETING_COMMAND} from '../commands/registry.js';
-import {QueueRequestEnvelope} from '../domain/context.js';
-import {WorkoutSchedule} from '../domain/workout.js';
-import {telegramUserRepository} from '../repository/telegramUserRepository.js';
+import {buildDailyFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
+import {DAILY_GREETING_ROUTE} from '../routes/registry.js';
+import {WorkoutSchedule} from '../features/workouts/workout.js';
+import {tgUserRepository} from '../repository/tgUserRepository.js';
 
 const sqsClient = new SQSClient();
 
@@ -14,7 +13,7 @@ export const handler = withAppInitialization(async (): Promise<void> => {
     log('Daily cron started');
 
     try {
-        const scheduledUsers = await telegramUserRepository.getUsersScheduledForDay();
+        const scheduledUsers = await tgUserRepository.getUsersScheduledForDay();
         log('Daily cron found scheduled users', scheduledUsers.map((item) => item.client.chatId));
 
         await Promise.all(
@@ -36,7 +35,7 @@ function createRequest(item: WorkoutSchedule): QueueRequestEnvelope {
         request: {
             message: {
                 promptRef: item.dictPrompt.key,
-                text: DAILY_GREETING_COMMAND,
+                text: DAILY_GREETING_ROUTE,
                 chat: {
                     id: item.client.chatId,
                 },

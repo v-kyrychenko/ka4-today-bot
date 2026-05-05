@@ -1,7 +1,7 @@
 import type {
     BodyMeasurementSummary,
     BodyMeasurementSummaryCreateInput,
-} from '../../../../modules/telegram/commands/progress/bodyMeasurementsModel.js';
+} from '../../../../modules/telegram/features/measurements/bodyMeasurementsModel.js';
 import type {BodyMeasurementSummaryRow} from '../models/bodyMeasurementSummaryRow.js';
 
 export interface BodyMeasurementSummaryCreateRow {

@@ -23,12 +23,16 @@ Deployment is defined in `template.yaml` and `stack/`. Local helper scripts live
 Install dependencies with `npm install`.
 
 - `npm run typecheck` validates the TypeScript codebase with `tsc --noEmit`.
+- `npm test` runs the automated Node.js test suite with `node --test "test/**/*.test.mjs"`.
 - Do not run script interpreters or ad-hoc scripting languages such as `ruby`, `python`, or similar for repository tasks. Prefer standard shell utilities and the documented `npm` commands instead.
 
 ## Coding Style & Naming Conventions
 This repository uses TypeScript with ESM (`"type": "module"`). Follow the existing style: 4-space indentation, semicolons, single quotes, and named exports for shared modules. Keep handlers thin and push orchestration into module `application/` code or repositories as appropriate. Put generic helpers in `shared`, low-level external integration code in `infrastructure`, and product behavior in the owning module under `modules`.
 
 For the shared logging module, prefer the shortened import path without `/index.js`, for example `import {log, logError} from '../shared/logging';`.
+Prefer keeping imports on one line when they fit within 120 symbols; wrap import lists only when needed for readability or line length.
+Prefer keeping function signatures on one line when the function name and parameters fit within 120 symbols; wrap only when needed for readability or line length.
+Use destructured function parameters only for very small functions that need a few fields. For workflow code, branching logic, or functions that pass context onward, prefer a named parameter such as `context` or `request` and read fields as `context.user`, `request.text`, and so on.
 Prefer `log(...)` and `logError(...)` calls on a single line when they fit within 120 symbols; only wrap them
 when needed to stay under the line-length limit.
 
@@ -45,7 +49,11 @@ For command classes, keep `execute(context)` as high-level orchestration only. S
 When changing progress view-model behavior or template rendering, keep the root `test/modules/telegram/commands/progress/` fixtures updated in the same change so previews and future tests continue to represent production behavior.
 
 ## Testing Guidelines
-There is no dedicated automated test suite yet. Treat `npm run typecheck` as the minimum gate. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation-only verification. When adding tests later, place them next to the feature or in a dedicated `tests/` folder, and name them after the target module or use case, for example `listClients.test.ts` or `searchExercises.test.ts`.
+There is a small automated test suite using Node.js built-in `node:test`. Run it with `npm test`, which executes every `test/**/*.test.mjs` file. The current automated test lives at `test/modules/telegram/features/conversations/conversationEngine.multiStep.test.mjs` and verifies the Telegram conversation engine multi-step flow with bundled TypeScript source through `esbuild`.
+
+Treat `npm run typecheck` as the minimum gate for code changes, and run `npm test` when changing tested behavior or adding tests. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation plus targeted tests.
+
+When adding tests, use Node.js built-in `node:test` unless the repo adopts a broader test framework. Place tests under `test/` using the owning module path, and name them after the target module or use case, for example `listClients.test.mjs`, `searchExercises.test.mjs`, or `conversationEngine.multiStep.test.mjs`.
 
 Local SAM verification depends on a working container runtime. `sam build` succeeds in this repo, but `sam local invoke` will fail unless Docker or Finch is installed and running; a recent attempt to run `npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/progress.json` was blocked for that reason rather than by an application error.
 For local TypeScript preview scripts, do not assume Node.js can execute repo source files directly with `--experimental-strip-types`. This codebase uses ESM imports that end in `.js`, so a direct TypeScript entrypoint can fail to resolve sibling source modules at runtime. The current progress preview works by using a small `esbuild` bootstrap script (`scripts/progressPreview.mjs`) that builds and runs the TypeScript preview entry under Node.js 22.
