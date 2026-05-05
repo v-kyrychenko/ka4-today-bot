@@ -1,3 +1,4 @@
+import {HttpApiError} from '../../../../shared/errors';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {log} from '../../../../shared/logging';
@@ -6,9 +7,6 @@ import {tgConversationStateRepository} from '../../repository/tgConversationStat
 import {
     CONVERSATION_STEP_CANCELLED,
     CONVERSATION_STEP_COMPLETED,
-    CONVERSATION_STEP_WAITING_CONFIRMATION,
-    CONVERSATION_STEP_WAITING_INPUT,
-    CONVERSATION_STEP_WAITING_MISSING_FIELDS,
     type ConversationCallbackContext,
     type ConversationDefinition,
     type ConversationResponse,
@@ -18,23 +16,25 @@ import {localizedButton, localizedResponse} from '../conversations/conversationR
 import {promptReplyService} from '../prompts/promptReplyService.js';
 import {bodyMeasurementService} from './bodyMeasurementService.js';
 import {
-    CONVERSATION_TYPE_BODY_MEASUREMENTS,
     BODY_MEASUREMENT_METRIC_I18N_KEYS,
-    BodyMeasurementType,
     type BodyMeasurementCreateInput,
+    BodyMeasurementType,
+    CONVERSATION_TYPE_BODY_MEASUREMENTS,
 } from './bodyMeasurementsModel.js';
 import {
-    getMissingTypes,
     getStoredMeasurements,
+    type MeasurementDraft,
     mergeMeasurements,
     parseMeasurementsReply,
-    type MeasurementDraft,
 } from './bodyMeasurementsParser.js';
 
 const MEASUREMENT_PARSER_PROMPT_REF = 'measurement_parser';
+const CONVERSATION_STEP_WAITING_INPUT = 'WAITING_INPUT';
+const CONVERSATION_STEP_WAITING_CONFIRMATION = 'WAITING_CONFIRMATION';
 const SAVE_CALLBACK = 'MEASUREMENTS:SAVE';
 const EDIT_CALLBACK = 'MEASUREMENTS:EDIT';
 const CANCEL_CALLBACK = 'MEASUREMENTS:CANCEL';
+const BODY_MEASUREMENT_TOO_SOON = 'BODY_MEASUREMENT_TOO_SOON';
 
 export const bodyMeasurementsConversation: ConversationDefinition = {
     type: CONVERSATION_TYPE_BODY_MEASUREMENTS,
@@ -44,10 +44,6 @@ export const bodyMeasurementsConversation: ConversationDefinition = {
         [CONVERSATION_STEP_WAITING_INPUT]: {
             onText: (context) =>
                 handleMeasurementInput(context, []),
-        },
-        [CONVERSATION_STEP_WAITING_MISSING_FIELDS]: {
-            onText: (context) =>
-                handleMeasurementInput(context, getStoredMeasurements(context.state.data)),
         },
         [CONVERSATION_STEP_WAITING_CONFIRMATION]: {
             onCallback: handleConfirmationCallback,
@@ -67,29 +63,19 @@ async function handleMeasurementInput(context: ConversationTextContext, existing
     }
 
     const merged = mergeMeasurements(existingMeasurements, parsed);
-    const missingTypes = getMissingTypes(merged);
-    const nextStep = missingTypes.length
-        ? CONVERSATION_STEP_WAITING_MISSING_FIELDS
-        : CONVERSATION_STEP_WAITING_CONFIRMATION;
 
     await tgConversationStateRepository.updateConversation({
         id: context.state.id,
-        currentStep: nextStep,
+        currentStep: CONVERSATION_STEP_WAITING_CONFIRMATION,
         data: {measurements: merged},
     });
-
-    if (missingTypes.length) {
-        return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.missingFields, {
-            fields: formatTypeList(context.user.lang, missingTypes),
-        });
-    }
 
     return buildConfirmationResponse(context.user.lang, merged);
 }
 
 async function handleConfirmationCallback(context: ConversationCallbackContext): Promise<ConversationResponse> {
     if (context.callbackData === SAVE_CALLBACK) {
-        return saveMeasurements(context);
+        return saveMeasurementsSafely(context);
     }
     if (context.callbackData === EDIT_CALLBACK) {
         return requestMeasurementsEdit(context);
@@ -99,6 +85,24 @@ async function handleConfirmationCallback(context: ConversationCallbackContext):
     }
 
     return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.unsupportedAction);
+}
+
+async function saveMeasurementsSafely(context: ConversationCallbackContext): Promise<ConversationResponse> {
+    try {
+        return await saveMeasurements(context);
+    } catch (error) {
+        if (error instanceof HttpApiError && error.code === BODY_MEASUREMENT_TOO_SOON) {
+            await tgConversationStateRepository.deactivateConversation({
+                id: context.state.id,
+                finalStep: CONVERSATION_STEP_CANCELLED,
+            });
+            log('### CONVERSATION:cancel_too_soon', {chatId: context.user.chatId, type: context.state.type});
+
+            return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.tooSoon);
+        }
+
+        throw error;
+    }
 }
 
 async function saveMeasurements(context: ConversationCallbackContext): Promise<ConversationResponse> {

@@ -2,8 +2,8 @@ export const PAGINATION_DEFAULT_PAGE = 0;
 export const PAGINATION_DEFAULT_LIMIT = 20;
 export const PAGINATION_MAX_LIMIT = 100;
 export const POLLING = {
-    MAX_RETRIES: 50,
-    DELAY_MS: 2000,
+    MAX_RETRIES: 30,
+    DELAY_MS: 1000,
 } as const;
 
 export const DEFAULT_LANG = 'ua';

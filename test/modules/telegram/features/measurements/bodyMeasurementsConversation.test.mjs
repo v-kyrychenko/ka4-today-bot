@@ -8,6 +8,16 @@ import {build} from 'esbuild';
 
 const chatId = 42;
 const user = {chatId, clientId: 777, lang: 'en'};
+
+class TestHttpApiError extends Error {
+    constructor(statusCode, code, message = 'HTTP API error') {
+        super(message);
+        this.name = 'HttpApiError';
+        this.statusCode = statusCode;
+        this.code = code;
+    }
+}
+
 const fullMeasurements = [
     {type: 'WEIGHT', value: 78.4, unit: 'kg'},
     {type: 'WAIST', value: 84, unit: 'cm'},
@@ -73,6 +83,28 @@ test('save stores measurements and completes', async () => {
     assert.equal(service.stored[0].clientId, 777);
     assert.equal(repository.deactivated.finalStep, 'COMPLETED');
     assert.equal(response.text, 'Measurements saved.');
+});
+
+test('save deactivates conversation when measurements are too soon', async () => {
+    const service = createTooSoonBodyMeasurementService();
+    const {definition, repository} = await loadConversation({bodyMeasurementService: service});
+    const state = createState({measurements: fullMeasurements}, 'WAITING_CONFIRMATION');
+
+    const response = await definition.steps.WAITING_CONFIRMATION.onCallback({
+        callbackData: 'MEASUREMENTS:SAVE',
+        messageId: 1001,
+        user,
+        state,
+    });
+
+    assert.equal(service.stored.length, 0);
+    assert.equal(service.storeAttempts, 1);
+    assert.equal(repository.deactivated.id, state.id);
+    assert.equal(repository.deactivated.finalStep, 'CANCELLED');
+    assert.equal(
+        response.text,
+        '⏳ Body measurements can be saved once every 30 days.\n\nYour previous measurements are still too recent, so I didn’t save this update.'
+    );
 });
 
 test('edit returns to input and keeps data', async () => {
@@ -189,6 +221,7 @@ async function loadConversation(options) {
         repository,
         promptService,
         bodyMeasurementService,
+        HttpApiError: TestHttpApiError,
     };
 
     const outfile = path.join(tmpdir(), `measurements-conversation-${process.pid}-${Date.now()}.mjs`);
@@ -223,6 +256,9 @@ const measurementConversationMocks = {
         mockModule(buildContext, /bodyMeasurementService\.js$/, [
             'export const bodyMeasurementService = globalThis.__measurementConversationMocks.bodyMeasurementService;',
         ]);
+        mockModule(buildContext, /shared\/errors(?:\/index)?(?:\.js)?$/, [
+            'export const HttpApiError = globalThis.__measurementConversationMocks.HttpApiError;',
+        ]);
     },
 };
 
@@ -252,6 +288,17 @@ function createBodyMeasurementService() {
         stored: [],
         async store(input) {
             this.stored = input;
+        },
+    };
+}
+
+function createTooSoonBodyMeasurementService() {
+    return {
+        stored: [],
+        storeAttempts: 0,
+        async store() {
+            this.storeAttempts += 1;
+            throw new TestHttpApiError(409, 'BODY_MEASUREMENT_TOO_SOON', 'Body measurements can be submitted once every 30 days');
         },
     };
 }

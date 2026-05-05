@@ -6,6 +6,7 @@
         "confirmation": "✅ Here’s what I understood from your message.\n\nPlease check if everything looks right:\n\n{measurements}",
         "editPrompt": "✏️ Send the corrected body measurements in one message — I’ll parse them.",
         "saveSuccess": "✅ Done, body measurements saved.",
+        "tooSoon": "⏳ Body measurements can be saved once every 30 days.\n\nYour previous measurements are still too recent, so I didn’t save this update.",
         "invalidInput": "❌ I couldn’t recognize the body measurements.\n\nSend them again in one message in any format — I’ll figure it out.",
         "cancel": "👌 Body measurement entry cancelled.",
         "buttonSave": "✅ Save",
