@@ -1,6 +1,4 @@
 import {withAppInitialization} from '../../../app/withAppInitialization.js';
-import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
-import {MAIN_MESSAGE_QUEUE_URL} from '../../../app/config/env.js';
 import {log} from '../../../shared/logging';
 import {minusDays, toIsoDate} from '../../../shared/utils/dateUtils.js';
 import {MIN_DAYS_BETWEEN_MEASUREMENTS} from '../features/measurements/bodyMeasurementService.js';
@@ -8,11 +6,14 @@ import {
     bodyMeasurementRepository,
     type BodyMeasurementReminderCandidate,
 } from '../features/measurements/repository/bodyMeasurementRepository.js';
-import {MEASUREMENTS_ROUTE} from '../routes/registry.js';
-import {buildScheduledJobFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
+import {MEASUREMENTS_ROUTE} from '../routes/constants.js';
+import {
+    buildScheduledJobFifoMessageMetadata,
+    QueueRequestEnvelope,
+} from '../features/sqs/sqsFifoMessageMetadata.js';
+import {sendTelegramQueueRequest} from '../features/sqs/telegramQueueSender.js';
 
 const MEASUREMENTS_REMINDER_JOB_NAME = 'measurements-reminder';
-const sqsClient = new SQSClient();
 
 export const handler = withAppInitialization(async (): Promise<void> => {
     const cutoffDate = getCutoffDate();
@@ -44,7 +45,10 @@ async function sendReminder(user: BodyMeasurementReminderCandidate): Promise<voi
 
     try {
         const payload = createRequest(user);
-        await sendToQueue(payload);
+        await sendTelegramQueueRequest(
+            payload,
+            buildScheduledJobFifoMessageMetadata(payload, MEASUREMENTS_REMINDER_JOB_NAME),
+        );
         log('Measurements reminder queued user', {chatId: user.chatId, clientId: user.clientId});
     } catch (error) {
         log('Measurements reminder failed for user', {chatId: user.chatId, clientId: user.clientId, error});
@@ -63,16 +67,4 @@ function createRequest(user: BodyMeasurementReminderCandidate): QueueRequestEnve
             },
         },
     });
-}
-
-async function sendToQueue(payload: QueueRequestEnvelope): Promise<void> {
-    const message = JSON.stringify(payload);
-    log(`Sending to queue:${MAIN_MESSAGE_QUEUE_URL} payload:${message}`);
-    const command = new SendMessageCommand({
-        QueueUrl: MAIN_MESSAGE_QUEUE_URL,
-        MessageBody: message,
-        ...buildScheduledJobFifoMessageMetadata(payload, MEASUREMENTS_REMINDER_JOB_NAME),
-    });
-
-    await sqsClient.send(command);
 }

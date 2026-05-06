@@ -1,5 +1,5 @@
 import {BaseRoute} from './BaseRoute.js';
-import {DAILY_GREETING_ROUTE} from './registry.js';
+import {DAILY_GREETING_ROUTE} from './constants.js';
 import {BadRequestError} from '../../../shared/errors';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';

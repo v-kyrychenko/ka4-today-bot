@@ -165,6 +165,7 @@ Resources:
         WeeklyMeasurementsReminderSchedule:
           Type: ScheduleV2
           Properties:
+            Name: ka4today-measurements-reminder
             ScheduleExpression: cron(0 8 ? * TUE *)
             ScheduleExpressionTimezone: Europe/Kyiv
             FlexibleTimeWindow:

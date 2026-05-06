@@ -12,7 +12,7 @@ test('measurements reminder cron queues /measurements with daily FIFO dedupe met
             {chatId: 101, clientId: 1001, latestMeasurementDate: null},
             {chatId: 202, clientId: 2002, latestMeasurementDate: '2025-12-01'},
         ],
-        sent: [],
+        queued: [],
         repositoryCalls: [],
         logs: [],
     };
@@ -22,16 +22,16 @@ test('measurements reminder cron queues /measurements with daily FIFO dedupe met
 
     assert.equal(mocks.repositoryCalls.length, 1);
     assert.match(mocks.repositoryCalls[0], /^\d{4}-\d{2}-\d{2}$/);
-    assert.equal(mocks.sent.length, 2);
+    assert.equal(mocks.queued.length, 2);
 
-    assertQueuedReminder(mocks.sent[0], 101);
-    assertQueuedReminder(mocks.sent[1], 202);
+    assertQueuedReminder(mocks.queued[0], 101);
+    assertQueuedReminder(mocks.queued[1], 202);
 });
 
 test('measurements reminder cron does not queue messages when no users are due', async () => {
     const mocks = {
         users: [],
-        sent: [],
+        queued: [],
         repositoryCalls: [],
         logs: [],
     };
@@ -40,7 +40,7 @@ test('measurements reminder cron does not queue messages when no users are due',
     await handler();
 
     assert.equal(mocks.repositoryCalls.length, 1);
-    assert.deepEqual(mocks.sent, []);
+    assert.deepEqual(mocks.queued, []);
     assert.deepEqual(mocks.logs.find(([message]) => message === 'Measurements reminder cron found users'), [
         'Measurements reminder cron found users',
         {count: 0},
@@ -72,10 +72,9 @@ async function loadHandler(mocks) {
 const cronMeasurementsReminderMocks = {
     name: 'cron-measurements-reminder-mocks',
     setup(buildContext) {
-        mockModule(buildContext, /^@aws-sdk\/client-sqs$/, [
-            'export class SendMessageCommand { constructor(input) { this.input = input; } }',
-            'export class SQSClient {',
-            '    async send(command) { globalThis.__cronMeasurementsReminderMocks.sent.push(command.input); }',
+        mockModule(buildContext, /telegramQueueSender\.js$/, [
+            'export async function sendTelegramQueueRequest(payload, metadata) {',
+            '    globalThis.__cronMeasurementsReminderMocks.queued.push({payload, metadata});',
             '}',
         ]);
         mockModule(buildContext, /withAppInitialization\.js$/, [
@@ -100,21 +99,22 @@ const cronMeasurementsReminderMocks = {
             '    },',
             '};',
         ]);
-        mockModule(buildContext, /routes\/registry\.js$/, [
+        mockModule(buildContext, /routes\/constants\.js$/, [
             'export const MEASUREMENTS_ROUTE = "/measurements";',
         ]);
     },
 };
 
 function assertQueuedReminder(message, chatId) {
-    assert.equal(message.QueueUrl, 'queue-url');
-    assert.equal(message.MessageGroupId, String(chatId));
-    assert.match(message.MessageDeduplicationId, new RegExp(`^measurements-reminder-${chatId}-\\d{4}-\\d{2}-\\d{2}$`));
+    assert.equal(message.metadata.MessageGroupId, String(chatId));
+    assert.match(
+        message.metadata.MessageDeduplicationId,
+        new RegExp(`^measurements-reminder-${chatId}-\\d{4}-\\d{2}-\\d{2}$`)
+    );
 
-    const body = JSON.parse(message.MessageBody);
-    assert.equal(body.request.message.text, '/measurements');
-    assert.equal(body.request.message.chat.id, chatId);
-    assert.equal(body.request.message.promptRef, undefined);
+    assert.equal(message.payload.request.message.text, '/measurements');
+    assert.equal(message.payload.request.message.chat.id, chatId);
+    assert.equal(message.payload.request.message.promptRef, undefined);
 }
 
 function mockModule(buildContext, filter, contents) {

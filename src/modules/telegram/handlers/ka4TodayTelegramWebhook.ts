@@ -1,5 +1,4 @@
-import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
-import {MAIN_MESSAGE_QUEUE_URL, TELEGRAM_SECURITY_TOKEN} from '../../../app/config/env.js';
+import {TELEGRAM_SECURITY_TOKEN} from '../../../app/config/env.js';
 import {toShortErrorLog} from '../../../shared/errors';
 import {logError} from '../../../shared/logging';
 import {
@@ -8,10 +7,9 @@ import {
     type ApiGatewayHttpEvent,
     type LambdaResponse,
 } from '../../../shared/types/aws.js';
-import {buildWebhookFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
+import {buildWebhookFifoMessageMetadata, QueueRequestEnvelope} from '../features/sqs/sqsFifoMessageMetadata.js';
 import {TelegramWebhookUpdate} from '../model/telegram.js';
-
-const sqsClient = new SQSClient();
+import {sendTelegramQueueRequest} from '../features/sqs/telegramQueueSender.js';
 
 export const handler = async (event: ApiGatewayHttpEvent): Promise<LambdaResponse> => {
     if (!isAuthorized(event.headers)) {
@@ -20,7 +18,8 @@ export const handler = async (event: ApiGatewayHttpEvent): Promise<LambdaRespons
 
     try {
         const request = new TelegramWebhookUpdate(parseJsonBody<TelegramWebhookUpdate>(event.body));
-        await sendToQueue(new QueueRequestEnvelope({request}));
+        const payload = new QueueRequestEnvelope({request});
+        await sendTelegramQueueRequest(payload, buildWebhookFifoMessageMetadata(payload));
 
         return buildSuccessResponse();
     } catch (error) {
@@ -41,14 +40,4 @@ function parseJsonBody<T>(body?: string | null): T {
         throw new Error('Missing request body');
     }
     return JSON.parse(body) as T;
-}
-
-async function sendToQueue(payload: QueueRequestEnvelope): Promise<void> {
-    const command = new SendMessageCommand({
-        QueueUrl: MAIN_MESSAGE_QUEUE_URL,
-        MessageBody: JSON.stringify(payload),
-        ...buildWebhookFifoMessageMetadata(payload),
-    });
-
-    await sqsClient.send(command);
 }

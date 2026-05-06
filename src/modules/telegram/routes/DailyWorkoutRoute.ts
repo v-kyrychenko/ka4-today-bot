@@ -1,4 +1,4 @@
-import {DAILY_WORKOUT_ROUTE} from './registry.js';
+import {DAILY_WORKOUT_ROUTE} from './constants.js';
 import {BaseRoute} from './BaseRoute.js';
 import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';

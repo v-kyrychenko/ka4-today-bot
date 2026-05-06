@@ -4,7 +4,7 @@ import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import type {ProcessorContext} from '../model/context.js';
 import {log, logError} from '../../../shared/logging';
 import {BaseRoute} from './BaseRoute.js';
-import {PROGRESS_ROUTE} from './registry.js';
+import {PROGRESS_ROUTE} from './constants.js';
 import {
     buildProgressCaption,
     buildProgressResult,

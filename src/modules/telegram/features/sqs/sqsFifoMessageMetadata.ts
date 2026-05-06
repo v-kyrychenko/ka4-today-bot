@@ -1,6 +1,6 @@
-import {BadRequestError} from '../../../shared/errors';
-import {toIsoDate} from '../../../shared/utils/dateUtils.js';
-import {TelegramWebhookUpdate} from '../model/telegram.js';
+import {BadRequestError} from '../../../../shared/errors';
+import {toIsoDate} from '../../../../shared/utils/dateUtils.js';
+import {TelegramWebhookUpdate} from '../../model/telegram.js';
 
 export interface SqsFifoMessageMetadata {
     MessageGroupId: string;
