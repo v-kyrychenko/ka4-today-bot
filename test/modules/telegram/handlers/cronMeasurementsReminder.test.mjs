@@ -1,0 +1,124 @@
+import {strict as assert} from 'node:assert';
+import {rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {test} from 'node:test';
+import {pathToFileURL} from 'node:url';
+import {build} from 'esbuild';
+
+test('measurements reminder cron queues /measurements with daily FIFO dedupe metadata', async () => {
+    const mocks = {
+        users: [
+            {chatId: 101, clientId: 1001, latestMeasurementDate: null},
+            {chatId: 202, clientId: 2002, latestMeasurementDate: '2025-12-01'},
+        ],
+        sent: [],
+        repositoryCalls: [],
+        logs: [],
+    };
+    const {handler} = await loadHandler(mocks);
+
+    await handler();
+
+    assert.equal(mocks.repositoryCalls.length, 1);
+    assert.match(mocks.repositoryCalls[0], /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(mocks.sent.length, 2);
+
+    assertQueuedReminder(mocks.sent[0], 101);
+    assertQueuedReminder(mocks.sent[1], 202);
+});
+
+test('measurements reminder cron does not queue messages when no users are due', async () => {
+    const mocks = {
+        users: [],
+        sent: [],
+        repositoryCalls: [],
+        logs: [],
+    };
+    const {handler} = await loadHandler(mocks);
+
+    await handler();
+
+    assert.equal(mocks.repositoryCalls.length, 1);
+    assert.deepEqual(mocks.sent, []);
+    assert.deepEqual(mocks.logs.find(([message]) => message === 'Measurements reminder cron found users'), [
+        'Measurements reminder cron found users',
+        {count: 0},
+    ]);
+});
+
+async function loadHandler(mocks) {
+    globalThis.__cronMeasurementsReminderMocks = mocks;
+
+    const outfile = path.join(tmpdir(), `cron-measurements-reminder-${process.pid}-${Date.now()}.mjs`);
+
+    await build({
+        bundle: true,
+        entryPoints: ['src/modules/telegram/handlers/cronMeasurementsReminder.ts'],
+        format: 'esm',
+        logLevel: 'silent',
+        outfile,
+        platform: 'node',
+        plugins: [cronMeasurementsReminderMocks],
+    });
+
+    try {
+        return await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
+    } finally {
+        await rm(outfile, {force: true});
+    }
+}
+
+const cronMeasurementsReminderMocks = {
+    name: 'cron-measurements-reminder-mocks',
+    setup(buildContext) {
+        mockModule(buildContext, /^@aws-sdk\/client-sqs$/, [
+            'export class SendMessageCommand { constructor(input) { this.input = input; } }',
+            'export class SQSClient {',
+            '    async send(command) { globalThis.__cronMeasurementsReminderMocks.sent.push(command.input); }',
+            '}',
+        ]);
+        mockModule(buildContext, /withAppInitialization\.js$/, [
+            'export function withAppInitialization(handler) { return handler; }',
+        ]);
+        mockModule(buildContext, /app\/config\/env\.js$/, [
+            'export const MAIN_MESSAGE_QUEUE_URL = "queue-url";',
+        ]);
+        mockModule(buildContext, /shared\/logging$/, [
+            'export function log(...args) { globalThis.__cronMeasurementsReminderMocks.logs.push(args); }',
+            'export function logError(...args) { globalThis.__cronMeasurementsReminderMocks.logs.push(args); }',
+        ]);
+        mockModule(buildContext, /bodyMeasurementService\.js$/, [
+            'export const MIN_DAYS_BETWEEN_MEASUREMENTS = 30;',
+            'export const bodyMeasurementService = {};',
+        ]);
+        mockModule(buildContext, /bodyMeasurementRepository\.js$/, [
+            'export const bodyMeasurementRepository = {',
+            '    async findReminderCandidates(cutoffDate) {',
+            '        globalThis.__cronMeasurementsReminderMocks.repositoryCalls.push(cutoffDate);',
+            '        return globalThis.__cronMeasurementsReminderMocks.users;',
+            '    },',
+            '};',
+        ]);
+        mockModule(buildContext, /routes\/registry\.js$/, [
+            'export const MEASUREMENTS_ROUTE = "/measurements";',
+        ]);
+    },
+};
+
+function assertQueuedReminder(message, chatId) {
+    assert.equal(message.QueueUrl, 'queue-url');
+    assert.equal(message.MessageGroupId, String(chatId));
+    assert.match(message.MessageDeduplicationId, new RegExp(`^measurements-reminder-${chatId}-\\d{4}-\\d{2}-\\d{2}$`));
+
+    const body = JSON.parse(message.MessageBody);
+    assert.equal(body.request.message.text, '/measurements');
+    assert.equal(body.request.message.chat.id, chatId);
+    assert.equal(body.request.message.promptRef, undefined);
+}
+
+function mockModule(buildContext, filter, contents) {
+    const namespace = `mock-${String(filter)}`;
+    buildContext.onResolve({filter}, () => ({namespace, path: 'mock'}));
+    buildContext.onLoad({filter: /^mock$/, namespace}, () => ({contents: contents.join('\n'), loader: 'js'}));
+}

@@ -54,7 +54,7 @@ Parameters:
     Default: ka4-today
 Resources:
   #####################################################################
-  ##                         Function                                     ##
+  ##                         Function                                ##
   #####################################################################
   Ka4TodayAsyncTelegramProcessor:
     Type: AWS::Serverless::Function
@@ -116,8 +116,6 @@ Resources:
       FunctionName: ka4today-cron-daily-message
       Handler: src/modules/telegram/handlers/cronDailyMessage.handler
       CodeUri: .
-      Layers:
-        - !Ref ResvgLayer
       VpcConfig:
         SecurityGroupIds:
           - !ImportValue
@@ -145,12 +143,51 @@ Resources:
       BuildProperties:
         EntryPoints:
           - src/modules/telegram/handlers/cronDailyMessage.ts
-        External:
-          - '@resvg/resvg-js'
         Format: cjs
         Minify: false
         Sourcemap: false
         Target: es2022
+
+  Ka4TodayCronMeasurementsReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-cron-measurements-reminder
+      Handler: src/modules/telegram/handlers/cronMeasurementsReminder.handler
+      CodeUri: .
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+        SubnetIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+      Events:
+        WeeklyMeasurementsReminderSchedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(0 8 ? * TUE *)
+            ScheduleExpressionTimezone: Europe/Kyiv
+            FlexibleTimeWindow:
+              Mode: 'OFF'
+            State: ENABLED
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt MainMessageQueue.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/modules/telegram/handlers/cronMeasurementsReminder.ts
+        Format: cjs
+        Minify: false
+        Sourcemap: false
+        Target: es2022
+      BuildArchitecture: arm64
 
   ResvgLayer:
     Type: AWS::Serverless::LayerVersion
@@ -181,6 +218,11 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/ka4today-cron-daily-message
+      RetentionInDays: 7
+  CronMeasurementsReminderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ka4today-cron-measurements-reminder
       RetentionInDays: 7
   HttpApiClientRoutesLogGroup:
     Type: AWS::Logs::LogGroup

@@ -39,7 +39,7 @@ const BODY_MEASUREMENT_TOO_SOON = 'BODY_MEASUREMENT_TOO_SOON';
 export const bodyMeasurementsConversation: ConversationDefinition = {
     type: CONVERSATION_TYPE_BODY_MEASUREMENTS,
     initialStep: CONVERSATION_STEP_WAITING_INPUT,
-    ttlMinutes: 30,
+    ttlMinutes: 30 * 2 * 12, // 12 hours
     steps: {
         [CONVERSATION_STEP_WAITING_INPUT]: {
             onText: (context) =>

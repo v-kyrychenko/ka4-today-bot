@@ -30,20 +30,21 @@ export function buildWebhookFifoMessageMetadata(payload: QueueRequestEnvelope): 
     };
 }
 
-export function buildDailyFifoMessageMetadata(
+export function buildScheduledJobFifoMessageMetadata(
     payload: QueueRequestEnvelope,
+    jobName: string,
     date = new Date()
 ): SqsFifoMessageMetadata {
     const chatId = extractChatId(payload);
-    const promptRef = payload.request.message?.promptRef?.trim();
+    const normalizedJobName = jobName.trim();
 
-    if (!promptRef) {
-        throw new BadRequestError('Telegram daily request message.promptRef is mandatory for FIFO deduplication');
+    if (!normalizedJobName) {
+        throw new BadRequestError('Scheduled job name is mandatory for FIFO deduplication');
     }
 
     return {
         MessageGroupId: String(chatId),
-        MessageDeduplicationId: `daily-${chatId}-${promptRef}-${toIsoDate(date)}`,
+        MessageDeduplicationId: `${normalizedJobName}-${chatId}-${toIsoDate(date)}`,
     };
 }
 

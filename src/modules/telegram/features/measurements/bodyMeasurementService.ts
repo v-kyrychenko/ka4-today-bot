@@ -7,7 +7,7 @@ import {
     bodyMeasurementRepository,
 } from './repository/bodyMeasurementRepository.js';
 
-const MIN_DAYS_BETWEEN_MEASUREMENTS = 30;
+export const MIN_DAYS_BETWEEN_MEASUREMENTS = 30;
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
 export const bodyMeasurementService = {

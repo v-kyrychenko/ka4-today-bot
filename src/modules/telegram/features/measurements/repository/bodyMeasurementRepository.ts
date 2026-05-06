@@ -1,4 +1,4 @@
-import {and, asc, desc, eq, gte, lte} from 'drizzle-orm';
+import {and, asc, desc, eq, gte, isNotNull, lte, sql} from 'drizzle-orm';
 import {
     bodyMeasurementLogMapper,
 } from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementLogMapper.js';
@@ -6,11 +6,19 @@ import {getPostgresDb} from '../../../../../infrastructure/persistence/postgres/
 import {
     bodyMeasurementLog,
 } from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementLog.js';
+import {tgUser} from '../../../../../infrastructure/persistence/postgres/schema/tgUser.js';
 import type {BodyMeasurement, BodyMeasurementCreateInput} from '../bodyMeasurementsModel.js';
+
+export interface BodyMeasurementReminderCandidate {
+    chatId: number;
+    clientId: number;
+    latestMeasurementDate: string | null;
+}
 
 export const bodyMeasurementRepository = {
     findForClientSince,
     findLatestForClientOnOrBefore,
+    findReminderCandidates,
     createMany,
 };
 
@@ -39,6 +47,36 @@ export async function findLatestForClientOnOrBefore(clientId: number, date: stri
         .limit(1);
 
     return row ? bodyMeasurementLogMapper.toAppModel(row) : null;
+}
+
+export async function findReminderCandidates(cutoffDate: string): Promise<BodyMeasurementReminderCandidate[]> {
+    const latestMeasurementDate = sql<string | null>`max(${bodyMeasurementLog.created_at})`;
+    const rows = await getPostgresDb()
+        .select({
+            chatId: tgUser.chat_id,
+            clientId: tgUser.client_id,
+            latestMeasurementDate,
+        })
+        .from(tgUser)
+        .leftJoin(bodyMeasurementLog, eq(bodyMeasurementLog.client_id, tgUser.client_id))
+        .where(and(
+            eq(tgUser.is_active, true),
+            isNotNull(tgUser.client_id),
+        ))
+        .groupBy(tgUser.chat_id, tgUser.client_id)
+        .having(sql`${latestMeasurementDate} is null or ${latestMeasurementDate} < ${cutoffDate}`);
+
+    return rows.flatMap((row) => {
+        if (row.clientId == null) {
+            return [];
+        }
+
+        return [{
+            chatId: row.chatId,
+            clientId: row.clientId,
+            latestMeasurementDate: row.latestMeasurementDate,
+        }];
+    });
 }
 
 export async function createMany(input: BodyMeasurementCreateInput[]): Promise<BodyMeasurement[]> {

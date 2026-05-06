@@ -2,11 +2,12 @@ import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs';
 import {MAIN_MESSAGE_QUEUE_URL} from '../../../app/config/env.js';
 import {log} from '../../../shared/logging';
-import {buildDailyFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
+import {buildScheduledJobFifoMessageMetadata, QueueRequestEnvelope} from './sqsFifoMessageMetadata.js';
 import {DAILY_GREETING_ROUTE} from '../routes/registry.js';
 import {WorkoutSchedule} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 
+const DAILY_MESSAGE_JOB_NAME = 'daily-message';
 const sqsClient = new SQSClient();
 
 export const handler = withAppInitialization(async (): Promise<void> => {
@@ -50,8 +51,17 @@ async function sendToQueue(payload: QueueRequestEnvelope): Promise<void> {
     const command = new SendMessageCommand({
         QueueUrl: MAIN_MESSAGE_QUEUE_URL,
         MessageBody: message,
-        ...buildDailyFifoMessageMetadata(payload),
+        ...buildScheduledJobFifoMessageMetadata(payload, getDailyMessageJobName(payload)),
     });
 
     await sqsClient.send(command);
+}
+
+function getDailyMessageJobName(payload: QueueRequestEnvelope): string {
+    const promptRef = payload.request.message?.promptRef?.trim();
+    if (!promptRef) {
+        return '';
+    }
+
+    return `${DAILY_MESSAGE_JOB_NAME}-${promptRef}`;
 }
