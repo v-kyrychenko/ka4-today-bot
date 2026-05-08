@@ -7,9 +7,8 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
 
 ## 📐 Architecture
 
-[//]: # (<img src="assets/ka4-today.arch.png">)
-
-[//]: # (<br>)
+ <img src="assets/ka4-today.arch.png"/>
+ <br>
 
 - **Telegram webhook flow** uses **API Gateway (HTTP API)** to invoke a lightweight Lambda.
   That handler validates the Telegram secret token and pushes inbound updates to **Amazon SQS**.
@@ -19,8 +18,10 @@ It processes a simple webhook message, interacts with OpenAI to generate a respo
   (`MaximumConcurrency: 2`) before routing each update through the Telegram command pipeline.
 - **Daily scheduled delivery** runs through a dedicated cron Lambda that loads the users scheduled
   for the day and enqueues outbound work onto the same SQS queue.
-- **Coach HTTP APIs** are exposed as separate **API Gateway (HTTP API)** Lambda handlers for
-  client and exercise endpoints, isolated from the Telegram webhook path.
+
+[//]: # (- **Coach HTTP APIs** are exposed as separate **API Gateway &#40;HTTP API&#41;** Lambda handlers for)
+[//]: # (  client and exercise endpoints, isolated from the Telegram webhook path.)
+
 - **OpenAI Responses API** is used by the Telegram application layer to render prompt-driven
   replies and workout generation flows.
 - **PostgreSQL** is the main application data store for Telegram users, prompts, message logs,
