@@ -3,8 +3,6 @@
 A lightweight, serverless Telegram bot built with AWS Lambda, OpenAI Responses API, and Node.js.  
 It processes a simple webhook message, interacts with OpenAI to generate a response, and sends it back via Telegram.
 
----
-
 ## 📐 Architecture
 
  <img src="assets/ka4-today.arch.png"/>
