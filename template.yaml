@@ -105,7 +105,7 @@ Resources:
         External:
           - '@resvg/resvg-js'
         Format: cjs
-        Minify: false
+        Minify: true
         Sourcemap: false
         Target: es2022
       BuildArchitecture: arm64
@@ -144,7 +144,7 @@ Resources:
         EntryPoints:
           - src/modules/telegram/handlers/cronDailyMessage.ts
         Format: cjs
-        Minify: false
+        Minify: true
         Sourcemap: false
         Target: es2022
 
@@ -185,7 +185,7 @@ Resources:
         EntryPoints:
           - src/modules/telegram/handlers/cronMeasurementsReminder.ts
         Format: cjs
-        Minify: false
+        Minify: true
         Sourcemap: false
         Target: es2022
       BuildArchitecture: arm64
@@ -302,7 +302,7 @@ Resources:
         EntryPoints:
           - src/modules/telegram/handlers/ka4TodayTelegramWebhook.ts
         Format: cjs
-        Minify: false
+        Minify: true
         Sourcemap: false
         Target: es2022
 
