@@ -1,8 +1,24 @@
 export type LocalizedText = Record<string, string>;
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-export type GoalTag = 'fat_loss' | 'maintenance';
-export type DayTag = 'training_day' | 'rest_day';
+export const MEAL_TYPE = {
+    BREAKFAST: 'breakfast',
+    LUNCH: 'lunch',
+    DINNER: 'dinner',
+    SNACK: 'snack',
+} as const;
+export type MealType = typeof MEAL_TYPE[keyof typeof MEAL_TYPE];
+
+export const GOAL_TAG = {
+    FAT_LOSS: 'fat_loss',
+    MAINTENANCE: 'maintenance',
+} as const;
+export type GoalTag = typeof GOAL_TAG[keyof typeof GOAL_TAG];
+
+export const DAY_TAG = {
+    TRAINING_DAY: 'training_day',
+    REST_DAY: 'rest_day',
+} as const;
+export type DayTag = typeof DAY_TAG[keyof typeof DAY_TAG];
 
 export type FoodCategory =
     | 'protein'
@@ -14,7 +30,24 @@ export type FoodCategory =
     | 'carb_fat';
 
 export type FoodUnit = 'g' | 'pcs';
-export type MealRole = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealRole = MealType;
+export const MEAL_ITEM_ROLE = {
+    BREAKFAST_CARB: 'breakfast_carb',
+    CARB: 'carb',
+    CARB_FAT: 'carb_fat',
+    CARB_PROTEIN: 'carb_protein',
+    FAT: 'fat',
+    FLAVOR_FAT: 'flavor_fat',
+    HEALTHY_FAT: 'healthy_fat',
+    LIGHT_CARB: 'light_carb',
+    MAIN_PROTEIN: 'main_protein',
+    PROTEIN_BOOSTER: 'protein_booster',
+    PROTEIN_FAT: 'protein_fat',
+    QUICK_CARB: 'quick_carb',
+    TRAINING_CARB: 'training_carb',
+    VEGETABLE: 'vegetable',
+} as const;
+export type MealItemRole = typeof MEAL_ITEM_ROLE[keyof typeof MEAL_ITEM_ROLE];
 
 export class FoodDict {
     id = 0;
@@ -42,7 +75,7 @@ export class MealItem {
     id = 0;
     amount = 0;
     unit: FoodUnit = 'g';
-    role = '';
+    role: MealItemRole = MEAL_ITEM_ROLE.MAIN_PROTEIN;
     adjustable = true;
     minAmount: number | null = null;
     maxAmount: number | null = null;
@@ -58,7 +91,7 @@ export class MealTemplate {
     id = 0;
     key = '';
     active = true;
-    mealType: MealType = 'breakfast';
+    mealType: MealType = MEAL_TYPE.BREAKFAST;
     title: LocalizedText = {};
     goalTags: GoalTag[] = [];
     dayTags: DayTag[] = [];

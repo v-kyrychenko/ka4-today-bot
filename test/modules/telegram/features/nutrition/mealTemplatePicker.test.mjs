@@ -150,7 +150,7 @@ function createTemplate(input) {
             id: index + 1,
             amount: 100,
             unit: 'g',
-            role: food.role ?? (index === 0 ? 'main_protein' : 'side'),
+            role: food.role ?? (index === 0 ? 'main_protein' : 'vegetable'),
             adjustable: true,
             minAmount: null,
             maxAmount: null,

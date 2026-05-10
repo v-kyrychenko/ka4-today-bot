@@ -1,4 +1,4 @@
-import {asc, eq} from 'drizzle-orm';
+import {asc, eq, sql} from 'drizzle-orm';
 import {nutritionMapper} from '../../../../infrastructure/persistence/postgres/mappers/nutritionMapper.js';
 import {getPostgresDb} from '../../../../infrastructure/persistence/postgres/postgresDb.js';
 import {
@@ -6,7 +6,7 @@ import {
     nMealItem,
     nMealTemplate,
 } from '../../../../infrastructure/persistence/postgres/schema/nutrition.js';
-import type {MealTemplate, MealType} from './nutritionModel.js';
+import type {MealItemRole, MealTemplate, MealType} from './nutritionModel.js';
 
 export const nutritionRepository = {
     findMealTemplatesByMealType,
@@ -17,6 +17,7 @@ export async function findMealTemplatesByMealType(mealType: MealType): Promise<M
         .select({
             template_id: nMealTemplate.id,
             template_key: nMealTemplate.key,
+            is_active: nMealTemplate.is_active,
             meal_type: nMealTemplate.meal_type,
             title: nMealTemplate.title,
             goal_tags: nMealTemplate.goal_tags,
@@ -24,7 +25,7 @@ export async function findMealTemplatesByMealType(mealType: MealType): Promise<M
             item_id: nMealItem.id,
             item_amount: nMealItem.amount,
             item_unit: nMealItem.unit,
-            item_role: nMealItem.role,
+            item_role: sql<MealItemRole>`${nMealItem.role}`,
             adjustable: nMealItem.adjustable,
             min_amount: nMealItem.min_amount,
             max_amount: nMealItem.max_amount,

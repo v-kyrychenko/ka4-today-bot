@@ -18,6 +18,7 @@ export const nFoodDict = pgTable('n_food_dict', {
 export const nMealTemplate = pgTable('n_meal_template', {
     id: bigserial('id', {mode: 'number'}).primaryKey(),
     key: varchar('key', {length: 80}).notNull(),
+    is_active: boolean('is_active').notNull(),
     meal_type: varchar('meal_type', {length: 60}).notNull(),
     title: jsonb('title').notNull(),
     goal_tags: text('goal_tags').array().notNull(),
