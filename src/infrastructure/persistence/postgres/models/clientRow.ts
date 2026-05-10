@@ -4,6 +4,7 @@ export interface ClientRow {
     first_name: string;
     last_name: string;
     status: string;
+    gender: string;
     lang: string;
     birthday: string;
     created_at: string;

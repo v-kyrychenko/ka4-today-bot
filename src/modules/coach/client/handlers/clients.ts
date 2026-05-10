@@ -21,8 +21,10 @@ import {getClientById} from '../application/getClient.js';
 import {listClients} from '../application/listClients.js';
 import {updateClient} from '../application/updateClient.js';
 import {
+    CLIENT_GENDERS,
     CLIENT_STATUSES,
     type ClientCreateInput,
+    type ClientGender,
     type ClientStatus,
     type ClientUpdateInput,
 } from '../domain/client.js';
@@ -87,12 +89,13 @@ export async function handleClientsUpdate(event: ApiGatewayHttpEvent): Promise<L
 
 function parseCreateInput(event: ApiGatewayHttpEvent): ClientCreateInput {
     const body = parseRequestBody(event);
-    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'lang', 'birthday', 'goals', 'notes']);
+    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'gender', 'lang', 'birthday', 'goals', 'notes']);
 
     return {
         firstName: parseRequiredString(body, 'firstName', 60),
         lastName: parseRequiredString(body, 'lastName', 60),
         status: parseClientStatus(body, 'status'),
+        gender: parseClientGender(body, 'gender'),
         lang: parseRequiredString(body, 'lang', 10),
         birthday: parseRequiredDate(body, 'birthday'),
         goals: parseOptionalNullableString(body, 'goals'),
@@ -102,7 +105,7 @@ function parseCreateInput(event: ApiGatewayHttpEvent): ClientCreateInput {
 
 function parseUpdateInput(event: ApiGatewayHttpEvent): ClientUpdateInput {
     const body = parseRequestBody(event);
-    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'lang', 'birthday', 'goals', 'notes']);
+    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'gender', 'lang', 'birthday', 'goals', 'notes']);
 
     const input: ClientUpdateInput = {};
 
@@ -114,6 +117,9 @@ function parseUpdateInput(event: ApiGatewayHttpEvent): ClientUpdateInput {
     }
     if ('status' in body) {
         input.status = parseClientStatus(body, 'status');
+    }
+    if ('gender' in body) {
+        input.gender = parseClientGender(body, 'gender');
     }
     if ('lang' in body) {
         input.lang = parseRequiredString(body, 'lang', 10);
@@ -164,4 +170,14 @@ function parseClientStatus(body: Record<string, unknown>, name: string): ClientS
     }
 
     return value as ClientStatus;
+}
+
+function parseClientGender(body: Record<string, unknown>, name: string): ClientGender {
+    const value = parseRequiredString(body, name, 1);
+
+    if (!CLIENT_GENDERS.includes(value as ClientGender)) {
+        throw new BadRequestError(`Field '${name}' must be one of: ${CLIENT_GENDERS.join(', ')}`);
+    }
+
+    return value as ClientGender;
 }

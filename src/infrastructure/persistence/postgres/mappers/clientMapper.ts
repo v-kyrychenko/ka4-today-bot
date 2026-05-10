@@ -1,7 +1,8 @@
 import {
-    ClientItem,
-    type ClientStatus,
+    ClientProfile,
     type ClientCreateInput,
+    type ClientGender,
+    type ClientStatus,
     type ClientUpdateInput,
 } from '../../../../modules/coach/client/domain/client.js';
 import type {ClientRow} from '../models/clientRow.js';
@@ -11,6 +12,7 @@ export interface ClientCreateRow {
     first_name: string;
     last_name: string;
     status: ClientStatus;
+    gender: ClientGender;
     lang: string;
     birthday: string;
     created_at: string;
@@ -22,6 +24,7 @@ export interface ClientUpdateRow {
     first_name?: string;
     last_name?: string;
     status?: ClientStatus;
+    gender?: ClientGender;
     lang?: string;
     birthday?: string;
     goals?: string | null;
@@ -34,13 +37,14 @@ export const clientMapper = {
     toUpdateRow,
 };
 
-export function toAppModel(row: ClientRow): ClientItem {
-    return new ClientItem({
+export function toAppModel(row: ClientRow): ClientProfile {
+    return new ClientProfile({
         id: row.id,
         coachId: row.coach_id,
         firstName: row.first_name,
         lastName: row.last_name,
         status: row.status as ClientStatus,
+        gender: row.gender as ClientGender,
         lang: row.lang,
         birthday: row.birthday,
         createdAt: row.created_at,
@@ -56,6 +60,7 @@ export function toCreateRow(input: ClientCreateInput, coachId: number, createdAt
         first_name: input.firstName,
         last_name: input.lastName,
         status: input.status,
+        gender: input.gender,
         lang: input.lang,
         birthday: input.birthday,
         created_at: createdAt,
@@ -75,6 +80,9 @@ export function toUpdateRow(input: ClientUpdateInput): ClientUpdateRow {
     }
     if (input.status !== undefined) {
         update.status = input.status;
+    }
+    if (input.gender !== undefined) {
+        update.gender = input.gender;
     }
     if (input.lang !== undefined) {
         update.lang = input.lang;

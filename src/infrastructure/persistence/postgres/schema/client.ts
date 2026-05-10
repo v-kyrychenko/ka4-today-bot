@@ -6,6 +6,7 @@ export const client = pgTable('client', {
     first_name: varchar('first_name', {length: 60}).notNull(),
     last_name: varchar('last_name', {length: 60}).notNull(),
     status: varchar('status', {length: 20}).notNull(),
+    gender: varchar('gender', {length: 1}).notNull(),
     lang: varchar('lang', {length: 10}).notNull(),
     birthday: date('birthday', {mode: 'string'}).notNull(),
     created_at: timestamp('created_at', {mode: 'string'}).notNull(),
