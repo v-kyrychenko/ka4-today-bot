@@ -1,4 +1,5 @@
 import {eq} from 'drizzle-orm';
+import {today} from '../../../../../shared/utils/dateUtils.js';
 import {
     bodyMeasurementSummaryMapper,
 } from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementSummaryMapper.js';
@@ -29,7 +30,7 @@ export async function findByDataHash(dataHash: string): Promise<BodyMeasurementS
 export async function create(input: BodyMeasurementSummaryCreateInput): Promise<BodyMeasurementSummary> {
     const [row] = await getPostgresDb()
         .insert(bodyMeasurementSummary)
-        .values(bodyMeasurementSummaryMapper.toCreateRow(input, new Date().toISOString().slice(0, 10)))
+        .values(bodyMeasurementSummaryMapper.toCreateRow(input, today()))
         .onConflictDoNothing({
             target: [
                 bodyMeasurementSummary.client_id,

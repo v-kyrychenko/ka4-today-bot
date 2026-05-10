@@ -1,5 +1,6 @@
 import {nutritionRepository} from '../nutritionRepository.js';
 import {toSet} from '../../../../../shared/utils/collectionUtils.js';
+import {today} from '../../../../../shared/utils/dateUtils.js';
 import {MEAL_TYPE, type MealTemplate, type MealType} from '../nutritionModel.js';
 import {applyFallbackRule, fallbackRules, getNextFallbackRule} from './fallbackRules.js';
 import {pickWeighted, scoreCandidates} from './mealTemplateScoring.js';
@@ -78,7 +79,7 @@ function createPickerContext(request: MealTemplatePickerRequest): PickerContext 
     return {
         request,
         config: {...mealTemplatePickerConfig, ...request.config},
-        targetDate: request.targetDate ?? new Date().toISOString().slice(0, 10),
+        targetDate: request.targetDate ?? today(),
         excludedFoodKeys: toSet([
             ...(exclusions.allergyFoodKeys ?? []),
             ...(exclusions.excludedFoodKeys ?? []),

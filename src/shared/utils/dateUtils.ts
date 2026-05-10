@@ -6,6 +6,10 @@ export function toIsoDate(date: Date): string {
     return date.toISOString().slice(0, 10);
 }
 
+export function today(): string {
+    return toIsoDate(new Date());
+}
+
 export function minusDays(date: Date, days: number): Date {
     const result = new Date(date);
     result.setUTCDate(result.getUTCDate() - days);

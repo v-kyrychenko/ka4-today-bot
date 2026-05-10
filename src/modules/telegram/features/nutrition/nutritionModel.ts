@@ -1,5 +1,12 @@
-import {ClientGender} from "../../../coach/client/domain/client";
-import {BodyMeasurement} from "../measurements/bodyMeasurementsModel";
+import type {ClientGender} from '../../../coach/client/domain/client.js';
+import type {BodyMeasurement} from '../measurements/bodyMeasurementsModel.js';
+import type {
+    MealTemplateExclusions,
+    MealTemplatePickerConfig,
+    MealTemplatePreferences,
+    MealTemplatePickMetadata,
+    RecentMealTemplate,
+} from './picker/types.js';
 
 export type LocalizedText = Record<string, string>;
 
@@ -111,13 +118,32 @@ export class MealTemplate {
 
 export interface DailyNutritionPlannerRequest {
     clientId: number;
-    gender: ClientGender;
-    birthday: string;
+    goal: GoalTag;
+    dayType: DayTag;
+    targetDate?: string;
+    gender?: ClientGender;
+    birthday?: string;
     goals?: string | null;
-    weight: BodyMeasurement;
+    weight?: BodyMeasurement;
+    exclusions?: MealTemplateExclusions;
+    preferences?: MealTemplatePreferences;
+    recentTemplates?: RecentMealTemplate[];
+    config?: Partial<MealTemplatePickerConfig>;
+    random?: () => number;
 }
 
 export interface DailyNutritionPlan {
-//TODO
+    clientId: number;
+    goal: GoalTag;
+    dayType: DayTag;
+    targetDate: string;
+    meals: DailyNutritionPlanMeal[];
 }
 
+export interface DailyNutritionPlanMeal {
+    mealType: MealType;
+    template: MealTemplate;
+    fallbackLevel: string;
+    reason: string;
+    score: number;
+}
