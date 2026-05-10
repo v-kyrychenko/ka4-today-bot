@@ -1,3 +1,6 @@
+import {ClientGender} from "../../../coach/client/domain/client";
+import {BodyMeasurement} from "../measurements/bodyMeasurementsModel";
+
 export type LocalizedText = Record<string, string>;
 
 export const MEAL_TYPE = {
@@ -105,3 +108,16 @@ export class MealTemplate {
         this.items = init?.items ?? [];
     }
 }
+
+export interface DailyNutritionPlannerRequest {
+    clientId: number;
+    gender: ClientGender;
+    birthday: string;
+    goals?: string | null;
+    weight: BodyMeasurement;
+}
+
+export interface DailyNutritionPlan {
+//TODO
+}
+
