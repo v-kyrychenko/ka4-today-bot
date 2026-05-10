@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 test('fetchOpenAiReply renders translated prompts and returns the latest assistant reply', async () => {
@@ -395,24 +391,24 @@ async function loadPromptReplyService(options = {}) {
         },
     };
 
-    const outfile = path.join(tmpdir(), `prompt-reply-service-${process.pid}-${Date.now()}.mjs`);
-
-    await build({
+    const cacheKey = `${Date.now()}`;
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/features/prompts/promptReplyService.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [promptReplyServiceMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
     try {
-        const module = await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
+        const module = await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
         return {module, calls};
     } finally {
         delete globalThis.__promptReplyServiceMocks;
-        await rm(outfile, {force: true});
     }
 }
 

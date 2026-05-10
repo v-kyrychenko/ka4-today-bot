@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 test('nutritionMapper maps nMealTemplate.is_active to MealTemplate.active', async () => {
@@ -16,22 +12,18 @@ test('nutritionMapper maps nMealTemplate.is_active to MealTemplate.active', asyn
 
 async function loadNutritionMapper() {
     const cacheKey = `${Date.now()}-${Math.random()}`;
-    const outfile = path.join(tmpdir(), `nutrition-mapper-${process.pid}-${cacheKey}.mjs`);
-
-    await build({
+    const result = await build({
         bundle: true,
         entryPoints: ['src/infrastructure/persistence/postgres/mappers/nutritionMapper.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${cacheKey}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
 
 function createMealTemplateRow(input = {}) {

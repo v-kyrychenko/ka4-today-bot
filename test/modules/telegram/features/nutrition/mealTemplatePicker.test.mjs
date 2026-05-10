@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 test('pickMealTemplate returns a strict matching active template', async () => {
@@ -101,28 +97,24 @@ async function loadMealTemplatePicker(templates) {
     globalThis.__mealTemplatePickerMocks = mocks;
 
     const cacheKey = `${Date.now()}-${Math.random()}`;
-    const outfile = path.join(tmpdir(), `meal-template-picker-${process.pid}-${cacheKey}.mjs`);
-
-    await build({
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/features/nutrition/picker/mealTemplatePicker.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [mealTemplatePickerMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        const module = await import(`${pathToFileURL(outfile).href}?cache=${cacheKey}`);
+    const module = await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 
-        return {
-            module,
-            logs: mocks.logs,
-        };
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return {
+        module,
+        logs: mocks.logs,
+    };
 }
 
 function createRequest(input = {}) {

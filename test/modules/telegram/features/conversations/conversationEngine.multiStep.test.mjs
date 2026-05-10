@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const chatId = 42;
@@ -37,23 +33,20 @@ async function loadConversationEngine(repository, definitions) {
     globalThis.__conversationRepository = repository;
     globalThis.__conversationDefinitions = definitions;
 
-    const outfile = path.join(tmpdir(), `conversation-engine-${process.pid}-${Date.now()}.mjs`);
-
-    await build({
+    const cacheKey = `${Date.now()}`;
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/features/conversations/engine.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [conversationEngineMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
 
 const conversationEngineMocks = {

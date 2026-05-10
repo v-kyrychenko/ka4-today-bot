@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const TELEGRAM_BOT_TOKEN = 'bot-secret-token';
@@ -98,23 +94,20 @@ async function loadTelegramClientWithRealHttpClient() {
 }
 
 async function loadTelegramClient(extraPlugins) {
-    const outfile = path.join(tmpdir(), `telegram-client-${process.pid}-${Date.now()}-${Math.random()}.mjs`);
-
-    await build({
+    const cacheKey = `${Date.now()}-${Math.random()}`;
+    const result = await build({
         bundle: true,
         entryPoints: ['src/infrastructure/integrations/telegram/telegramClient.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [telegramEnvPlugin, telegramErrorsPlugin, ...extraPlugins],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
 
 const telegramEnvPlugin = {

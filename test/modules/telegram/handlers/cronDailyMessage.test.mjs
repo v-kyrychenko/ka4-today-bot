@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 test('daily cron queues daily greeting with scheduled job FIFO metadata', async () => {
@@ -34,23 +30,20 @@ test('daily cron queues daily greeting with scheduled job FIFO metadata', async 
 async function loadHandler(mocks) {
     globalThis.__cronDailyMessageMocks = mocks;
 
-    const outfile = path.join(tmpdir(), `cron-daily-message-${process.pid}-${Date.now()}.mjs`);
-
-    await build({
+    const cacheKey = `${Date.now()}`;
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/handlers/cronDailyMessage.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [cronDailyMessageMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
 
 const cronDailyMessageMocks = {

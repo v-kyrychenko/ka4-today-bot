@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const chatId = 42;
@@ -138,23 +134,20 @@ async function loadRoutesProcessor(options) {
 async function loadModule(entryPoint, mocks) {
     globalThis.__telegramRouteMocks = mocks;
 
-    const outfile = path.join(tmpdir(), `telegram-route-${process.pid}-${Date.now()}-${Math.random()}.mjs`);
-
-    await build({
+    const cacheKey = `${Date.now()}-${Math.random()}`;
+    const result = await build({
         bundle: true,
         entryPoints: [entryPoint],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [routeMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}-${Math.random()}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
 
 const routeMocks = {

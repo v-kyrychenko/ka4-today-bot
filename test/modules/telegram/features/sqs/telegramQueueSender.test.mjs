@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 test('telegram queue sender serializes payload and sends FIFO metadata to the main queue', async () => {
@@ -35,23 +31,19 @@ async function loadModule(mocks) {
     globalThis.__telegramQueueSenderMocks = mocks;
 
     const cacheKey = `${Date.now()}-${Math.random()}`;
-    const outfile = path.join(tmpdir(), `telegram-queue-sender-${process.pid}-${cacheKey}.mjs`);
-
-    await build({
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/features/sqs/telegramQueueSender.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [telegramQueueSenderMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${cacheKey}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
 
 const telegramQueueSenderMocks = {

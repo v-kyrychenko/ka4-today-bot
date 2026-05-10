@@ -1,24 +1,20 @@
 export const CLIENT_STATUS_ACTIVE = 'ACTIVE';
 export const CLIENT_STATUS_ONLINE = 'ONLINE';
 export const CLIENT_STATUS_INACTIVE = 'INACTIVE';
-export const CLIENT_GENDER_FEMALE = 'F';
-export const CLIENT_GENDER_MALE = 'M';
-export const CLIENT_GENDER_UNKNOWN = 'U';
 
 export const CLIENT_STATUSES = [
     CLIENT_STATUS_ACTIVE,
     CLIENT_STATUS_ONLINE,
     CLIENT_STATUS_INACTIVE,
 ] as const;
-
-export const CLIENT_GENDERS = [
-    CLIENT_GENDER_FEMALE,
-    CLIENT_GENDER_MALE,
-    CLIENT_GENDER_UNKNOWN,
-] as const;
-
 export type ClientStatus = typeof CLIENT_STATUSES[number];
-export type ClientGender = typeof CLIENT_GENDERS[number];
+
+export const CLIENT_GENDERS = {
+    FEMALE: 'F',
+    MALE: 'M',
+    UNKNOWN: 'U',
+} as const;
+export type ClientGender = typeof CLIENT_GENDERS[keyof typeof CLIENT_GENDERS];
 
 export class ClientProfile {
     id = 0;
@@ -26,7 +22,7 @@ export class ClientProfile {
     firstName = '';
     lastName = '';
     status: ClientStatus = CLIENT_STATUS_ACTIVE;
-    gender: ClientGender = CLIENT_GENDER_UNKNOWN;
+    gender: ClientGender = CLIENT_GENDERS.UNKNOWN;
     lang = '';
     birthday = '';
     createdAt = '';

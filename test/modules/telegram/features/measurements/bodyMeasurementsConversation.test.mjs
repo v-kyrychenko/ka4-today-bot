@@ -1,9 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const chatId = 42;
@@ -232,24 +228,22 @@ async function loadConversation(options) {
         HttpApiError: TestHttpApiError,
     };
 
-    const outfile = path.join(tmpdir(), `measurements-conversation-${process.pid}-${Date.now()}.mjs`);
-
-    await build({
+    const cacheKey = `${Date.now()}`;
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/features/measurements/bodyMeasurementsConversation.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
         plugins: [measurementConversationMocks],
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        const module = await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
-        return {definition: module.bodyMeasurementsConversation, repository, bodyMeasurementService};
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    const module = await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
+
+    return {definition: module.bodyMeasurementsConversation, repository, bodyMeasurementService};
 }
 
 const measurementConversationMocks = {

@@ -1,18 +1,17 @@
 import {strict as assert} from 'node:assert';
-import {rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {test} from 'node:test';
-import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 test('calculateDailyNutritionPlan logs maintenance targets for an 81 kg male client', async () => {
     const module = await loadMacroTargetsCalculator();
-    const result = module.calculateDailyNutritionPlan({
+    const result = module.calculateMacroTargets({
         clientId: 101,
         gender: 'M',
-        birthday: '15.01.1989',
+        birthday: '1989-01-15',
         goal: 'maintenance',
+        height: 182,
+        activityLevel: 'active',
+        dayType: 'training_day',
         weight: {
             id: 1,
             clientId: 101,
@@ -26,29 +25,25 @@ test('calculateDailyNutritionPlan logs maintenance targets for an 81 kg male cli
     console.log('### MACRO_TARGETS_CALCULATOR:result', result);
 
     assert.deepEqual(result, {
-        calories: 2592,
+        calories: 2740,
         protein: 130,
-        fat: 72,
-        carbs: 356,
+        fat: 76,
+        carbs: 384,
     });
 });
 
 async function loadMacroTargetsCalculator() {
     const cacheKey = `${Date.now()}-${Math.random()}`;
-    const outfile = path.join(tmpdir(), `macro-targets-calculator-${process.pid}-${cacheKey}.mjs`);
-
-    await build({
+    const result = await build({
         bundle: true,
         entryPoints: ['src/modules/telegram/features/nutrition/macroTargetsCalculator.ts'],
         format: 'esm',
         logLevel: 'silent',
-        outfile,
         platform: 'node',
+        write: false,
     });
+    const output = result.outputFiles[0];
+    const encodedSource = Buffer.from(output.text).toString('base64');
 
-    try {
-        return await import(`${pathToFileURL(outfile).href}?cache=${cacheKey}`);
-    } finally {
-        await rm(outfile, {force: true});
-    }
+    return await import(`data:text/javascript;base64,${encodedSource}#${cacheKey}`);
 }
