@@ -118,18 +118,10 @@ export class MealTemplate {
 
 export interface DailyNutritionPlannerRequest {
     clientId: number;
-    goal: GoalTag;
-    dayType: DayTag;
-    targetDate?: string;
-    gender?: ClientGender;
-    birthday?: string;
+    gender: ClientGender;
+    birthday: string;
     goals?: string | null;
-    weight?: BodyMeasurement;
-    exclusions?: MealTemplateExclusions;
-    preferences?: MealTemplatePreferences;
-    recentTemplates?: RecentMealTemplate[];
-    config?: Partial<MealTemplatePickerConfig>;
-    random?: () => number;
+    weight: BodyMeasurement;
 }
 
 export interface DailyNutritionPlan {

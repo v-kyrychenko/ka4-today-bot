@@ -24,8 +24,7 @@ export async function generate(request: DailyNutritionPlannerRequest): Promise<D
 }
 
 async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
-    const targetDate = request.targetDate ?? today();
-    const meals = await pickDraftMeals(request, targetDate);
+    const meals = await pickDraftMeals(request);
 
     return {
         clientId: request.clientId,
@@ -36,35 +35,27 @@ async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promi
     };
 }
 
-async function pickDraftMeals(
-    request: DailyNutritionPlannerRequest,
-    targetDate: string
-): Promise<DailyNutritionPlanMeal[]> {
+async function pickDraftMeals(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlanMeal[]> {
     const meals: DailyNutritionPlanMeal[] = [];
 
     for (const mealType of DAILY_MEAL_ORDER) {
-        meals.push(await pickDraftMeal(request, mealType, targetDate));
+        meals.push(await pickDraftMeal(request, mealType));
     }
 
     return meals;
 }
 
-async function pickDraftMeal(
-    request: DailyNutritionPlannerRequest,
-    mealType: MealType,
-    targetDate: string
-): Promise<DailyNutritionPlanMeal> {
+async function pickDraftMeal(request: DailyNutritionPlannerRequest, mealType: MealType): Promise<DailyNutritionPlanMeal> {
     const result = await mealTemplatePicker.pickMealTemplate({
         clientId: request.clientId,
-        mealType,
-        goal: request.goal,
-        dayType: request.dayType,
-        targetDate,
-        exclusions: request.exclusions,
-        preferences: request.preferences,
-        recentTemplates: request.recentTemplates,
-        config: request.config,
-        random: request.random,
+        mealType
+       // goal: request.goals,
+        // dayType: request.dayType,
+        // targetDate,
+        // exclusions: request.exclusions,
+        // preferences: request.preferences,
+        // recentTemplates: request.recentTemplates,
+        // config: request.config,
     });
 
     return {
