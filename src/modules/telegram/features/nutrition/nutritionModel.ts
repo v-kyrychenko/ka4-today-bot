@@ -57,6 +57,7 @@ export class MealItem {
 export class MealTemplate {
     id = 0;
     key = '';
+    active = true;
     mealType: MealType = 'breakfast';
     title: LocalizedText = {};
     goalTags: GoalTag[] = [];
