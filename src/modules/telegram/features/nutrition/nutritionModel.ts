@@ -120,7 +120,7 @@ export interface DailyNutritionPlannerRequest {
     clientId: number;
     gender: ClientGender;
     birthday: string;
-    goals?: string | null;
+    goal?: GoalTag | null;
     weight: BodyMeasurement;
 }
 

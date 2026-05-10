@@ -26,46 +26,47 @@ export async function generate(request: DailyNutritionPlannerRequest): Promise<D
 async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
     const meals = await pickDraftMeals(request);
 
-    return {
-        clientId: request.clientId,
-        goal: request.goal,
-        dayType: request.dayType,
-        targetDate,
-        meals,
-    };
+    return {clientId: 0, dayType: undefined, goal: undefined, meals: [], targetDate: ""};
+    // return {
+    //     clientId: request.clientId,
+    //     goal: null,//request.goal,
+    //     dayType: request.dayType,
+    //     targetDate,
+    //     meals,
+    // };
 }
 
 async function pickDraftMeals(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlanMeal[]> {
     const meals: DailyNutritionPlanMeal[] = [];
 
     for (const mealType of DAILY_MEAL_ORDER) {
-        meals.push(await pickDraftMeal(request, mealType));
+       // meals.push(await pickDraftMeal(request, mealType));
     }
 
     return meals;
 }
 
-async function pickDraftMeal(request: DailyNutritionPlannerRequest, mealType: MealType): Promise<DailyNutritionPlanMeal> {
-    const result = await mealTemplatePicker.pickMealTemplate({
-        clientId: request.clientId,
-        mealType
-       // goal: request.goals,
-        // dayType: request.dayType,
-        // targetDate,
-        // exclusions: request.exclusions,
-        // preferences: request.preferences,
-        // recentTemplates: request.recentTemplates,
-        // config: request.config,
-    });
-
-    return {
-        mealType,
-        template: result.template,
-        fallbackLevel: result.fallbackLevel,
-        reason: result.reason,
-        score: result.score,
-    };
-}
+// async function pickDraftMeal(request: DailyNutritionPlannerRequest, mealType: MealType): Promise<DailyNutritionPlanMeal> {
+//     const result = await mealTemplatePicker.pickMealTemplate({
+//         clientId: request.clientId,
+//         mealType
+//        // goal: request.goals,
+//         // dayType: request.dayType,
+//         // targetDate,
+//         // exclusions: request.exclusions,
+//         // preferences: request.preferences,
+//         // recentTemplates: request.recentTemplates,
+//         // config: request.config,
+//     });
+//
+//     return {
+//         mealType,
+//         template: result.template,
+//         fallbackLevel: result.fallbackLevel,
+//         reason: result.reason,
+//         score: result.score,
+//     };
+// }
 
 // TODO: Decide whether goal/dayType should always be passed by callers or derived here from client goals/training schedule.
 // TODO: Add calorie and macro targets when the product rules for age, gender, weight, and activity are confirmed.
