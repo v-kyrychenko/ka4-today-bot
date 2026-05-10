@@ -1,14 +1,40 @@
 import type {ClientGender} from '../../../coach/client/domain/client.js';
 import type {BodyMeasurement} from '../measurements/bodyMeasurementsModel.js';
-import type {
-    MealTemplateExclusions,
-    MealTemplatePickerConfig,
-    MealTemplatePreferences,
-    MealTemplatePickMetadata,
-    RecentMealTemplate,
-} from './picker/types.js';
 
 export type LocalizedText = Record<string, string>;
+
+/**
+ * Physical activity level used for estimating daily energy needs.
+ *
+ * These values describe the user's general daily activity level, not only
+ * whether a workout exists on a specific day.
+ */
+export const ACTIVITY_LEVEL = {
+    /**
+     * Mostly sedentary day with little planned movement.
+     * Example: desk work, minimal walking, no structured exercise.
+     */
+    INACTIVE: 'inactive',
+
+    /**
+     * Light daily movement.
+     * Example: desk work with some walking or light household activity.
+     */
+    LOW_ACTIVE: 'low_active',
+
+    /**
+     * Regular daily movement or a typical training day.
+     * Example: gym training, regular walking, or moderately active routine.
+     */
+    ACTIVE: 'active',
+
+    /**
+     * High daily movement or physically demanding day.
+     * Example: physical job, long cardio/endurance session, or very high step count.
+     */
+    VERY_ACTIVE: 'very_active',
+} as const;
+export type ActivityLevel = typeof ACTIVITY_LEVEL[keyof typeof ACTIVITY_LEVEL];
 
 export const MEAL_TYPE = {
     BREAKFAST: 'breakfast',
@@ -21,6 +47,7 @@ export type MealType = typeof MEAL_TYPE[keyof typeof MEAL_TYPE];
 export const GOAL_TAG = {
     FAT_LOSS: 'fat_loss',
     MAINTENANCE: 'maintenance',
+    MUSCLE_GAIN: 'muscle_gain',
 } as const;
 export type GoalTag = typeof GOAL_TAG[keyof typeof GOAL_TAG];
 
@@ -122,6 +149,9 @@ export interface DailyNutritionPlannerRequest {
     birthday: string;
     goal?: GoalTag | null;
     weight: BodyMeasurement;
+    height: number;
+    activityLevel: ActivityLevel;
+    dayType: DayTag;
 }
 
 export interface DailyNutritionPlan {
@@ -138,4 +168,11 @@ export interface DailyNutritionPlanMeal {
     fallbackLevel: string;
     reason: string;
     score: number;
+}
+
+export interface DailyMacroTargets {
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
 }

@@ -17,6 +17,21 @@ export function minusDays(date: Date, days: number): Date {
     return result;
 }
 
+export function calculateAge(birthday: string): number {
+    const birthDate = new Date(birthday);
+    const today = new Date();
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const hasBirthdayPassed = monthDiff > 0 || (monthDiff === 0 && today.getDate() >= birthDate.getDate());
+
+    if (!hasBirthdayPassed) {
+        age -= 1;
+    }
+
+    return age;
+}
+
 export function getDayDistance(usedAt: string, targetDate: string): number {
     const usedTime = parseDateOnly(usedAt);
     const targetTime = parseDateOnly(targetDate);
