@@ -44,7 +44,6 @@ export interface MealTemplatePickerRequest {
     preferences?: MealTemplatePreferences;
     recentTemplates?: RecentMealTemplate[];
     config?: Partial<MealTemplatePickerConfig>;
-    random?: () => number;
 }
 
 export interface MealTemplatePickMetadata {
@@ -75,7 +74,6 @@ export interface PickerContext {
     preferredFoodKeys: Set<string>;
     preferredBreakfastStyles: Set<string>;
     recentTemplates: RecentMealTemplate[];
-    random: () => number;
 }
 
 export interface FallbackRule {

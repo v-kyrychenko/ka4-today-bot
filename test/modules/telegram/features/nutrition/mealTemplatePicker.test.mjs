@@ -22,6 +22,25 @@ test('pickMealTemplate returns a strict matching active template', async () => {
     ]);
 });
 
+test('pickMealTemplate accepts required-only input and applies internal defaults', async () => {
+    const harness = await loadMealTemplatePicker([
+        createTemplate({key: 'breakfast_match', foods: [{key: 'egg_large'}]}),
+        createTemplate({key: 'breakfast_inactive', active: false, foods: [{key: 'oats_dry'}]}),
+    ]);
+
+    const result = await harness.module.pickMealTemplate({
+        clientId: 101,
+        mealType: 'breakfast',
+        goal: 'fat_loss',
+        dayType: 'training_day',
+    });
+
+    assert.equal(result.template.key, 'breakfast_match');
+    assert.equal(result.fallbackLevel, 'strict');
+    assert.equal(result.metadata.recentTemplateCount, 0);
+    assert.equal(result.metadata.excludedFoodCount, 0);
+});
+
 test('pickMealTemplate avoids a template used yesterday when another strict candidate exists', async () => {
     const harness = await loadMealTemplatePicker([
         createTemplate({id: 1, key: 'breakfast_a', foods: [{key: 'egg_large'}]}),
@@ -124,7 +143,6 @@ function createRequest(input = {}) {
         goal: 'fat_loss',
         dayType: 'training_day',
         targetDate: '2026-05-10',
-        random: () => 0,
         ...input,
     };
 }

@@ -1,12 +1,15 @@
 import {
+    GOAL_TAG,
     MEAL_TYPE,
     type DailyNutritionPlan,
     type DailyNutritionPlanMeal,
     type DailyNutritionPlannerRequest,
-    type MealType,
+    type GoalTag,
+    type MealType, DailyMacroTargets,
 } from './nutritionModel.js';
 import {today} from '../../../../shared/utils/dateUtils.js';
 import {mealTemplatePicker} from './picker/mealTemplatePicker.js';
+import {calculateMacroTargets} from "./macroTargetsCalculator";
 
 const DAILY_MEAL_ORDER = [
     MEAL_TYPE.BREAKFAST,
@@ -20,55 +23,51 @@ export const dailyNutritionPlanner = {
 };
 
 export async function generate(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
-    return buildDraftDailyPlan(request);
+    //TODO get history of daily plans and pass it to buildDraftDailyPlan
+
+    const draftPlan = await buildDraftDailyPlan(request);
+    const dailyMacroTargets = calculateMacroTargets(request);
+
+    const adjustedPlan = draftPlan
+
+    return adjustedPlan
 }
 
 async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
-    const meals = await pickDraftMeals(request);
-
-    return {clientId: 0, dayType: undefined, goal: undefined, meals: [], targetDate: ""};
-    // return {
-    //     clientId: request.clientId,
-    //     goal: null,//request.goal,
-    //     dayType: request.dayType,
-    //     targetDate,
-    //     meals,
-    // };
-}
-
-async function pickDraftMeals(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlanMeal[]> {
+    const goal = request.goal ?? GOAL_TAG.MAINTENANCE;
+    const targetDate = today();
     const meals: DailyNutritionPlanMeal[] = [];
 
     for (const mealType of DAILY_MEAL_ORDER) {
-       // meals.push(await pickDraftMeal(request, mealType));
+        meals.push(await pickDraftMeal(request, mealType, goal));
     }
 
-    return meals;
+    return {
+        clientId: request.clientId,
+        goal,
+        dayType: request.dayType,
+        targetDate,
+        meals,
+    };
 }
 
-// async function pickDraftMeal(request: DailyNutritionPlannerRequest, mealType: MealType): Promise<DailyNutritionPlanMeal> {
-//     const result = await mealTemplatePicker.pickMealTemplate({
-//         clientId: request.clientId,
-//         mealType
-//        // goal: request.goals,
-//         // dayType: request.dayType,
-//         // targetDate,
-//         // exclusions: request.exclusions,
-//         // preferences: request.preferences,
-//         // recentTemplates: request.recentTemplates,
-//         // config: request.config,
-//     });
-//
-//     return {
-//         mealType,
-//         template: result.template,
-//         fallbackLevel: result.fallbackLevel,
-//         reason: result.reason,
-//         score: result.score,
-//     };
-// }
+async function pickDraftMeal(
+    request: DailyNutritionPlannerRequest,
+    mealType: MealType,
+    goal: GoalTag
+): Promise<DailyNutritionPlanMeal> {
+    const result = await mealTemplatePicker.pickMealTemplate({
+        clientId: request.clientId,
+        mealType,
+        goal,
+        dayType: request.dayType,
+    });
 
-// TODO: Decide whether goal/dayType should always be passed by callers or derived here from client goals/training schedule.
-// TODO: Add calorie and macro targets when the product rules for age, gender, weight, and activity are confirmed.
-// TODO: Expand selected templates into concrete food portions after portion-scaling rules are clear.
-// TODO: Persist the accepted daily plan once the storage model for generated nutrition plans exists.
+    return {
+        mealType,
+        template: result.template,
+        fallbackLevel: result.fallbackLevel,
+        reason: result.reason,
+        score: result.score,
+    };
+}

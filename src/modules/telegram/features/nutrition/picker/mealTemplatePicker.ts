@@ -89,7 +89,6 @@ function createPickerContext(request: MealTemplatePickerRequest): PickerContext 
         preferredFoodKeys: toSet(preferences.preferredFoodKeys ?? []),
         preferredBreakfastStyles: toSet(preferences.preferredBreakfastStyles ?? []),
         recentTemplates: request.recentTemplates ?? [],
-        random: request.random ?? Math.random,
     };
 }
 
@@ -105,7 +104,7 @@ function selectTemplate(
 
         if (scoredCandidates.length) {
             return toPickResult(
-                pickWeighted(scoredCandidates, context.random),
+                pickWeighted(scoredCandidates),
                 context,
                 rule,
                 templates,
