@@ -1,10 +1,10 @@
 import {
     ACTIVITY_LEVEL,
-    ActivityLevel,
+    ActivityLevel, BmrParams,
     DailyMacroTargets,
     DailyNutritionPlannerRequest, DAY_TAG, DayTag,
     GOAL_TAG,
-    GoalTag,
+    GoalTag, TargetCaloriesParams,
 } from './nutritionModel';
 import {BodyMeasurement} from '../measurements/bodyMeasurementsModel';
 import {CLIENT_GENDERS, ClientGender,} from "../../../coach/client/domain/client";
@@ -110,19 +110,6 @@ const NUTRITION_ENERGY = {
     },
 } as const;
 
-interface BmrParams {
-    gender: ClientGender;
-    age: number;
-    weightKg: number;
-    heightCm: number;
-}
-
-interface TargetCaloriesParams extends BmrParams {
-    activityLevel: ActivityLevel;
-    dayType: DayTag;
-    goal: GoalTag;
-}
-
 export function calculateMacroTargets(request: DailyNutritionPlannerRequest): DailyMacroTargets {
     const goal = request.goal ?? DEFAULT_GOAL;
     const weightKg = getWeightKg(request.weight);
@@ -159,7 +146,18 @@ function calculateTargetCalories(params: TargetCaloriesParams): number {
 }
 
 function calculateBmrKcal(params: BmrParams): number {
-    const base = 10 * params.weightKg + 6.25 * params.heightCm - 5 * params.age;
+    // Mifflin-St Jeor weight coefficient: 10 kcal per kg.
+    const weightKcalPerKg = 10;
+    // Mifflin-St Jeor height coefficient: 6.25 kcal per cm.
+    const heightKcalPerCm = 6.25;
+    // Mifflin-St Jeor age coefficient: subtract 5 kcal per year.
+    const ageKcalPerYear = 5;
+
+    const base =
+        weightKcalPerKg * params.weightKg +
+        heightKcalPerCm * params.heightCm -
+        ageKcalPerYear * params.age;
+
     const genderAdjustment = getBmrGenderAdjustment(params.gender);
 
     return Math.round(base + genderAdjustment);

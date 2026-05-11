@@ -176,3 +176,16 @@ export interface DailyMacroTargets {
     fat: number;
     carbs: number;
 }
+
+export interface BmrParams {
+    gender: ClientGender;
+    age: number;
+    weightKg: number;
+    heightCm: number;
+}
+
+export interface TargetCaloriesParams extends BmrParams {
+    activityLevel: ActivityLevel;
+    dayType: DayTag;
+    goal: GoalTag;
+}

@@ -32,6 +32,36 @@ test('calculateDailyNutritionPlan logs maintenance targets for an 81 kg male cli
     });
 });
 
+test('calculateMacroTargets logs maintenance targets for an active female training day', async () => {
+    const module = await loadMacroTargetsCalculator();
+    const result = module.calculateMacroTargets({
+        clientId: 102,
+        gender: 'F',
+        birthday: '1991-10-01',
+        goal: 'maintenance',
+        height: 167,
+        activityLevel: 'active',
+        dayType: 'training_day',
+        weight: {
+            id: 2,
+            clientId: 102,
+            createdAt: '2026-05-10T00:00:00.000Z',
+            amount: 60,
+            type: 'WEIGHT',
+            unitKey: 'kg',
+        },
+    });
+
+    console.log('### MACRO_TARGETS_CALCULATOR:female-active-training-day-result', result);
+
+    assert.deepEqual(result, {
+        calories: 2035,
+        protein: 96,
+        fat: 57,
+        carbs: 285,
+    });
+});
+
 async function loadMacroTargetsCalculator() {
     const cacheKey = `${Date.now()}-${Math.random()}`;
     const result = await build({
