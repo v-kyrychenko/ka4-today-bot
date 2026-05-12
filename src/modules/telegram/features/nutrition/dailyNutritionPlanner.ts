@@ -5,11 +5,12 @@ import {
     type DailyNutritionPlanMeal,
     type DailyNutritionPlannerRequest,
     type GoalTag,
-    type MealType, DailyMacroTargets,
+    type MealType,
 } from './nutritionModel.js';
 import {today} from '../../../../shared/utils/dateUtils.js';
 import {mealTemplatePicker} from './picker/mealTemplatePicker.js';
 import {calculateMacroTargets} from "./macroTargetsCalculator";
+import {adjust} from "./nutritionAdjuster";
 
 const DAILY_MEAL_ORDER = [
     MEAL_TYPE.BREAKFAST,
@@ -28,7 +29,7 @@ export async function generate(request: DailyNutritionPlannerRequest): Promise<D
     const draftPlan = await buildDraftDailyPlan(request);
     const dailyMacroTargets = calculateMacroTargets(request);
 
-    const adjustedPlan = draftPlan
+    const adjustedPlan = await adjust(draftPlan, dailyMacroTargets);
 
     return adjustedPlan
 }
