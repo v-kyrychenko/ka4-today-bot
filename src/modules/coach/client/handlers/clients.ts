@@ -29,6 +29,8 @@ import {
     type ClientUpdateInput,
 } from '../domain/client.js';
 
+const CLIENT_GENDER_VALUES = Object.values(CLIENT_GENDERS);
+
 export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     if (event.pathParameters?.clientId) {
         return handleGetById(event);
@@ -175,8 +177,8 @@ function parseClientStatus(body: Record<string, unknown>, name: string): ClientS
 function parseClientGender(body: Record<string, unknown>, name: string): ClientGender {
     const value = parseRequiredString(body, name, 1);
 
-    if (!CLIENT_GENDERS.includes(value as ClientGender)) {
-        throw new BadRequestError(`Field '${name}' must be one of: ${CLIENT_GENDERS.join(', ')}`);
+    if (!CLIENT_GENDER_VALUES.includes(value as ClientGender)) {
+        throw new BadRequestError(`Field '${name}' must be one of: ${CLIENT_GENDER_VALUES.join(', ')}`);
     }
 
     return value as ClientGender;

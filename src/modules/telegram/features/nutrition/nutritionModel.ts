@@ -86,6 +86,34 @@ export const MEAL_ITEM_ROLE = {
 } as const;
 export type MealItemRole = typeof MEAL_ITEM_ROLE[keyof typeof MEAL_ITEM_ROLE];
 
+export const PROTEIN_ITEM_ROLES: ReadonlySet<string> = new Set([
+    MEAL_ITEM_ROLE.MAIN_PROTEIN,
+    MEAL_ITEM_ROLE.PROTEIN_BOOSTER,
+    MEAL_ITEM_ROLE.PROTEIN_FAT,
+    MEAL_ITEM_ROLE.CARB_PROTEIN,
+]);
+export const PROTEIN_FOOD_CATEGORIES: ReadonlySet<string> = new Set(['protein', 'protein_fat', 'carb_protein']);
+
+export const CARB_ITEM_ROLES: ReadonlySet<string> = new Set([
+    MEAL_ITEM_ROLE.BREAKFAST_CARB,
+    MEAL_ITEM_ROLE.CARB,
+    MEAL_ITEM_ROLE.CARB_FAT,
+    MEAL_ITEM_ROLE.CARB_PROTEIN,
+    MEAL_ITEM_ROLE.LIGHT_CARB,
+    MEAL_ITEM_ROLE.QUICK_CARB,
+    MEAL_ITEM_ROLE.TRAINING_CARB,
+]);
+export const CARB_FOOD_CATEGORIES: ReadonlySet<string> = new Set(['carb', 'carb_protein', 'carb_fat']);
+
+export const FAT_ITEM_ROLES: ReadonlySet<string> = new Set([
+    MEAL_ITEM_ROLE.FAT,
+    MEAL_ITEM_ROLE.FLAVOR_FAT,
+    MEAL_ITEM_ROLE.HEALTHY_FAT,
+    MEAL_ITEM_ROLE.PROTEIN_FAT,
+    MEAL_ITEM_ROLE.CARB_FAT,
+]);
+export const FAT_FOOD_CATEGORIES: ReadonlySet<string> = new Set(['fat', 'protein_fat', 'carb_fat']);
+
 export class FoodDict {
     id = 0;
     key = '';

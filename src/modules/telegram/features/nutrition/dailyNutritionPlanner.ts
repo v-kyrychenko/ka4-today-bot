@@ -1,7 +1,6 @@
 import {
     GOAL_TAG,
     MEAL_TYPE,
-    type DailyMacroTargets,
     type DailyNutritionPlan,
     type DailyNutritionPlanMeal,
     type DailyNutritionPlannerRequest,
@@ -12,6 +11,7 @@ import {today} from '../../../../shared/utils/dateUtils.js';
 import {mealTemplatePicker} from './picker/mealTemplatePicker.js';
 import {calculateMacroTargets} from "./macroTargetsCalculator";
 import {adjust} from "./nutritionAdjuster";
+import {calculatePlanTotals} from './planMacroTotals.js';
 
 const DAILY_MEAL_ORDER = [
     MEAL_TYPE.BREAKFAST,
@@ -52,11 +52,9 @@ async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promi
     };
 }
 
-function initDraftPlan(
-    request: DailyNutritionPlannerRequest,
-    goal: GoalTag,
-    meals: DailyNutritionPlanMeal[]
-): DailyNutritionPlan {
+function initDraftPlan(request: DailyNutritionPlannerRequest,
+                       goal: GoalTag,
+                       meals: DailyNutritionPlanMeal[]): DailyNutritionPlan {
     const targetDate = today();
     return {
         clientId: request.clientId,
@@ -73,11 +71,9 @@ function initDraftPlan(
     };
 }
 
-async function pickDraftMeal(
-    request: DailyNutritionPlannerRequest,
-    mealType: MealType,
-    goal: GoalTag
-): Promise<DailyNutritionPlanMeal> {
+async function pickDraftMeal(request: DailyNutritionPlannerRequest,
+                             mealType: MealType,
+                             goal: GoalTag): Promise<DailyNutritionPlanMeal> {
     const result = await mealTemplatePicker.pickMealTemplate({
         clientId: request.clientId,
         mealType,
@@ -92,44 +88,4 @@ async function pickDraftMeal(
         reason: result.reason,
         score: result.score,
     };
-}
-
-function calculatePlanTotals(plan: DailyNutritionPlan): DailyMacroTargets {
-    const totals = {
-        calories: 0,
-        protein: 0,
-        fat: 0,
-        carbs: 0,
-    };
-
-    for (const meal of plan.meals) {
-        for (const item of meal.template.items) {
-            if (!hasValidMacros(item)) {
-                continue;
-            }
-
-            const amountRatio = item.amount / item.foodDict.amount;
-            totals.calories += item.foodDict.calories * amountRatio;
-            totals.protein += item.foodDict.protein * amountRatio;
-            totals.fat += item.foodDict.fat * amountRatio;
-            totals.carbs += item.foodDict.carbs * amountRatio;
-        }
-    }
-
-    return {
-        calories: Math.round(totals.calories),
-        protein: Math.round(totals.protein),
-        fat: Math.round(totals.fat),
-        carbs: Math.round(totals.carbs),
-    };
-}
-
-function hasValidMacros(item: DailyNutritionPlanMeal['template']['items'][number]): boolean {
-    return Number.isFinite(item.amount) &&
-        Number.isFinite(item.foodDict.amount) &&
-        item.foodDict.amount > 0 &&
-        Number.isFinite(item.foodDict.calories) &&
-        Number.isFinite(item.foodDict.protein) &&
-        Number.isFinite(item.foodDict.fat) &&
-        Number.isFinite(item.foodDict.carbs);
 }

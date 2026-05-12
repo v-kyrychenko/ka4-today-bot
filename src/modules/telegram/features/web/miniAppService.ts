@@ -4,7 +4,7 @@ import {HttpApiError} from '../../../../shared/errors';
 import {log} from '../../../../shared/logging';
 import {TelegramUserProfile} from '../../model/telegram.js';
 
-const TELEGRAM_WEB_APP_DATA_PUBLIC_KEY = 'WebAppData';
+const TELEGRAM_WEB_APP_DATA_KEY = 'WebAppData';
 const MAX_INIT_DATA_AGE_SECONDS = 24 * 60 * 60;
 
 export const miniAppService = {
@@ -37,10 +37,10 @@ function assertValidHash(params: URLSearchParams, receivedHash: string): void {
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([key, value]) => `${key}=${value}`)
         .join('\n');
-    const secretKey = createHmac('sha256', TELEGRAM_WEB_APP_DATA_PUBLIC_KEY)
+    const dataKey = createHmac('sha256', TELEGRAM_WEB_APP_DATA_KEY)
         .update(TELEGRAM_BOT_TOKEN ?? '')
         .digest();
-    const calculatedHash = createHmac('sha256', secretKey)
+    const calculatedHash = createHmac('sha256', dataKey)
         .update(dataCheckString)
         .digest('hex');
 
