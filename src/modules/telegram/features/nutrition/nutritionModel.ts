@@ -159,6 +159,7 @@ export interface DailyNutritionPlan {
     goal: GoalTag;
     dayType: DayTag;
     targetDate: string;
+    totals: DailyMacroTargets;
     meals: DailyNutritionPlanMeal[];
 }
 
