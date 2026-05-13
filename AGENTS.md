@@ -19,6 +19,35 @@ Generic REST controller helpers live in `src/shared/http/controllers/`. PostgreS
 
 Deployment is defined in `template.yaml` and `stack/`. Local helper scripts live in `scripts/`. Static assets such as diagrams belong in `assets/`.
 
+## Reusable Shared Features
+Before adding new helpers, services, repositories, parsers, or integration wrappers, check these existing reusable features and extend them only when the new behavior belongs there.
+
+- `src/shared/errors/` defines common application errors (`BadRequestError`, `HttpApiError`, `NotFoundError`, `OpenAIError`, `TelegramError`) and short error logging helpers.
+- `src/shared/logging/` provides `log` and `logError`; prefer this over direct logging in application code.
+- `src/shared/i18n/` provides `I18N_KEYS`, locale JSON files, language normalization, and `i18nService.tr(...)`; use it for all user-facing localized text.
+- `src/shared/http/` provides API Gateway helpers for route/method controllers, JSON request parsing, validation helpers, query/path params, JSON responses, and error responses.
+- `src/shared/http/httpClient.ts` provides the generic HTTP request builder/client foundation used by external integrations.
+- `src/shared/types/` contains shared AWS Lambda/SQS response/event shapes and OpenAI response/config types.
+- `src/shared/utils/dateUtils.ts` provides date-only parsing/formatting, `today`, `nowIso`, age calculation, minus-days, and day-distance helpers.
+- `src/shared/utils/dayOfWeek.ts` provides current day-code calculation for workout scheduling.
+- `src/shared/utils/json.ts` extracts JSON objects/arrays from text responses; reuse it for OpenAI text that embeds JSON.
+- `src/shared/utils/collectionUtils.ts` provides set/intersection helpers for tag and filter logic.
+- `src/shared/pagination/pageRequest.ts` provides cursor-style page request parsing.
+- `src/infrastructure/persistence/postgres/` provides the Drizzle DB singleton, schema definitions, row models, persistence error detection, and mappers between snake_case rows and domain models.
+- `src/infrastructure/integrations/openai/openAiClient.ts` is the low-level OpenAI client wrapper; application code should normally go through prompt services instead.
+- `src/infrastructure/integrations/telegram/telegramClient.ts` is the low-level Telegram HTTP client; route and feature code should normally use `telegramMessagingService`.
+- `src/modules/telegram/features/messaging/telegramMessagingService.ts` centralizes Telegram message sending, media sending, callback answers, reply-markup removal, and sent-message logging.
+- `src/modules/telegram/features/prompts/promptReplyService.ts` loads prompt dictionaries, applies translations/variables, calls OpenAI, and returns the latest assistant text.
+- `src/modules/telegram/features/conversations/` provides the reusable multi-step conversation engine, conversation registry, localized conversation responses, callback/text handling, cancellation, and state persistence.
+- `src/modules/telegram/features/measurements/` provides body-measurement models, parsing, missing-type detection, storage rules, repositories, and the body-measurements conversation.
+- `src/modules/telegram/features/progress/` builds progress view models/captions, detects empty progress data, renders progress PNGs, and caches generated summaries.
+- `src/modules/telegram/features/nutrition/` provides nutrition domain models, macro target calculation, meal template repositories/mappers, meal picking with fallback rules, macro adjustment, plan totals, and `dailyNutritionPlanner.generate(...)`.
+- `src/modules/telegram/features/sqs/` provides Telegram queue envelopes and FIFO metadata builders for webhook and scheduled-job messages.
+- `src/modules/telegram/features/web/miniAppService.ts` validates Telegram Mini App init data and extracts Telegram user profiles.
+- `src/modules/telegram/repository/` contains reusable Telegram persistence boundaries for users, prompts, conversation state, and sent-message logs.
+- `src/modules/coach/client/` contains reusable client profile use cases and repository access; keep coach REST parsing separate from domain and persistence row models.
+- `src/modules/coach/exercise/` contains exercise search domain models, application use case, and repository access for exercise catalog functionality.
+
 ## Build, Test, and Development Commands
 Install dependencies with `npm install`.
 

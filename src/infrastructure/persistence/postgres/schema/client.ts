@@ -9,7 +9,7 @@ export const client = pgTable('client', {
     gender: varchar('gender', {length: 1}).notNull(),
     lang: varchar('lang', {length: 10}).notNull(),
     birthday: date('birthday', {mode: 'string'}).notNull(),
-    height: numeric('height', {precision: 3, scale: 1}),
+    height: numeric('height', {precision: 4, scale: 1}),
     created_at: timestamp('created_at', {mode: 'string'}).notNull(),
     last_activity: timestamp('last_activity', {mode: 'string'}),
     goals: text('goals'),

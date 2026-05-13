@@ -1,6 +1,8 @@
 import {clientsRepository} from '../../coach/client/repository/clientsRepository.js';
 import type {ClientProfile} from '../../coach/client/domain/client.js';
-import {NotFoundError, OpenAIError} from '../../../shared/errors';
+import {NotFoundError, OpenAIError, TelegramError} from '../../../shared/errors';
+import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
+import {i18nService} from '../../../shared/i18n/i18nService.js';
 import {bodyMeasurementRepository} from '../features/measurements/repository/bodyMeasurementRepository.js';
 import {BodyMeasurementType, type BodyMeasurement} from '../features/measurements/bodyMeasurementsModel.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
@@ -11,20 +13,13 @@ import {
     GOAL_TAG,
     type ActivityLevel,
     type DayTag,
-    type GoalTag,
+    type GoalTag, type DailyNutritionPlannerRequest,
 } from '../features/nutrition/nutritionModel.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import type {ProcessorContext} from '../model/context.js';
 import {BaseRoute} from './BaseRoute.js';
 import {DAILY_MEALS} from './constants.js';
-
-const CLIENT_NOT_LINKED_MESSAGE =
-    "Я ще не бачу прив'язаного профілю клієнта. Попроси тренера перевірити налаштування профілю.";
-const HEIGHT_MISSING_MESSAGE =
-    'Щоб скласти меню, мені потрібен твій зріст. Додай зріст у профіль, і я одразу згенерую план харчування.';
-const WEIGHT_MISSING_MESSAGE =
-    'Щоб скласти меню, мені потрібна актуальна вага. Надішли заміри, і я одразу згенерую план харчування.';
-const MEASUREMENT_START_DATE = '1970-01-01';
+import {log} from "../../../shared/logging";
 
 export class DailyMealsRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
@@ -32,52 +27,65 @@ export class DailyMealsRoute extends BaseRoute {
     }
 
     async execute(context: ProcessorContext): Promise<void> {
-        const clientId = getClientId(context);
-        if (clientId == null) {
-            await telegramMessagingService.sendMessage(context, CLIENT_NOT_LINKED_MESSAGE);
+        const request = await initPlannerRequest(context);
+        if (request == null) {
             return;
         }
 
-        const client = await getClient(clientId);
-        if (client == null) {
-            await telegramMessagingService.sendMessage(context, CLIENT_NOT_LINKED_MESSAGE);
-            return;
-        }
+        const plan = await dailyNutritionPlanner.generate(request);
 
-        const height = getHeight(client);
-        if (height == null) {
-            await telegramMessagingService.sendMessage(context, HEIGHT_MISSING_MESSAGE);
-            return;
-        }
-
-        const weight = await getWeight(clientId);
-        if (weight == null) {
-            await telegramMessagingService.sendMessage(context, WEIGHT_MISSING_MESSAGE);
-            return;
-        }
-
-        const plan = await dailyNutritionPlanner.generate({
-            clientId,
-            gender: getGender(client),
-            birthday: getBirthday(client),
-            goal: getGoal(client),
-            weight,
-            height,
-            activityLevel: getActivityLevel(),
-            dayType: await getDayType(getChatId(context)),
-        });
-
-        await telegramMessagingService.sendMessage(context, JSON.stringify(plan, null, 2));
+        log(JSON.stringify(plan, null, 2));
     }
+}
+
+async function initPlannerRequest(context: ProcessorContext): Promise<DailyNutritionPlannerRequest | null> {
+    const clientId = getClientId(context);
+    if (clientId == null) {
+        await sendLocalizedMessage(context, I18N_KEYS.telegram.dailyMeals.clientNotLinked);
+        return null;
+    }
+
+    const client = await getClient(clientId);
+    if (client == null) {
+        await sendLocalizedMessage(context, I18N_KEYS.telegram.dailyMeals.clientNotLinked);
+        return null;
+    }
+
+    const height = getHeight(client);
+    if (height == null) {
+        await sendLocalizedMessage(context, I18N_KEYS.telegram.dailyMeals.heightMissing);
+        return null;
+    }
+
+    const weight = await getWeight(clientId);
+    if (weight == null) {
+        await sendLocalizedMessage(context, I18N_KEYS.telegram.dailyMeals.weightMissing);
+        return null;
+    }
+
+    return {
+        clientId,
+        gender: client.gender,
+        birthday: client.birthday,
+        goal: getGoal(client),
+        weight,
+        height,
+        activityLevel: getActivityLevel(),
+        dayType: await getDayType(getChatId(context)),
+    };
 }
 
 function getClientId(context: ProcessorContext): number | null {
     return context.user.clientId ?? null;
 }
 
+async function sendLocalizedMessage(context: ProcessorContext, key: string): Promise<void> {
+    await telegramMessagingService.sendMessage(context, i18nService.tr(context.user.lang, key));
+}
+
 function getChatId(context: ProcessorContext): number {
     if (context.chatId == null) {
-        throw new OpenAIError('chatId is mandatory');
+        throw new TelegramError('chatId is mandatory');
     }
 
     return context.chatId;
@@ -95,14 +103,6 @@ async function getClient(clientId: number): Promise<ClientProfile | null> {
     }
 }
 
-function getGender(client: ClientProfile) {
-    return client.gender;
-}
-
-function getBirthday(client: ClientProfile): string {
-    return client.birthday;
-}
-
 function getGoal(client: ClientProfile): GoalTag {
     const goal = client.goals?.trim();
 
@@ -114,10 +114,7 @@ function getHeight(client: ClientProfile): number | null {
 }
 
 async function getWeight(clientId: number): Promise<BodyMeasurement | null> {
-    const measurements = await bodyMeasurementRepository.findForClientSince(clientId, MEASUREMENT_START_DATE);
-    const weights = measurements.filter((item) => item.type === BodyMeasurementType.WEIGHT);
-
-    return weights[weights.length - 1] ?? null;
+    return bodyMeasurementRepository.findLatestForClientByType(clientId, BodyMeasurementType.WEIGHT);
 }
 
 function getActivityLevel(): ActivityLevel {

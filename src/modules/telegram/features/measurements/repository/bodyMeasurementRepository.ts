@@ -7,7 +7,7 @@ import {
     bodyMeasurementLog,
 } from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementLog.js';
 import {tgUser} from '../../../../../infrastructure/persistence/postgres/schema/tgUser.js';
-import type {BodyMeasurement, BodyMeasurementCreateInput} from '../bodyMeasurementsModel.js';
+import {type BodyMeasurement, type BodyMeasurementCreateInput, type BodyMeasurementType} from '../bodyMeasurementsModel.js';
 
 export interface BodyMeasurementReminderCandidate {
     chatId: number;
@@ -18,6 +18,7 @@ export interface BodyMeasurementReminderCandidate {
 export const bodyMeasurementRepository = {
     findForClientSince,
     findLatestForClientOnOrBefore,
+    findLatestForClientByType,
     findReminderCandidates,
     createMany,
 };
@@ -42,6 +43,20 @@ export async function findLatestForClientOnOrBefore(clientId: number, date: stri
         .where(and(
             eq(bodyMeasurementLog.client_id, clientId),
             lte(bodyMeasurementLog.created_at, date),
+        ))
+        .orderBy(desc(bodyMeasurementLog.created_at), desc(bodyMeasurementLog.id))
+        .limit(1);
+
+    return row ? bodyMeasurementLogMapper.toAppModel(row) : null;
+}
+
+export async function findLatestForClientByType(clientId: number, type: BodyMeasurementType): Promise<BodyMeasurement | null> {
+    const [row] = await getPostgresDb()
+        .select()
+        .from(bodyMeasurementLog)
+        .where(and(
+            eq(bodyMeasurementLog.client_id, clientId),
+            eq(bodyMeasurementLog.type, type),
         ))
         .orderBy(desc(bodyMeasurementLog.created_at), desc(bodyMeasurementLog.id))
         .limit(1);

@@ -19,6 +19,11 @@
       "unsupportedAction": "This action is not available for body measurements yet.",
       "unsupportedInput": "I can’t use this message for body measurements yet."
     },
+    "dailyMeals": {
+      "clientNotLinked": "I do not see a linked client profile yet. Ask your coach to check the profile settings.",
+      "heightMissing": "To build your menu, I need your height. Add it to your profile, and I will generate the nutrition plan right away.",
+      "weightMissing": "To build your menu, I need your current weight. Send your measurements, and I will generate the nutrition plan right away."
+    },
     "progress": {
       "caption": {
         "title": "📊 Metrics dynamics"

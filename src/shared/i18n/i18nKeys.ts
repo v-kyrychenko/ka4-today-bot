@@ -35,6 +35,11 @@ export const I18N_KEYS = {
             unsupportedAction: 'telegram.conversations.unsupportedAction',
             unsupportedInput: 'telegram.conversations.unsupportedInput',
         },
+        dailyMeals: {
+            clientNotLinked: 'telegram.dailyMeals.clientNotLinked',
+            heightMissing: 'telegram.dailyMeals.heightMissing',
+            weightMissing: 'telegram.dailyMeals.weightMissing',
+        },
         progress: {
             caption: {
                 title: 'telegram.progress.caption.title',

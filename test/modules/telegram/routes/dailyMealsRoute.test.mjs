@@ -11,7 +11,7 @@ test('/meals route generates a daily nutrition plan and sends formatted JSON', a
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({goals: 'fat_loss', height: 181.5}),
-        measurements: [createWeight({amount: 80}), createMeasurement({type: 'WAIST'})],
+        weight: createWeight({amount: 80}),
         scheduled: {id: 1},
         plan,
     });
@@ -23,7 +23,7 @@ test('/meals route generates a daily nutrition plan and sends formatted JSON', a
 
     assert.deepEqual(calls, [
         ['findByClientId', clientId],
-        ['findForClientSince', clientId, '1970-01-01'],
+        ['findLatestForClientByType', clientId, 'WEIGHT'],
         ['getUserScheduledForDay', chatId],
         ['generate', {
             clientId,
@@ -44,7 +44,7 @@ test('/meals route defaults missing goal to maintenance and unscheduled day to r
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({goals: null, height: 170}),
-        measurements: [createWeight({amount: 75})],
+        weight: createWeight({amount: 75}),
         scheduled: null,
         plan: {ok: true},
     });
@@ -68,7 +68,7 @@ test('/meals route blocks when height is missing', async () => {
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({height: null}),
-        measurements: [createWeight()],
+        weight: createWeight(),
     });
 
     await new DailyMealsRoute().execute(createContext());
@@ -79,19 +79,35 @@ test('/meals route blocks when height is missing', async () => {
     ]);
 });
 
+test('/meals route localizes blocking messages', async () => {
+    const calls = [];
+    const {DailyMealsRoute} = await loadRoute({
+        calls,
+        client: createClient({height: null}),
+        weight: createWeight(),
+    });
+
+    await new DailyMealsRoute().execute(createContext({lang: 'en'}));
+
+    assert.deepEqual(calls, [
+        ['findByClientId', clientId],
+        ['send', chatId, 'To build your menu, I need your height. Add it to your profile, and I will generate the nutrition plan right away.'],
+    ]);
+});
+
 test('/meals route blocks when weight is missing', async () => {
     const calls = [];
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({height: 170}),
-        measurements: [createMeasurement({type: 'WAIST'})],
+        weight: null,
     });
 
     await new DailyMealsRoute().execute(createContext());
 
     assert.deepEqual(calls, [
         ['findByClientId', clientId],
-        ['findForClientSince', clientId, '1970-01-01'],
+        ['findLatestForClientByType', clientId, 'WEIGHT'],
         ['send', chatId, 'Щоб скласти меню, мені потрібна актуальна вага. Надішли заміри, і я одразу згенерую план харчування.'],
     ]);
 });
@@ -129,9 +145,9 @@ const routeMocks = {
         ]);
         mockModule(buildContext, /bodyMeasurementRepository\.js$/, [
             'export const bodyMeasurementRepository = {',
-            '    async findForClientSince(clientId, since) {',
-            '        globalThis.__dailyMealsRouteMocks.calls.push(["findForClientSince", clientId, since]);',
-            '        return globalThis.__dailyMealsRouteMocks.measurements ?? [];',
+            '    async findLatestForClientByType(clientId, type) {',
+            '        globalThis.__dailyMealsRouteMocks.calls.push(["findLatestForClientByType", clientId, type]);',
+            '        return globalThis.__dailyMealsRouteMocks.weight ?? null;',
             '    },',
             '};',
         ]);
@@ -167,11 +183,11 @@ function mockModule(buildContext, filter, contents) {
     buildContext.onLoad({filter: /^mock$/, namespace}, () => ({contents: contents.join('\n'), loader: 'js'}));
 }
 
-function createContext() {
+function createContext(input = {}) {
     return {
         chatId,
         text: '/meals',
-        user: {chatId, clientId, lang: 'uk'},
+        user: {chatId, clientId, lang: input.lang ?? 'uk'},
         message: {},
     };
 }
