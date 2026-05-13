@@ -12,6 +12,7 @@ import type {
 export const clientsRepository = {
     findAll,
     findById,
+    findByClientId,
     create,
     update,
 };
@@ -41,6 +42,20 @@ export async function findById(coachId: number, clientId: number) {
             eq(client.coach_id, coachId),
             eq(client.id, clientId),
         ))
+        .limit(1);
+
+    if (!row) {
+        throw new NotFoundError('Client not found');
+    }
+
+    return clientMapper.toAppModel(row);
+}
+
+export async function findByClientId(clientId: number) {
+    const [row] = await getPostgresDb()
+        .select()
+        .from(client)
+        .where(eq(client.id, clientId))
         .limit(1);
 
     if (!row) {

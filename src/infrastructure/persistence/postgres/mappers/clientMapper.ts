@@ -15,6 +15,7 @@ export interface ClientCreateRow {
     gender: ClientGender;
     lang: string;
     birthday: string;
+    height: string | null;
     created_at: string;
     goals: string | null;
     notes: string | null;
@@ -27,6 +28,7 @@ export interface ClientUpdateRow {
     gender?: ClientGender;
     lang?: string;
     birthday?: string;
+    height?: string | null;
     goals?: string | null;
     notes?: string | null;
 }
@@ -47,6 +49,7 @@ export function toAppModel(row: ClientRow): ClientProfile {
         gender: row.gender as ClientGender,
         lang: row.lang,
         birthday: row.birthday,
+        height: toNullableNumber(row.height),
         createdAt: row.created_at,
         lastActivity: row.last_activity,
         goals: row.goals,
@@ -63,6 +66,7 @@ export function toCreateRow(input: ClientCreateInput, coachId: number, createdAt
         gender: input.gender,
         lang: input.lang,
         birthday: input.birthday,
+        height: toNullableFixedDecimal(input.height),
         created_at: createdAt,
         goals: input.goals ?? null,
         notes: input.notes ?? null,
@@ -90,6 +94,9 @@ export function toUpdateRow(input: ClientUpdateInput): ClientUpdateRow {
     if (input.birthday !== undefined) {
         update.birthday = input.birthday;
     }
+    if (input.height !== undefined) {
+        update.height = toNullableFixedDecimal(input.height);
+    }
     if (input.goals !== undefined) {
         update.goals = input.goals;
     }
@@ -98,4 +105,12 @@ export function toUpdateRow(input: ClientUpdateInput): ClientUpdateRow {
     }
 
     return update;
+}
+
+function toNullableNumber(value: string | null): number | null {
+    return value == null ? null : Number(value);
+}
+
+function toNullableFixedDecimal(value: number | null | undefined): string | null {
+    return value == null ? null : value.toFixed(1);
 }

@@ -91,7 +91,7 @@ export async function handleClientsUpdate(event: ApiGatewayHttpEvent): Promise<L
 
 function parseCreateInput(event: ApiGatewayHttpEvent): ClientCreateInput {
     const body = parseRequestBody(event);
-    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'gender', 'lang', 'birthday', 'goals', 'notes']);
+    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'gender', 'lang', 'birthday', 'height', 'goals', 'notes']);
 
     return {
         firstName: parseRequiredString(body, 'firstName', 60),
@@ -100,6 +100,7 @@ function parseCreateInput(event: ApiGatewayHttpEvent): ClientCreateInput {
         gender: parseClientGender(body, 'gender'),
         lang: parseRequiredString(body, 'lang', 10),
         birthday: parseRequiredDate(body, 'birthday'),
+        height: parseOptionalNullablePositiveNumber(body, 'height'),
         goals: parseOptionalNullableString(body, 'goals'),
         notes: parseOptionalNullableString(body, 'notes'),
     };
@@ -107,7 +108,7 @@ function parseCreateInput(event: ApiGatewayHttpEvent): ClientCreateInput {
 
 function parseUpdateInput(event: ApiGatewayHttpEvent): ClientUpdateInput {
     const body = parseRequestBody(event);
-    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'gender', 'lang', 'birthday', 'goals', 'notes']);
+    assertAllowedKeys(body, ['firstName', 'lastName', 'status', 'gender', 'lang', 'birthday', 'height', 'goals', 'notes']);
 
     const input: ClientUpdateInput = {};
 
@@ -128,6 +129,9 @@ function parseUpdateInput(event: ApiGatewayHttpEvent): ClientUpdateInput {
     }
     if ('birthday' in body) {
         input.birthday = parseRequiredDate(body, 'birthday');
+    }
+    if ('height' in body) {
+        input.height = parseOptionalNullablePositiveNumber(body, 'height');
     }
     if ('goals' in body) {
         input.goals = parseOptionalNullableString(body, 'goals');
@@ -182,4 +186,20 @@ function parseClientGender(body: Record<string, unknown>, name: string): ClientG
     }
 
     return value as ClientGender;
+}
+
+function parseOptionalNullablePositiveNumber(body: Record<string, unknown>, name: string): number | null | undefined {
+    if (!(name in body)) {
+        return undefined;
+    }
+
+    const value = body[name];
+    if (value === null) {
+        return null;
+    }
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        throw new BadRequestError(`Field '${name}' must be a positive number or null`);
+    }
+
+    return value;
 }

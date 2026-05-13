@@ -7,6 +7,7 @@ export interface ClientRow {
     gender: string;
     lang: string;
     birthday: string;
+    height: string | null;
     created_at: string;
     last_activity: string | null;
     goals: string | null;

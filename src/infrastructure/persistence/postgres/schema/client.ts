@@ -1,4 +1,4 @@
-import {bigint, bigserial, date, pgTable, text, timestamp, varchar} from 'drizzle-orm/pg-core';
+import {bigint, bigserial, date, numeric, pgTable, text, timestamp, varchar} from 'drizzle-orm/pg-core';
 
 export const client = pgTable('client', {
     id: bigserial('id', {mode: 'number'}).primaryKey(),
@@ -9,6 +9,7 @@ export const client = pgTable('client', {
     gender: varchar('gender', {length: 1}).notNull(),
     lang: varchar('lang', {length: 10}).notNull(),
     birthday: date('birthday', {mode: 'string'}).notNull(),
+    height: numeric('height', {precision: 3, scale: 1}),
     created_at: timestamp('created_at', {mode: 'string'}).notNull(),
     last_activity: timestamp('last_activity', {mode: 'string'}),
     goals: text('goals'),

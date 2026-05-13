@@ -25,6 +25,7 @@ export class ClientProfile {
     gender: ClientGender = CLIENT_GENDERS.UNKNOWN;
     lang = '';
     birthday = '';
+    height: number | null = null;
     createdAt = '';
     lastActivity?: string | null;
     goals?: string | null;
@@ -53,6 +54,7 @@ export interface ClientCreateInput {
     gender: ClientGender;
     lang: string;
     birthday: string;
+    height?: number | null;
     goals?: string | null;
     notes?: string | null;
 }
@@ -64,6 +66,7 @@ export interface ClientUpdateInput {
     gender?: ClientGender;
     lang?: string;
     birthday?: string;
+    height?: number | null;
     goals?: string | null;
     notes?: string | null;
 }
