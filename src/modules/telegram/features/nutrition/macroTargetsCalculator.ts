@@ -32,26 +32,10 @@ const BMR_GENDER_ADJUSTMENT = {
  */
 const ACTIVITY_FACTOR = {
     [ACTIVITY_LEVEL.INACTIVE]: 1.2,
-    [ACTIVITY_LEVEL.LOW_ACTIVE]: 1.375,
-    [ACTIVITY_LEVEL.ACTIVE]: 1.55,
-    [ACTIVITY_LEVEL.VERY_ACTIVE]: 1.725,
+    [ACTIVITY_LEVEL.LOW_ACTIVE]: 1.3,
+    [ACTIVITY_LEVEL.ACTIVE]: 1.45,
+    [ACTIVITY_LEVEL.VERY_ACTIVE]: 1.7,
 } satisfies Record<ActivityLevel, number>;
-
-/**
- * V1 uses weight-based calorie estimates instead of BMR/TDEE.
- *
- * This keeps Adaptive Daily Nutrition Planning simple and deterministic while
- * height, activity level, and detailed expenditure tracking are not available.
- *
- * These values are planning defaults, not clinical maintenance calculations.
- * They should be adjusted later by observed progress signals such as weight,
- * waist trend, training day energy, and user feedback.
- */
-const CALORIES_PER_KG_BY_GOAL = {
-    [GOAL_TAG.MAINTENANCE]: 32,
-    [GOAL_TAG.FAT_LOSS]: 28,
-    [GOAL_TAG.MUSCLE_GAIN]: 36,
-} satisfies Record<GoalTag, number>;
 
 /**
  * Goal adjustment is applied after maintenance calories are estimated.
@@ -86,18 +70,49 @@ const DAY_TYPE_CALORIE_ADJUSTMENT = {
  * grams per kilogram of body weight for active people.
  */
 const PROTEIN_PER_KG_BY_GOAL = {
-    [GOAL_TAG.MAINTENANCE]: 1.6,
+    [GOAL_TAG.MAINTENANCE]: 1.7,
     [GOAL_TAG.FAT_LOSS]: 1.8,
     [GOAL_TAG.MUSCLE_GAIN]: 1.6,
 } satisfies Record<GoalTag, number>;
 
-/**
- * Fat is set as a moderate share of planning calories.
- *
- * In V1, fat is treated as a guardrail for dietary balance, while carbohydrates
- * absorb the remaining calories and become the main adjustment lever.
- */
-const FAT_TARGET_PERCENT = 0.25;
+const FAT_PER_KG_BY_GOAL = {
+    [GOAL_TAG.MAINTENANCE]: 0.9,
+    [GOAL_TAG.FAT_LOSS]: 0.8,
+    [GOAL_TAG.MUSCLE_GAIN]: 1.0,
+} satisfies Record<GoalTag, number>;
+
+const CARBS_PER_KG_LIMIT_BY_GOAL_AND_DAY = {
+    [GOAL_TAG.MAINTENANCE]: {
+        [DAY_TAG.REST_DAY]: {
+            min: 1.8,
+            max: 2.6,
+        },
+        [DAY_TAG.TRAINING_DAY]: {
+            min: 2.2,
+            max: 3.2,
+        },
+    },
+    [GOAL_TAG.FAT_LOSS]: {
+        [DAY_TAG.REST_DAY]: {
+            min: 1.4,
+            max: 2.2,
+        },
+        [DAY_TAG.TRAINING_DAY]: {
+            min: 1.8,
+            max: 2.8,
+        },
+    },
+    [GOAL_TAG.MUSCLE_GAIN]: {
+        [DAY_TAG.REST_DAY]: {
+            min: 2.8,
+            max: 3.8,
+        },
+        [DAY_TAG.TRAINING_DAY]: {
+            min: 3.4,
+            max: 4.6,
+        },
+    },
+} satisfies Record<GoalTag, Record<DayTag, { min: number; max: number }>>;
 
 /**
  * Standard Atwater factors used to estimate metabolizable energy.
@@ -114,19 +129,22 @@ export function calculateMacroTargets(request: DailyNutritionPlannerRequest): Da
     const goal = request.goal ?? DEFAULT_GOAL;
     const weightKg = getWeightKg(request.weight);
     const age = calculateAge(request.birthday);
-    const calories = calculateTargetCalories({
+    const activity = request.activityLevel;
+    const dayType = request.dayType;
+    const targetCalories = calculateTargetCalories({
         gender: request.gender,
         age,
         weightKg,
         heightCm: request.height,
-        activityLevel: request.activityLevel,
-        dayType: request.dayType,
+        activityLevel: activity,
+        dayType: dayType,
         goal,
     });
 
-    const protein = calculateProteinTargetG(weightKg, goal);
-    const fat = calculateFatTargetG(calories);
-    const carbs = calculateRemainingCarbsG(calories, protein, fat);
+    const protein = calculateProteinTarget(weightKg, goal);
+    const fat = calculateFatTarget(weightKg, goal);
+    const carbs = calculateCarbsTarget(targetCalories, protein, fat, weightKg, goal, dayType, activity);
+    const calories = calculateCaloriesFromMacros(protein, fat, carbs);
 
     return {
         calories,
@@ -134,6 +152,57 @@ export function calculateMacroTargets(request: DailyNutritionPlannerRequest): Da
         fat,
         carbs,
     };
+}
+
+function calculateCaloriesFromMacros(protein: number, fat: number, carbs: number): number {
+    const proteinKcal = protein * NUTRITION_ENERGY.kcalPerGram.protein;
+    const fatKcal = fat * NUTRITION_ENERGY.kcalPerGram.fat;
+    const carbsKcal = carbs * NUTRITION_ENERGY.kcalPerGram.carbs;
+
+    return proteinKcal + fatKcal + carbsKcal;
+}
+
+function calculateCarbsTarget(
+    targetCalories: number,
+    protein: number,
+    fat: number,
+    weightKg: number,
+    goal: GoalTag,
+    dayType: DayTag,
+    activityLevel: ActivityLevel,
+): number {
+    const remainingCarbs = calculateRemainingCarbs(targetCalories, protein, fat);
+    const limits = CARBS_PER_KG_LIMIT_BY_GOAL_AND_DAY[goal][dayType];
+    const minCarbs = Math.round(weightKg * limits.min);
+    const maxCarbs = calculateMaxCarbs(weightKg, limits.max, activityLevel);
+
+    return clamp(remainingCarbs, minCarbs, maxCarbs);
+}
+
+function calculateMaxCarbs(weightKg: number, baseMaxPerKg: number, activityLevel: ActivityLevel): number {
+    const adjustment = calculateActivityCarbLimitAdjustment(activityLevel);
+    const adjustedMaxPerKg = baseMaxPerKg + adjustment;
+
+    return Math.round(weightKg * adjustedMaxPerKg);
+}
+
+function calculateActivityCarbLimitAdjustment(activityLevel: ActivityLevel): number {
+    const baselineActivityFactor = ACTIVITY_FACTOR[ACTIVITY_LEVEL.LOW_ACTIVE];
+    const activityFactor = ACTIVITY_FACTOR[activityLevel];
+
+    return Math.max(0, activityFactor - baselineActivityFactor) * 2;
+}
+
+function calculateRemainingCarbs(targetCalories: number, protein: number, fat: number): number {
+    const proteinKcal = protein * NUTRITION_ENERGY.kcalPerGram.protein;
+    const fatKcal = fat * NUTRITION_ENERGY.kcalPerGram.fat;
+    const remainingCalories = targetCalories - proteinKcal - fatKcal;
+
+    return Math.max(0, Math.round(remainingCalories / NUTRITION_ENERGY.kcalPerGram.carbs));
+}
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max);
 }
 
 function calculateTargetCalories(params: TargetCaloriesParams): number {
@@ -167,21 +236,12 @@ function getBmrGenderAdjustment(gender: ClientGender): number {
     return BMR_GENDER_ADJUSTMENT[gender] ?? BMR_GENDER_ADJUSTMENT[CLIENT_GENDERS.UNKNOWN];
 }
 
-function calculateProteinTargetG(weightKg: number, goal: GoalTag): number {
+function calculateProteinTarget(weightKg: number, goal: GoalTag): number {
     return Math.round(weightKg * PROTEIN_PER_KG_BY_GOAL[goal]);
 }
 
-function calculateFatTargetG(calories: number): number {
-    return Math.round((calories * FAT_TARGET_PERCENT) / NUTRITION_ENERGY.kcalPerGram.fat);
-}
-
-function calculateRemainingCarbsG(calories: number, proteinG: number, fatG: number): number {
-    const proteinKcal = proteinG * NUTRITION_ENERGY.kcalPerGram.protein;
-    const fatKcal = fatG * NUTRITION_ENERGY.kcalPerGram.fat;
-    const remainingCalories = calories - proteinKcal - fatKcal;
-
-    // Carbohydrates are the flexible energy lever after protein and fat targets are fixed.
-    return Math.max(0, Math.round(remainingCalories / NUTRITION_ENERGY.kcalPerGram.carbs));
+function calculateFatTarget(weightKg: number, goal: GoalTag): number {
+    return Math.round(weightKg * FAT_PER_KG_BY_GOAL[goal]);
 }
 
 function getWeightKg(weight: BodyMeasurement): number {

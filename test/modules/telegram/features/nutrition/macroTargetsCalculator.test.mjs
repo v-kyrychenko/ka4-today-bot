@@ -10,7 +10,7 @@ test('calculateDailyNutritionPlan logs maintenance targets for an 81 kg male cli
         birthday: '1989-01-15',
         goal: 'maintenance',
         height: 182,
-        activityLevel: 'active',
+        activityLevel: 'low_active',
         dayType: 'training_day',
         weight: {
             id: 1,
@@ -25,12 +25,16 @@ test('calculateDailyNutritionPlan logs maintenance targets for an 81 kg male cli
     console.log('### MACRO_TARGETS_CALCULATOR:result', result);
 
     assert.deepEqual(result, {
-        calories: 2740,
-        protein: 130,
-        fat: 76,
-        carbs: 384,
+        calories: 2245,
+        protein: 138,
+        fat: 73,
+        carbs: 259,
     });
 });
+
+// protein = primary target
+// fat = hormonal minimum
+// carbs = controlled performance lever
 
 test('calculateMacroTargets logs maintenance targets for an active female training day', async () => {
     const module = await loadMacroTargetsCalculator();

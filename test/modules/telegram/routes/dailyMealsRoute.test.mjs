@@ -5,9 +5,9 @@ import {build} from 'esbuild';
 const chatId = 42;
 const clientId = 777;
 
-test('/meals route generates a daily nutrition plan and sends formatted JSON', async () => {
+test('/meals route generates a daily nutrition plan and sends a daily menu template', async () => {
     const calls = [];
-    const plan = {clientId, meals: [{mealType: 'breakfast'}]};
+    const plan = createPlan();
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({goals: 'fat_loss', height: 181.5}),
@@ -35,7 +35,26 @@ test('/meals route generates a daily nutrition plan and sends formatted JSON', a
             activityLevel: 'active',
             dayType: 'training_day',
         }],
-        ['send', chatId, JSON.stringify(plan, null, 2)],
+        ['send', chatId, [
+            '🍽 Меню на сьогодні',
+            '',
+            'Тренувальний день · зниження ваги',
+            '',
+            '📊 Разом за день:',
+            '1406 ккал · Б 157 г · Ж 25 г · В 145 г',
+            '',
+            '🥣 Сніданок',
+            'Яєчні білки з моцарелою та грибами',
+            '',
+            '• Яєчні білки — 150 г',
+            '• Моцарела light — 40 г',
+            '',
+            '🍽 Обід',
+            'Біла риба з картоплею та салатом',
+            '',
+            '• Біла риба — 180 г',
+            '• Картопля варена — 340 г',
+        ].join('\n')],
     ]);
 });
 
@@ -46,7 +65,7 @@ test('/meals route defaults missing goal to maintenance and unscheduled day to r
         client: createClient({goals: null, height: 170}),
         weight: createWeight({amount: 75}),
         scheduled: null,
-        plan: {ok: true},
+        plan: createPlan({goal: 'maintenance', dayType: 'rest_day'}),
     });
 
     await new DailyMealsRoute().execute(createContext());
@@ -220,5 +239,61 @@ function createMeasurement(input = {}) {
         amount: input.amount ?? 90,
         type: input.type ?? 'WAIST',
         unitKey: input.unitKey ?? 'cm',
+    };
+}
+
+function createPlan(input = {}) {
+    return {
+        clientId,
+        goal: input.goal ?? 'fat_loss',
+        dayType: input.dayType ?? 'training_day',
+        targetDate: '2026-05-15',
+        totals: {
+            calories: 1406,
+            protein: 157,
+            fat: 25,
+            carbs: 145,
+        },
+        meals: [
+            createMeal({
+                mealType: 'breakfast',
+                title: 'Яєчні білки з моцарелою та грибами',
+                items: [
+                    createMealItem('Яєчні білки', 150),
+                    createMealItem('Моцарела light', 40),
+                ],
+            }),
+            createMeal({
+                mealType: 'lunch',
+                title: 'Біла риба з картоплею та салатом',
+                items: [
+                    createMealItem('Біла риба', 180),
+                    createMealItem('Картопля варена', 340),
+                ],
+            }),
+        ],
+    };
+}
+
+function createMeal(input) {
+    return {
+        mealType: input.mealType,
+        template: {
+            title: {uk: input.title},
+            items: input.items,
+        },
+        fallbackLevel: 'exact',
+        reason: 'test',
+        score: 1,
+    };
+}
+
+function createMealItem(name, amount) {
+    return {
+        amount,
+        unit: 'g',
+        foodDict: {
+            name: {uk: name},
+        },
     };
 }

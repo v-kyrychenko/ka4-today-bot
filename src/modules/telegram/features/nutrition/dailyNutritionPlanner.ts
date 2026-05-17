@@ -8,6 +8,7 @@ import {
     type MealType,
 } from './nutritionModel.js';
 import {today} from '../../../../shared/utils/dateUtils.js';
+import {log} from '../../../../shared/logging';
 import {mealTemplatePicker} from './picker/mealTemplatePicker.js';
 import {calculateMacroTargets} from "./macroTargetsCalculator";
 import {adjust} from "./nutritionAdjuster";
@@ -26,6 +27,7 @@ export const dailyNutritionPlanner = {
 
 export async function generate(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
     //TODO get history of daily plans and pass it to buildDraftDailyPlan
+    log('### DAILY_NUTRITION_PLANNER:generate:request', request);
 
     const draftPlan = await buildDraftDailyPlan(request);
     const dailyMacroTargets = calculateMacroTargets(request);

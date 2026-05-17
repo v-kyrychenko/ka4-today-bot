@@ -1,5 +1,5 @@
 import {clientsRepository} from '../../coach/client/repository/clientsRepository.js';
-import type {ClientProfile} from '../../coach/client/domain/client.js';
+import {CLIENT_GENDERS, ClientProfile} from '../../coach/client/domain/client.js';
 import {NotFoundError, OpenAIError, TelegramError} from '../../../shared/errors';
 import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../shared/i18n/i18nService.js';
@@ -12,14 +12,17 @@ import {
     DAY_TAG,
     GOAL_TAG,
     type ActivityLevel,
+    type DailyNutritionPlan,
     type DayTag,
-    type GoalTag, type DailyNutritionPlannerRequest,
+    type DailyNutritionPlannerRequest,
+    type GoalTag,
+    MEAL_TYPE,
 } from '../features/nutrition/nutritionModel.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import type {ProcessorContext} from '../model/context.js';
 import {BaseRoute} from './BaseRoute.js';
 import {DAILY_MEALS} from './constants.js';
-import {log} from "../../../shared/logging";
+import {log} from '../../../shared/logging';
 
 export class DailyMealsRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
@@ -35,6 +38,51 @@ export class DailyMealsRoute extends BaseRoute {
         const plan = await dailyNutritionPlanner.generate(request);
 
         log(JSON.stringify(plan, null, 2));
+        await telegramMessagingService.sendMessage(context, this.generateDailyMealsTemplate(plan));
+    }
+
+    private generateDailyMealsTemplate(plan: DailyNutritionPlan): string {
+        const dayTypeLabels = {
+            [DAY_TAG.REST_DAY]: 'День відпочинку',
+            [DAY_TAG.TRAINING_DAY]: 'Тренувальний день',
+        };
+        const goalLabels = {
+            [GOAL_TAG.FAT_LOSS]: 'зниження ваги',
+            [GOAL_TAG.MAINTENANCE]: 'підтримка форми',
+            [GOAL_TAG.MUSCLE_GAIN]: 'набір мʼязів',
+        };
+        const mealLabels = {
+            [MEAL_TYPE.BREAKFAST]: {emoji: '🥣', title: 'Сніданок'},
+            [MEAL_TYPE.LUNCH]: {emoji: '🍽', title: 'Обід'},
+            [MEAL_TYPE.DINNER]: {emoji: '🌙', title: 'Вечеря'},
+            [MEAL_TYPE.SNACK]: {emoji: '🍓', title: 'Перекус'},
+        };
+        const unitLabels = {
+            g: 'г',
+            pcs: 'шт',
+        };
+        const formatAmount = (amount: number): string => Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
+        const getText = (text: Record<string, string>): string => text.uk ?? text.en ?? Object.values(text)[0] ?? '';
+        const lines = [
+            '🍽 Меню на сьогодні',
+            '',
+            `${dayTypeLabels[plan.dayType]} · ${goalLabels[plan.goal]}`,
+            '',
+            '📊 Разом за день:',
+            `${Math.round(plan.totals.calories)} ккал · Б ${Math.round(plan.totals.protein)} г`
+            + ` · Ж ${Math.round(plan.totals.fat)} г · В ${Math.round(plan.totals.carbs)} г`,
+        ];
+
+        for (const meal of plan.meals) {
+            const label = mealLabels[meal.mealType];
+            lines.push('', `${label.emoji} ${label.title}`, getText(meal.template.title), '');
+
+            for (const item of meal.template.items) {
+                lines.push(`• ${getText(item.foodDict.name)} — ${formatAmount(item.amount)} ${unitLabels[item.unit]}`);
+            }
+        }
+
+        return lines.join('\n');
     }
 }
 
@@ -65,7 +113,7 @@ async function initPlannerRequest(context: ProcessorContext): Promise<DailyNutri
 
     return {
         clientId,
-        gender: client.gender,
+        gender: CLIENT_GENDERS.FEMALE,//client.gender,
         birthday: client.birthday,
         goal: getGoal(client),
         weight,
