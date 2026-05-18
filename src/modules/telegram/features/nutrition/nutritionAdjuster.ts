@@ -112,11 +112,14 @@ function getAdjustableFatItems(plan: DailyNutritionPlan): MealItem[] {
 function getPrioritizedItems(plan: DailyNutritionPlan,
                              predicate: (item: MealItem) => boolean,
                              macro: MacroKey): MealItem[] {
-    const candidates = getPlanItems(plan).filter((item) => predicate(item) && !isVegetableItem(item));
-    const adjustableItems = candidates.filter((item) => item.adjustable);
+    const candidates = getPlanItems(plan)
+        .filter((item) => predicate(item) && !isVegetableItem(item));
+    const adjustableItems = candidates
+        .filter((item) => item.adjustable);
     const sourceItems = adjustableItems.length > NO_DELTA ? adjustableItems : candidates;
 
-    return sourceItems.sort((left, right) => getMacroPerAmount(right, macro) - getMacroPerAmount(left, macro));
+    return sourceItems.sort((left, right) =>
+        getMacroPerAmount(right, macro) - getMacroPerAmount(left, macro));
 }
 
 function getPlanItems(plan: DailyNutritionPlan): MealItem[] {
