@@ -31,7 +31,7 @@ export async function generate(request: DailyNutritionPlannerRequest): Promise<D
 
     const draftPlan = await buildDraftDailyPlan(request);
     const dailyMacroTargets = calculateMacroTargets(request);
-
+    log('### DAILY_NUTRITION_PLANNER:generate:dailyMacroTargets', dailyMacroTargets);
     const adjustedPlan = await adjust(draftPlan, dailyMacroTargets);
 
     return adjustedPlan

@@ -119,7 +119,7 @@ async function initPlannerRequest(context: ProcessorContext): Promise<DailyNutri
         weight,
         height,
         activityLevel: getActivityLevel(),
-        dayType: await getDayType(getChatId(context)),
+        dayType: DAY_TAG.TRAINING_DAY// await getDayType(getChatId(context)),
     };
 }
 
@@ -166,7 +166,7 @@ async function getWeight(clientId: number): Promise<BodyMeasurement | null> {
 }
 
 function getActivityLevel(): ActivityLevel {
-    return ACTIVITY_LEVEL.ACTIVE;
+    return ACTIVITY_LEVEL.LOW_ACTIVE;
 }
 
 async function getDayType(chatId: number): Promise<DayTag> {
