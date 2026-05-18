@@ -18,6 +18,10 @@ const PIECE_PORTION_STEP = 1;
 const MIN_PORTION_AMOUNT = 0;
 const NO_DELTA = 0;
 const NO_MACRO_DENSITY = 0;
+const NO_SOLID_WEIGHT = 0;
+const MIN_SOLID_MEAL_DENSITY_KCAL_PER_100G = 100;
+const MIN_VEGETABLE_PORTION_G = 80;
+const VOLUME_FOOD_REDUCTION_STEP_G = 20;
 
 type MealItem = DailyNutritionPlanMeal['template']['items'][number];
 type MacroKey = keyof DailyMacroTargets;
@@ -37,6 +41,9 @@ export async function adjust(draftPlan: DailyNutritionPlan, targets: DailyMacroT
 
     delta = calculateMacroDelta(adjustedPlan.totals, targets);
     adjustCarbs(adjustedPlan, delta.carbs);
+    adjustedPlan.totals = calculatePlanTotals(adjustedPlan);
+
+    normalizeMealVolume(adjustedPlan);
     adjustedPlan.totals = calculatePlanTotals(adjustedPlan);
 
     return adjustedPlan;
@@ -64,10 +71,6 @@ function adjustCarbs(plan: DailyNutritionPlan, deltaCarbsG: number): void {
 }
 
 function adjustFat(plan: DailyNutritionPlan, delta: MacroDelta): void {
-    if (delta.fat > MACRO_TOLERANCE_G && !isWithinTolerance(delta.protein)) {
-        return;
-    }
-
     adjustMacro(plan, getAdjustableFatItems(plan), 'fat', delta.fat);
 }
 
@@ -95,6 +98,76 @@ function adjustMacro(plan: DailyNutritionPlan, items: MealItem[], macro: MacroKe
     }
 
     plan.totals = calculatePlanTotals(plan);
+}
+
+function normalizeMealVolume(plan: DailyNutritionPlan): void {
+    for (const meal of plan.meals) {
+        normalizeSingleMealVolume(meal);
+    }
+}
+
+function normalizeSingleMealVolume(meal: DailyNutritionPlanMeal): void {
+    const volumeFoods = getVolumeFoods(meal);
+
+    for (const item of volumeFoods) {
+        while (getMealDensityKcalPer100G(meal) < MIN_SOLID_MEAL_DENSITY_KCAL_PER_100G && canReduceVolumeFood(item)) {
+            reduceVolumeFood(item);
+        }
+    }
+}
+
+function getMealDensityKcalPer100G(meal: DailyNutritionPlanMeal): number {
+    const solidWeightG = getMealSolidWeightG(meal);
+
+    if (solidWeightG <= NO_SOLID_WEIGHT) {
+        return MIN_SOLID_MEAL_DENSITY_KCAL_PER_100G;
+    }
+
+    return getMealCalories(meal) / solidWeightG * 100;
+}
+
+function getMealSolidWeightG(meal: DailyNutritionPlanMeal): number {
+    return meal.template.items
+        .filter((item) => item.unit === 'g')
+        .reduce((total, item) => total + item.amount, NO_SOLID_WEIGHT);
+}
+
+function getMealCalories(meal: DailyNutritionPlanMeal): number {
+    return meal.template.items
+        .filter((item) => hasValidMacros(item))
+        .reduce((total, item) => total + getItemCalories(item), NO_DELTA);
+}
+
+function getItemCalories(item: MealItem): number {
+    return item.foodDict.calories * item.amount / item.foodDict.amount;
+}
+
+function getVolumeFoods(meal: DailyNutritionPlanMeal): MealItem[] {
+    return meal.template.items
+        .filter((item) => item.adjustable && item.unit === 'g')
+        .filter((item) => isVolumeFood(item) && !isMacroItem(item))
+        .sort((left, right) => right.amount - left.amount);
+}
+
+function isVolumeFood(item: MealItem): boolean {
+    return isVegetableItem(item) || item.foodDict.flags.includes('volumeFood');
+}
+
+function isMacroItem(item: MealItem): boolean {
+    return isProteinItem(item) || isCarbItem(item) || isFatItem(item);
+}
+
+function canReduceVolumeFood(item: MealItem): boolean {
+    return item.amount > getVolumeFoodMinimum(item);
+}
+
+function reduceVolumeFood(item: MealItem): void {
+    const nextAmount = item.amount - VOLUME_FOOD_REDUCTION_STEP_G;
+    item.amount = Math.max(nextAmount, getVolumeFoodMinimum(item));
+}
+
+function getVolumeFoodMinimum(item: MealItem): number {
+    return item.minAmount ?? MIN_VEGETABLE_PORTION_G;
 }
 
 function getAdjustableProteinItems(plan: DailyNutritionPlan): MealItem[] {
