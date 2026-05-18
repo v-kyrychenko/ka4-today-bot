@@ -13,6 +13,10 @@ import {
 import {calculatePlanTotals, hasValidMacros} from './planMacroTotals.js';
 
 const MACRO_TOLERANCE_G = 2;
+const PROTEIN_TOLERANCE_G = 10;
+const FAT_TOLERANCE_G = 7;
+const CARB_TOLERANCE_G = 15;
+const CALORIE_TOLERANCE_PERCENT = 0.05;
 const GRAM_PORTION_STEP = 5;
 const PIECE_PORTION_STEP = 1;
 const MIN_PORTION_AMOUNT = 0;
@@ -63,14 +67,26 @@ function calculateMacroDelta(currentTotals: DailyMacroTargets, dailyMacroTargets
 }
 
 function adjustProtein(plan: DailyNutritionPlan, deltaProteinG: number): void {
+    if (deltaProteinG <= PROTEIN_TOLERANCE_G) {
+        return;
+    }
+
     adjustMacro(plan, getAdjustableProteinItems(plan), 'protein', deltaProteinG);
 }
 
 function adjustCarbs(plan: DailyNutritionPlan, deltaCarbsG: number): void {
+    if (Math.abs(deltaCarbsG) <= CARB_TOLERANCE_G) {
+        return;
+    }
+
     adjustMacro(plan, getAdjustableCarbItems(plan), 'carbs', deltaCarbsG);
 }
 
 function adjustFat(plan: DailyNutritionPlan, delta: MacroDelta): void {
+    if (Math.abs(delta.fat) <= FAT_TOLERANCE_G) {
+        return;
+    }
+
     adjustMacro(plan, getAdjustableFatItems(plan), 'fat', delta.fat);
 }
 
@@ -179,7 +195,7 @@ function getAdjustableCarbItems(plan: DailyNutritionPlan): MealItem[] {
 }
 
 function getAdjustableFatItems(plan: DailyNutritionPlan): MealItem[] {
-    return getPrioritizedItems(plan, isFatItem, 'fat');
+    return getPrioritizedItems(plan, isFatDominantItem, 'fat');
 }
 
 function getPrioritizedItems(plan: DailyNutritionPlan,
@@ -209,6 +225,13 @@ function isCarbItem(item: MealItem): boolean {
 
 function isFatItem(item: MealItem): boolean {
     return FAT_ITEM_ROLES.has(item.role) || FAT_FOOD_CATEGORIES.has(item.foodDict.category);
+}
+
+function isFatDominantItem(item: MealItem): boolean {
+    const fatPerAmount = getMacroPerAmount(item, 'fat');
+    const proteinPerAmount = getMacroPerAmount(item, 'protein');
+
+    return isFatItem(item) && fatPerAmount > proteinPerAmount;
 }
 
 function isVegetableItem(item: MealItem): boolean {
