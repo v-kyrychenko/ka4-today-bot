@@ -15,6 +15,9 @@ Globals:
         TELEGRAM_SECURITY_TOKEN: !Ref TelegramSecurityToken
         OPENAI_API_KEY: !Ref OpenAiToken
         OPENAI_PROJECT_ID: !Ref OpenAiProjectId
+        EDAMAM_API_ID: !Ref EdamamApiId
+        EDAMAM_API_KEY: !Ref EdamamApiKey
+        EDAMAM_API_USER: !Ref EdamamApiUser
         MAIN_MESSAGE_QUEUE_URL: !Ref MainMessageQueue
         POSTGRES_HOST: !ImportValue
           'Fn::Sub': '${NetworkStackExportPrefix}-PostgresHost'
@@ -38,6 +41,15 @@ Parameters:
     Type: String
     NoEcho: true
   OpenAiProjectId:
+    Type: String
+    NoEcho: true
+  EdamamApiId:
+    Type: String
+    NoEcho: true
+  EdamamApiKey:
+    Type: String
+    NoEcho: true
+  EdamamApiUser:
     Type: String
     NoEcho: true
   PostgresPassword:

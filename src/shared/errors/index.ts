@@ -38,6 +38,16 @@ export class OpenAIError extends Error {
     }
 }
 
+export class EdamamError extends Error {
+    statusCode: number;
+
+    constructor(message = 'Edamam API error', statusCode = 500) {
+        super(message);
+        this.name = 'EdamamError';
+        this.statusCode = statusCode;
+    }
+}
+
 export class TelegramError extends Error {
     statusCode: number;
 
