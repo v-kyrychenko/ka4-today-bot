@@ -152,6 +152,28 @@ test('edamam client gets recipe details by recipe id', async () => {
     assert.equal(new calls[0].errorClass().name, 'EdamamError');
 });
 
+test('edamam client gets recipe details by recipe href', async () => {
+    const module = await loadEdamamClient();
+    const calls = [];
+    const recipeId = '5fe5340d10e364f4eba25a11189a474c';
+    const href = `https://api.edamam.com/api/recipes/v2/${recipeId}`;
+
+    globalThis.__edamamClientHttpMock = {
+        calls,
+        async httpRequest(params) {
+            calls.push(params);
+            return {recipe: {uri: `recipe:${recipeId}`}, _links: {self: {href, title: 'Self'}}};
+        },
+    };
+
+    await module.getRecipe(href);
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].method, 'GET');
+    assert.equal(calls[0].endpointUrl, 'https://api.edamam.com');
+    assert.equal(calls[0].path, `/api/recipes/v2/${recipeId}`);
+});
+
 async function loadEdamamClient() {
     const cacheKey = `${Date.now()}-${Math.random()}`;
     const result = await build({

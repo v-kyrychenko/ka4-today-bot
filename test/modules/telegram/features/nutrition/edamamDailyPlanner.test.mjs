@@ -39,6 +39,15 @@ test('generate calls Edamam meal planner with macro and meal calorie ranges', as
                 },
             },
         },
+    ], [
+        'getRecipe',
+        'https://api.edamam.com/api/recipes/v2/breakfast-recipe-id',
+    ], [
+        'getRecipe',
+        'https://api.edamam.com/api/recipes/v2/lunch-recipe-id',
+    ], [
+        'getRecipe',
+        'https://api.edamam.com/api/recipes/v2/dinner-recipe-id',
     ]]);
 });
 
@@ -90,9 +99,28 @@ const edamamDailyPlannerMocks = {
             'export const edamamClient = {',
             '    async selectMealPlan(request) {',
             '        globalThis.__edamamDailyPlannerMocks.calls.push(["selectMealPlan", request]);',
-            '        return {selection: [], status: "OK"};',
+            '        return {',
+            '            selection: [{',
+            '                sections: {',
+            '                    Breakfast: createSection("breakfast-recipe-id"),',
+            '                    Lunch: createSection("lunch-recipe-id"),',
+            '                    Dinner: createSection("dinner-recipe-id"),',
+            '                },',
+            '            }],',
+            '            status: "OK",',
+            '        };',
+            '    },',
+            '    async getRecipe(recipeId) {',
+            '        globalThis.__edamamDailyPlannerMocks.calls.push(["getRecipe", recipeId]);',
+            '        return {recipe: {uri: `recipe:${recipeId}`, label: recipeId}};',
             '    },',
             '};',
+            'function createSection(recipeId) {',
+            '    return {',
+            '        assigned: `http://www.edamam.com/ontologies/edamam.owl#recipe_${recipeId}`,',
+            '        _links: {self: {href: `https://api.edamam.com/api/recipes/v2/${recipeId}`, title: "Recipe details"}},',
+            '    };',
+            '}',
         ]);
         mockModule(buildContext, /macroTargetsCalculator$/, [
             'export function calculateMacroTargets() {',

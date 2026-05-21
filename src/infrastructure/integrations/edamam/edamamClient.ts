@@ -34,13 +34,21 @@ export async function selectMealPlan(
     });
 }
 
-export async function getRecipe(recipeId: string): Promise<EdamamRecipeResponse> {
+export async function getRecipe(recipeIdOrHref: string): Promise<EdamamRecipeResponse> {
     return await httpRequest<EdamamRecipeResponse>({
         method: 'GET',
-        path: `/api/recipes/v2/${recipeId}`,
+        path: buildRecipePath(recipeIdOrHref),
         endpointUrl: EDAMAM_BASE_URL,
         headers: EDAMAM_API_HEADERS,
         label: `${EDAMAM_API_LABEL}:recipe-details`,
         errorClass: EdamamError,
     });
+}
+
+function buildRecipePath(recipeIdOrHref: string): string {
+    if (!recipeIdOrHref.startsWith('http')) {
+        return `/api/recipes/v2/${recipeIdOrHref}`;
+    }
+
+    return new URL(recipeIdOrHref).pathname;
 }
