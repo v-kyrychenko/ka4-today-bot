@@ -9,9 +9,8 @@ test('generate calls Edamam meal planner with macro and meal calorie ranges', as
     const result = await module.generate(createRequest());
 
     assert.deepEqual(JSON.parse(JSON.stringify(result)), {
-        clientId: 101,
-        goal: 'maintenance',
-        dayType: 'training_day',
+        title: '🍽 Меню на сьогодні',
+        subtitle: 'Тренувальний день · підтримка форми',
         targetDate: '2026-05-10',
         totals: {
             calories: 1020,
@@ -20,9 +19,9 @@ test('generate calls Edamam meal planner with macro and meal calorie ranges', as
             carbs: 109,
         },
         meals: [
-            createExpectedMeal('breakfast', 'breakfast-recipe-id', 320, 21, 9, 34, 155),
-            createExpectedMeal('lunch', 'lunch-recipe-id', 410, 27.5, 12, 43, 210),
-            createExpectedMeal('dinner', 'dinner-recipe-id', 290, 20, 14, 32, 180),
+            createExpectedMeal('breakfast', 'breakfast-recipe-id', 77.5),
+            createExpectedMeal('lunch', 'lunch-recipe-id', 105),
+            createExpectedMeal('dinner', 'dinner-recipe-id', 90),
         ],
     });
     assert.deepEqual(calls, [[
@@ -44,11 +43,7 @@ test('generate calls Edamam meal planner with macro and meal calorie ranges', as
                         accept: {
                             all: [{
                                 dish: [
-                                    'drinks',
                                     'egg',
-                                    'biscuits and cookies',
-                                    'bread',
-                                    'pancake',
                                     'cereals',
                                 ],
                             }, {
@@ -158,54 +153,23 @@ function createRequest() {
     };
 }
 
-function createExpectedMeal(mealType, recipeId, calories, protein, fat, carbs, weight) {
-    const recipeKey = `https://api.edamam.com/api/recipes/v2/${recipeId}`;
-
+function createExpectedMeal(mealType, recipeId, mainAmount) {
     return {
         mealType,
-        template: {
-            id: 0,
-            key: recipeKey,
-            active: true,
-            mealType,
-            title: {en: recipeId},
-            goalTags: ['maintenance'],
-            dayTags: ['training_day'],
-            items: [
-                createExpectedIngredientItem(mealType, recipeKey, recipeId, 1, calories / 2, protein / 2, fat / 2,
-                    carbs / 2, weight / 2),
-                createExpectedIngredientItem(mealType, recipeKey, recipeId, 2, calories / 2, protein / 2, fat / 2,
-                    carbs / 2, weight / 2),
-            ],
-        },
-        fallbackLevel: 'edamam',
-        reason: 'edamam_recipe_selected',
-        score: 100,
-    };
-}
-
-function createExpectedIngredientItem(mealType, recipeKey, recipeId, index, calories, protein, fat, carbs, weight) {
-    return {
-        id: 0,
-        amount: weight,
-        unit: 'g',
-        role: 'main_protein',
-        adjustable: false,
-        minAmount: null,
-        maxAmount: null,
-        foodDict: {
-            id: 0,
-            key: `${recipeKey}#ingredient_${index}`,
-            name: {en: `${recipeId} ingredient ${index}`},
-            category: 'protein',
-            amount: weight,
-            unit: 'g',
-            calories,
-            protein,
-            fat,
-            carbs,
-            mealRoles: [mealType],
-            flags: [],
+        title: recipeId,
+        originalTitle: recipeId,
+        mainIngredients: [{
+            name: `${recipeId} ingredient 1`,
+            amount: mainAmount,
+            unit: 'г',
+        }, {
+            name: `${recipeId} ingredient 2`,
+            amount: mainAmount,
+            unit: 'г',
+        }],
+        additionalIngredients: {
+            label: 'Додатково',
+            items: ['salt', 'olive oil'],
         },
     };
 }
@@ -258,6 +222,9 @@ const edamamDailyPlannerMocks = {
             '        ingredients: [',
             '            {food: `${recipeId.split("/").pop()} ingredient 1`, weight: weight / 2},',
             '            {food: `${recipeId.split("/").pop()} ingredient 2`, weight: weight / 2},',
+            '            {food: "salt", weight: 1},',
+            '            {food: "water", weight: 100},',
+            '            {food: "olive oil", weight: 8},',
             '        ],',
             '        totalNutrients: {',
             '            ENERC_KCAL: {label: "Energy", quantity: calories, unit: "kcal"},',

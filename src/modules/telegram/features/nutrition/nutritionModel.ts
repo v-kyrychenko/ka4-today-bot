@@ -57,120 +57,6 @@ export const DAY_TAG = {
 } as const;
 export type DayTag = typeof DAY_TAG[keyof typeof DAY_TAG];
 
-export type FoodCategory =
-    | 'protein'
-    | 'protein_fat'
-    | 'carb'
-    | 'fat'
-    | 'vegetable'
-    | 'carb_protein'
-    | 'carb_fat';
-
-export type FoodUnit = 'g' | 'pcs';
-export type MealRole = MealType;
-export const MEAL_ITEM_ROLE = {
-    BREAKFAST_CARB: 'breakfast_carb',
-    CARB: 'carb',
-    CARB_FAT: 'carb_fat',
-    CARB_PROTEIN: 'carb_protein',
-    FAT: 'fat',
-    FLAVOR_FAT: 'flavor_fat',
-    HEALTHY_FAT: 'healthy_fat',
-    LIGHT_CARB: 'light_carb',
-    MAIN_PROTEIN: 'main_protein',
-    PROTEIN_BOOSTER: 'protein_booster',
-    PROTEIN_FAT: 'protein_fat',
-    QUICK_CARB: 'quick_carb',
-    TRAINING_CARB: 'training_carb',
-    VEGETABLE: 'vegetable',
-} as const;
-export type MealItemRole = typeof MEAL_ITEM_ROLE[keyof typeof MEAL_ITEM_ROLE];
-
-export const PROTEIN_ITEM_ROLES: ReadonlySet<string> = new Set([
-    MEAL_ITEM_ROLE.MAIN_PROTEIN,
-    MEAL_ITEM_ROLE.PROTEIN_BOOSTER,
-    MEAL_ITEM_ROLE.PROTEIN_FAT,
-    MEAL_ITEM_ROLE.CARB_PROTEIN,
-]);
-export const PROTEIN_FOOD_CATEGORIES: ReadonlySet<string> = new Set(['protein', 'protein_fat', 'carb_protein']);
-
-export const CARB_ITEM_ROLES: ReadonlySet<string> = new Set([
-    MEAL_ITEM_ROLE.BREAKFAST_CARB,
-    MEAL_ITEM_ROLE.CARB,
-    MEAL_ITEM_ROLE.CARB_FAT,
-    MEAL_ITEM_ROLE.CARB_PROTEIN,
-    MEAL_ITEM_ROLE.LIGHT_CARB,
-    MEAL_ITEM_ROLE.QUICK_CARB,
-    MEAL_ITEM_ROLE.TRAINING_CARB,
-]);
-export const CARB_FOOD_CATEGORIES: ReadonlySet<string> = new Set(['carb', 'carb_protein', 'carb_fat']);
-
-export const FAT_ITEM_ROLES: ReadonlySet<string> = new Set([
-    MEAL_ITEM_ROLE.FAT,
-    MEAL_ITEM_ROLE.FLAVOR_FAT,
-    MEAL_ITEM_ROLE.HEALTHY_FAT,
-    MEAL_ITEM_ROLE.PROTEIN_FAT,
-    MEAL_ITEM_ROLE.CARB_FAT,
-]);
-export const FAT_FOOD_CATEGORIES: ReadonlySet<string> = new Set(['fat', 'protein_fat', 'carb_fat']);
-
-export class FoodDict {
-    id = 0;
-    key = '';
-    name: LocalizedText = {};
-    category: FoodCategory = 'protein';
-    amount = 0;
-    unit: FoodUnit = 'g';
-    calories = 0;
-    protein = 0;
-    fat = 0;
-    carbs = 0;
-    mealRoles: MealRole[] = [];
-    flags: string[] = [];
-
-    constructor(init?: Partial<FoodDict>) {
-        Object.assign(this, init);
-        this.name = init?.name ?? {};
-        this.mealRoles = init?.mealRoles ?? [];
-        this.flags = init?.flags ?? [];
-    }
-}
-
-export class MealItem {
-    id = 0;
-    amount = 0;
-    unit: FoodUnit = 'g';
-    role: MealItemRole = MEAL_ITEM_ROLE.MAIN_PROTEIN;
-    adjustable = true;
-    minAmount: number | null = null;
-    maxAmount: number | null = null;
-    foodDict = new FoodDict();
-
-    constructor(init?: Partial<MealItem>) {
-        Object.assign(this, init);
-        this.foodDict = init?.foodDict ?? new FoodDict();
-    }
-}
-
-export class MealTemplate {
-    id = 0;
-    key = '';
-    active = true;
-    mealType: MealType = MEAL_TYPE.BREAKFAST;
-    title: LocalizedText = {};
-    goalTags: GoalTag[] = [];
-    dayTags: DayTag[] = [];
-    items: MealItem[] = [];
-
-    constructor(init?: Partial<MealTemplate>) {
-        Object.assign(this, init);
-        this.title = init?.title ?? {};
-        this.goalTags = init?.goalTags ?? [];
-        this.dayTags = init?.dayTags ?? [];
-        this.items = init?.items ?? [];
-    }
-}
-
 export interface DailyNutritionPlannerRequest {
     clientId: number;
     gender: ClientGender;
@@ -182,28 +68,58 @@ export interface DailyNutritionPlannerRequest {
     dayType: DayTag;
 }
 
-export interface DailyNutritionPlan {
-    clientId: number;
-    goal: GoalTag;
-    dayType: DayTag;
-    targetDate: string;
-    totals: DailyMacroTargets;
-    meals: DailyNutritionPlanMeal[];
-}
-
-export interface DailyNutritionPlanMeal {
-    mealType: MealType;
-    template: MealTemplate;
-    fallbackLevel: string;
-    reason: string;
-    score: number;
-}
-
 export interface DailyMacroTargets {
     calories: number;
     protein: number;
     fat: number;
     carbs: number;
+}
+
+export interface TelegramMealView {
+    title: string;
+    subtitle: string;
+    targetDate: string;
+    totals: DailyMacroTargets;
+    meals: TelegramMealViewMeal[];
+}
+
+export interface TelegramMealViewMeal {
+    mealType: MealType;
+    title: string;
+    originalTitle: string;
+    mainIngredients: TelegramMealIngredient[];
+    additionalIngredients: TelegramMealAdditionalIngredients;
+}
+
+export interface TelegramMealIngredient {
+    name: string;
+    amount: number;
+    unit: 'г';
+}
+
+export interface TelegramMealAdditionalIngredients {
+    label: string;
+    items: string[];
+}
+
+export interface DailyNutritionPlan {
+    totals: DailyMacroTargets;
+    meals: DailyNutritionPlanMeal[];
+}
+
+export interface DailyNutritionPlanMeal {
+    template: {
+        items: Array<{
+            amount: number;
+            foodDict: {
+                amount: number;
+                calories: number;
+                protein: number;
+                fat: number;
+                carbs: number;
+            };
+        }>;
+    };
 }
 
 export interface BmrParams {

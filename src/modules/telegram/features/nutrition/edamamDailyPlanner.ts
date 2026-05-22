@@ -6,9 +6,9 @@ import {buildDailyNutritionPlan, type EdamamSelectedRecipe} from './edamamRespon
 import {calculateMacroTargets} from './macroTargetsCalculator';
 import {
     MEAL_TYPE,
-    type DailyNutritionPlan,
     type DailyNutritionPlannerRequest,
-    type MealType
+    type MealType,
+    type TelegramMealView
 } from './nutritionModel';
 
 const EDAMAM_SECTION_MEAL_TYPE: Record<string, MealType> = {
@@ -21,7 +21,7 @@ export const edamamDailyPlanner = {
     generate,
 };
 
-export async function generate(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
+export async function generate(request: DailyNutritionPlannerRequest): Promise<TelegramMealView> {
     log('### EDAMAM_DAILY_PLANNER:generate:request', request);
 
     const dailyMacroTargets = calculateMacroTargets(request);

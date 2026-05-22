@@ -1,17 +1,15 @@
-import type {EdamamRecipe} from '../../../../infrastructure/integrations/edamam/types.js';
+import type {EdamamRecipe, EdamamRecipeIngredient} from '../../../../infrastructure/integrations/edamam/types.js';
 import {today} from '../../../../shared/utils/dateUtils.js';
-import {calculatePlanTotals} from './planMacroTotals.js';
 import {
+    DAY_TAG,
     GOAL_TAG,
-    MEAL_ITEM_ROLE,
     MEAL_TYPE,
-    type DailyNutritionPlan,
-    type DailyNutritionPlanMeal,
+    type DailyMacroTargets,
     type DailyNutritionPlannerRequest,
-    FoodDict,
-    MealItem,
-    MealTemplate,
-    type MealType
+    type MealType,
+    type TelegramMealIngredient,
+    type TelegramMealView,
+    type TelegramMealViewMeal
 } from './nutritionModel';
 
 const DAILY_MEAL_ORDER = [
@@ -20,147 +18,209 @@ const DAILY_MEAL_ORDER = [
     MEAL_TYPE.DINNER,
 ] as const;
 
+const MAX_MAIN_INGREDIENTS = 6;
+const MIN_MAIN_INGREDIENT_AMOUNT_G = 2;
+const SMALL_OIL_AMOUNT_G = 10;
+const TELEGRAM_UNIT_GRAMS = 'г';
+const ADDITIONAL_INGREDIENTS_LABEL = 'Додатково';
+
+const DAY_TYPE_LABELS = {
+    [DAY_TAG.REST_DAY]: 'День відпочинку',
+    [DAY_TAG.TRAINING_DAY]: 'Тренувальний день',
+} as const;
+
+const GOAL_LABELS = {
+    [GOAL_TAG.FAT_LOSS]: 'зниження ваги',
+    [GOAL_TAG.MAINTENANCE]: 'підтримка форми',
+    [GOAL_TAG.MUSCLE_GAIN]: 'набір мʼязів',
+} as const;
+
+const HELPER_INGREDIENT_PATTERNS = [
+    'salt',
+    'pepper',
+    'spice',
+    'spices',
+    'seasoning',
+    'seasonings',
+    'herb',
+    'herbs',
+    'yeast',
+    'gum',
+    'mustard',
+    'lemon juice',
+    'lime juice',
+    'vinegar',
+    'baking powder',
+    'baking soda',
+    'extract',
+];
+
+const WATER_PATTERNS = [
+    'water',
+    'ice',
+];
+
+const SOUP_DRINK_BROTH_PATTERNS = [
+    'soup',
+    'broth',
+    'stock',
+    'stew',
+    'cioppino',
+    'drink',
+    'smoothie',
+    'juice',
+    'tea',
+    'coffee',
+];
+
 export interface EdamamSelectedRecipe {
     recipeKey: string;
     recipe: EdamamRecipe;
 }
 
+interface WeightedIngredient {
+    index: number;
+    name: string;
+    amount: number;
+    visible: boolean;
+    helper: boolean;
+}
+
 export function buildDailyNutritionPlan(request: DailyNutritionPlannerRequest,
-                                        recipesByMealType: Map<MealType, EdamamSelectedRecipe>): DailyNutritionPlan {
-    const goal = request.goal ?? GOAL_TAG.MAINTENANCE;
+                                        recipesByMealType: Map<MealType, EdamamSelectedRecipe>): TelegramMealView {
     const meals = DAILY_MEAL_ORDER
         .map((mealType) => {
             const recipe = recipesByMealType.get(mealType);
-            return recipe == null ? null : buildDailyNutritionPlanMeal(request, mealType, recipe);
+            return recipe == null ? null : buildTelegramMeal(mealType, recipe.recipe);
         })
-        .filter((meal): meal is DailyNutritionPlanMeal => meal != null);
-    const plan = {
-        clientId: request.clientId,
-        goal,
-        dayType: request.dayType,
-        targetDate: today(),
-        totals: {
-            calories: 0,
-            protein: 0,
-            fat: 0,
-            carbs: 0,
-        },
-        meals,
-    };
+        .filter((meal): meal is TelegramMealViewMeal => meal != null);
 
     return {
-        ...plan,
-        totals: calculatePlanTotals(plan),
+        title: '🍽 Меню на сьогодні',
+        subtitle: `${DAY_TYPE_LABELS[request.dayType]} · ${GOAL_LABELS[request.goal ?? GOAL_TAG.MAINTENANCE]}`,
+        targetDate: today(),
+        totals: calculateTotals(meals.map((meal) => recipesByMealType.get(meal.mealType)?.recipe)),
+        meals,
     };
 }
 
-function buildDailyNutritionPlanMeal(request: DailyNutritionPlannerRequest,
-                                     mealType: MealType,
-                                     selectedRecipe: EdamamSelectedRecipe): DailyNutritionPlanMeal {
-    const goal = request.goal ?? GOAL_TAG.MAINTENANCE;
+function buildTelegramMeal(mealType: MealType, recipe: EdamamRecipe): TelegramMealViewMeal {
+    const ingredients = buildWeightedIngredients(recipe);
+    const visibleIngredients = ingredients
+        .filter((ingredient) => ingredient.visible)
+        .sort((left, right) => right.amount - left.amount);
+    const mainIngredients = visibleIngredients
+        .filter((ingredient) => isMainIngredient(ingredient))
+        .slice(0, MAX_MAIN_INGREDIENTS);
+    const mainNames = new Set(mainIngredients.map((ingredient) => ingredient.name));
+    const additionalIngredients = ingredients
+        .filter((ingredient) => ingredient.visible)
+        .sort((left, right) => left.index - right.index)
+        .filter((ingredient) => !mainNames.has(ingredient.name))
+        .map((ingredient) => ingredient.name);
 
     return {
         mealType,
-        template: new MealTemplate({
-            key: selectedRecipe.recipeKey,
-            active: true,
-            mealType,
-            title: {en: selectedRecipe.recipe.label},
-            goalTags: [goal],
-            dayTags: [request.dayType],
-            items: buildRecipeMealItems(mealType, selectedRecipe),
-        }),
-        fallbackLevel: 'edamam',
-        reason: 'edamam_recipe_selected',
-        score: 100,
+        title: recipe.label,
+        originalTitle: recipe.label,
+        mainIngredients: mainIngredients.map((ingredient) => ({
+            name: ingredient.name,
+            amount: ingredient.amount,
+            unit: TELEGRAM_UNIT_GRAMS,
+        })),
+        additionalIngredients: {
+            label: ADDITIONAL_INGREDIENTS_LABEL,
+            items: unique(additionalIngredients),
+        },
     };
 }
 
-function buildRecipeMealItem(mealType: MealType, selectedRecipe: EdamamSelectedRecipe): MealItem {
-    const recipe = selectedRecipe.recipe;
-    const amount = getRecipeWeight(recipe);
+function buildWeightedIngredients(recipe: EdamamRecipe): WeightedIngredient[] {
+    const showWater = shouldShowWater(recipe);
 
-    return new MealItem({
-        amount,
-        unit: 'g',
-        role: MEAL_ITEM_ROLE.MAIN_PROTEIN,
-        adjustable: false,
-        foodDict: new FoodDict({
-            key: selectedRecipe.recipeKey,
-            name: {en: recipe.label},
-            category: 'protein',
-            amount,
-            unit: 'g',
-            calories: getNutrientQuantity(recipe, 'ENERC_KCAL', recipe.calories),
-            protein: getNutrientQuantity(recipe, 'PROCNT'),
-            fat: getNutrientQuantity(recipe, 'FAT'),
-            carbs: getNutrientQuantity(recipe, 'CHOCDF'),
-            mealRoles: [mealType],
-        }),
-    });
+    return (recipe.ingredients ?? [])
+        .map((ingredient, index) => buildWeightedIngredient(recipe, ingredient, index, showWater))
+        .filter((ingredient): ingredient is WeightedIngredient => ingredient != null);
 }
 
-function buildRecipeMealItems(mealType: MealType, selectedRecipe: EdamamSelectedRecipe): MealItem[] {
-    const ingredients = selectedRecipe.recipe.ingredients ?? [];
-    const weightedIngredients = ingredients
-        .map((ingredient, index) => ({
-            ingredient,
-            index,
-            servingWeight: getIngredientServingWeight(selectedRecipe.recipe, index),
-        }))
-        .filter((item) => item.servingWeight > 0);
-
-    if (weightedIngredients.length === 0) {
-        return [buildRecipeMealItem(mealType, selectedRecipe)];
-    }
-
-    const servingWeight = weightedIngredients.reduce((total, item) => total + item.servingWeight, 0);
-
-    return weightedIngredients.map((item) => {
-        const macroShare = item.servingWeight / servingWeight;
-        const foodName = item.ingredient.food || item.ingredient.text;
-        return buildIngredientMealItem(mealType, selectedRecipe, item.index, foodName, item.servingWeight, macroShare);
-    });
-}
-
-function buildIngredientMealItem(mealType: MealType,
-                                 selectedRecipe: EdamamSelectedRecipe,
+function buildWeightedIngredient(recipe: EdamamRecipe,
+                                 ingredient: EdamamRecipeIngredient,
                                  index: number,
-                                 foodName: string,
-                                 amount: number,
-                                 macroShare: number): MealItem {
-    const recipe = selectedRecipe.recipe;
+                                 showWater: boolean): WeightedIngredient | null {
+    const amount = getIngredientServingWeight(recipe, ingredient);
 
-    return new MealItem({
-        amount,
-        unit: 'g',
-        role: MEAL_ITEM_ROLE.MAIN_PROTEIN,
-        adjustable: false,
-        foodDict: new FoodDict({
-            key: `${selectedRecipe.recipeKey}#ingredient_${index + 1}`,
-            name: {en: foodName},
-            category: 'protein',
-            amount,
-            unit: 'g',
-            calories: getNutrientQuantity(recipe, 'ENERC_KCAL', recipe.calories) * macroShare,
-            protein: getNutrientQuantity(recipe, 'PROCNT') * macroShare,
-            fat: getNutrientQuantity(recipe, 'FAT') * macroShare,
-            carbs: getNutrientQuantity(recipe, 'CHOCDF') * macroShare,
-            mealRoles: [mealType],
-        }),
-    });
-}
-
-function getRecipeWeight(recipe: EdamamRecipe): number {
-    if (Number.isFinite(recipe.totalWeight) && recipe.totalWeight > 0) {
-        return Math.round(recipe.totalWeight / getRecipeYield(recipe));
+    if (amount <= 0) {
+        return null;
     }
 
-    return 1;
+    const name = getIngredientName(ingredient);
+    const normalizedName = normalizeText(name);
+    const water = isWater(normalizedName);
+
+    return {
+        index,
+        name,
+        amount,
+        visible: !water || showWater,
+        helper: amount < MIN_MAIN_INGREDIENT_AMOUNT_G || isHelperIngredient(normalizedName, amount),
+    };
 }
 
-function getIngredientServingWeight(recipe: EdamamRecipe, ingredientIndex: number): number {
-    const weight = recipe.ingredients?.[ingredientIndex]?.weight;
+function isMainIngredient(ingredient: WeightedIngredient): boolean {
+    return !ingredient.helper && ingredient.amount >= MIN_MAIN_INGREDIENT_AMOUNT_G;
+}
+
+function getIngredientName(ingredient: EdamamRecipeIngredient): string {
+    return ingredient.food || ingredient.text;
+}
+
+function isHelperIngredient(normalizedName: string, amount: number): boolean {
+    if (normalizedName.includes('oil') && amount <= SMALL_OIL_AMOUNT_G) {
+        return true;
+    }
+
+    return HELPER_INGREDIENT_PATTERNS.some((pattern) => normalizedName.includes(pattern));
+}
+
+function shouldShowWater(recipe: EdamamRecipe): boolean {
+    const text = [
+        recipe.label,
+        ...(recipe.dishType ?? []),
+        ...(recipe.mealType ?? []),
+    ].join(' ');
+    const normalizedText = normalizeText(text);
+
+    return SOUP_DRINK_BROTH_PATTERNS.some((pattern) => normalizedText.includes(pattern));
+}
+
+function isWater(normalizedName: string): boolean {
+    return WATER_PATTERNS.includes(normalizedName);
+}
+
+function calculateTotals(recipes: Array<EdamamRecipe | undefined>): DailyMacroTargets {
+    const totals = recipes.reduce((result, recipe) => {
+        if (recipe == null) {
+            return result;
+        }
+
+        result.calories += getNutrientQuantity(recipe, 'ENERC_KCAL', recipe.calories);
+        result.protein += getNutrientQuantity(recipe, 'PROCNT');
+        result.fat += getNutrientQuantity(recipe, 'FAT');
+        result.carbs += getNutrientQuantity(recipe, 'CHOCDF');
+
+        return result;
+    }, {calories: 0, protein: 0, fat: 0, carbs: 0});
+
+    return {
+        calories: Math.round(totals.calories),
+        protein: Math.round(totals.protein),
+        fat: Math.round(totals.fat),
+        carbs: Math.round(totals.carbs),
+    };
+}
+
+function getIngredientServingWeight(recipe: EdamamRecipe, ingredient: EdamamRecipeIngredient): number {
+    const weight = ingredient.weight;
 
     if (Number.isFinite(weight) && weight > 0) {
         return weight / getRecipeYield(recipe);
@@ -177,4 +237,12 @@ function getNutrientQuantity(recipe: EdamamRecipe, nutrientCode: string, fallbac
 
 function getRecipeYield(recipe: EdamamRecipe): number {
     return Number.isFinite(recipe.yield) && recipe.yield > 0 ? recipe.yield : 1;
+}
+
+function normalizeText(value: string): string {
+    return value.toLowerCase().trim();
+}
+
+function unique(items: string[]): string[] {
+    return Array.from(new Set(items));
 }
