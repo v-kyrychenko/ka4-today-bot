@@ -8,7 +8,23 @@ test('generate calls Edamam meal planner with macro and meal calorie ranges', as
 
     const result = await module.generate(createRequest());
 
-    assert.equal(result, null);
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), {
+        clientId: 101,
+        goal: 'maintenance',
+        dayType: 'training_day',
+        targetDate: '2026-05-10',
+        totals: {
+            calories: 1020,
+            protein: 69,
+            fat: 35,
+            carbs: 109,
+        },
+        meals: [
+            createExpectedMeal('breakfast', 'breakfast-recipe-id', 320, 21, 9, 34, 155),
+            createExpectedMeal('lunch', 'lunch-recipe-id', 410, 27.5, 12, 43, 210),
+            createExpectedMeal('dinner', 'dinner-recipe-id', 290, 20, 14, 32, 180),
+        ],
+    });
     assert.deepEqual(calls, [[
         'selectMealPlan',
         {
@@ -25,15 +41,65 @@ test('generate calls Edamam meal planner with macro and meal calorie ranges', as
                         fit: {
                             ENERC_KCAL: {min: 561, max: 674},
                         },
+                        accept: {
+                            all: [{
+                                dish: [
+                                    'drinks',
+                                    'egg',
+                                    'biscuits and cookies',
+                                    'bread',
+                                    'pancake',
+                                    'cereals',
+                                ],
+                            }, {
+                                meal: [
+                                    'breakfast',
+                                ],
+                            }],
+                        },
                     },
                     Lunch: {
                         fit: {
                             ENERC_KCAL: {min: 786, max: 898},
                         },
+                        accept: {
+                            all: [{
+                                dish: [
+                                    'main course',
+                                    'pasta',
+                                    'egg',
+                                    'salad',
+                                    'soup',
+                                    'sandwiches',
+                                    'pizza',
+                                    'seafood',
+                                ],
+                            }, {
+                                meal: [
+                                    'lunch/dinner',
+                                ],
+                            }],
+                        },
                     },
                     Dinner: {
                         fit: {
                             ENERC_KCAL: {min: 674, max: 786},
+                        },
+                        accept: {
+                            all: [{
+                                dish: [
+                                    'seafood',
+                                    'egg',
+                                    'salad',
+                                    'pizza',
+                                    'pasta',
+                                    'main course',
+                                ],
+                            }, {
+                                meal: [
+                                    'lunch/dinner',
+                                ],
+                            }],
                         },
                     },
                 },
@@ -92,6 +158,58 @@ function createRequest() {
     };
 }
 
+function createExpectedMeal(mealType, recipeId, calories, protein, fat, carbs, weight) {
+    const recipeKey = `https://api.edamam.com/api/recipes/v2/${recipeId}`;
+
+    return {
+        mealType,
+        template: {
+            id: 0,
+            key: recipeKey,
+            active: true,
+            mealType,
+            title: {en: recipeId},
+            goalTags: ['maintenance'],
+            dayTags: ['training_day'],
+            items: [
+                createExpectedIngredientItem(mealType, recipeKey, recipeId, 1, calories / 2, protein / 2, fat / 2,
+                    carbs / 2, weight / 2),
+                createExpectedIngredientItem(mealType, recipeKey, recipeId, 2, calories / 2, protein / 2, fat / 2,
+                    carbs / 2, weight / 2),
+            ],
+        },
+        fallbackLevel: 'edamam',
+        reason: 'edamam_recipe_selected',
+        score: 100,
+    };
+}
+
+function createExpectedIngredientItem(mealType, recipeKey, recipeId, index, calories, protein, fat, carbs, weight) {
+    return {
+        id: 0,
+        amount: weight,
+        unit: 'g',
+        role: 'main_protein',
+        adjustable: false,
+        minAmount: null,
+        maxAmount: null,
+        foodDict: {
+            id: 0,
+            key: `${recipeKey}#ingredient_${index}`,
+            name: {en: `${recipeId} ingredient ${index}`},
+            category: 'protein',
+            amount: weight,
+            unit: 'g',
+            calories,
+            protein,
+            fat,
+            carbs,
+            mealRoles: [mealType],
+            flags: [],
+        },
+    };
+}
+
 const edamamDailyPlannerMocks = {
     name: 'edamam-daily-planner-mocks',
     setup(buildContext) {
@@ -112,7 +230,10 @@ const edamamDailyPlannerMocks = {
             '    },',
             '    async getRecipe(recipeId) {',
             '        globalThis.__edamamDailyPlannerMocks.calls.push(["getRecipe", recipeId]);',
-            '        return {recipe: {uri: `recipe:${recipeId}`, label: recipeId}};',
+            '        return {',
+            '            recipe: createRecipe(recipeId),',
+            '            _links: {self: {href: recipeId, title: "Self"}},',
+            '        };',
             '    },',
             '};',
             'function createSection(recipeId) {',
@@ -121,11 +242,39 @@ const edamamDailyPlannerMocks = {
             '        _links: {self: {href: `https://api.edamam.com/api/recipes/v2/${recipeId}`, title: "Recipe details"}},',
             '    };',
             '}',
+            'function createRecipe(recipeId) {',
+            '    const nutrients = {',
+            '        "https://api.edamam.com/api/recipes/v2/breakfast-recipe-id": [640, 42, 18, 68, 310],',
+            '        "https://api.edamam.com/api/recipes/v2/lunch-recipe-id": [820, 55, 24, 86, 420],',
+            '        "https://api.edamam.com/api/recipes/v2/dinner-recipe-id": [580, 40, 28, 64, 360],',
+            '    };',
+            '    const [calories, protein, fat, carbs, weight] = nutrients[recipeId];',
+            '    return {',
+            '        uri: `recipe:${recipeId}`,',
+            '        label: recipeId.split("/").pop(),',
+            '        yield: 2,',
+            '        calories,',
+            '        totalWeight: weight,',
+            '        ingredients: [',
+            '            {food: `${recipeId.split("/").pop()} ingredient 1`, weight: weight / 2},',
+            '            {food: `${recipeId.split("/").pop()} ingredient 2`, weight: weight / 2},',
+            '        ],',
+            '        totalNutrients: {',
+            '            ENERC_KCAL: {label: "Energy", quantity: calories, unit: "kcal"},',
+            '            PROCNT: {label: "Protein", quantity: protein, unit: "g"},',
+            '            FAT: {label: "Fat", quantity: fat, unit: "g"},',
+            '            CHOCDF: {label: "Carbs", quantity: carbs, unit: "g"},',
+            '        },',
+            '    };',
+            '}',
         ]);
         mockModule(buildContext, /macroTargetsCalculator$/, [
             'export function calculateMacroTargets() {',
             '    return {calories: 2245, protein: 138, fat: 73, carbs: 259};',
             '}',
+        ]);
+        mockModule(buildContext, /dateUtils\.js$/, [
+            'export function today() { return "2026-05-10"; }',
         ]);
         mockModule(buildContext, /shared\/logging$/, [
             'export function log() {}',

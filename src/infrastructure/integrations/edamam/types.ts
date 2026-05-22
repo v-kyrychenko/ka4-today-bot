@@ -9,7 +9,14 @@ export type EdamamNutrientFit = Record<EdamamNutrientCode, EdamamNutrientRange>;
 
 export interface EdamamMealPlannerSectionRequest {
     fit: EdamamNutrientFit;
+    accept?: EdamamMealPlannerAccept;
 }
+
+export interface EdamamMealPlannerAccept {
+    all: EdamamMealPlannerAcceptRule[];
+}
+
+export type EdamamMealPlannerAcceptRule = Record<string, string[]>;
 
 export interface EdamamMealPlannerPlan {
     fit: EdamamNutrientFit;

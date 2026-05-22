@@ -1,12 +1,11 @@
 import {clientsRepository} from '../../coach/client/repository/clientsRepository.js';
 import {CLIENT_GENDERS, ClientProfile} from '../../coach/client/domain/client.js';
-import {NotFoundError, OpenAIError, TelegramError} from '../../../shared/errors';
+import {NotFoundError, TelegramError} from '../../../shared/errors';
 import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../shared/i18n/i18nService.js';
 import {bodyMeasurementRepository} from '../features/measurements/repository/bodyMeasurementRepository.js';
 import {BodyMeasurementType, type BodyMeasurement} from '../features/measurements/bodyMeasurementsModel.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import {dailyNutritionPlanner} from '../features/nutrition/dailyNutritionPlanner.js';
 import {
     ACTIVITY_LEVEL,
     DAY_TAG,
@@ -23,6 +22,7 @@ import type {ProcessorContext} from '../model/context.js';
 import {BaseRoute} from './BaseRoute.js';
 import {DAILY_MEALS} from './constants.js';
 import {log} from '../../../shared/logging';
+import {edamamDailyPlanner} from "../features/nutrition/edamamDailyPlanner";
 
 export class DailyMealsRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
@@ -35,7 +35,7 @@ export class DailyMealsRoute extends BaseRoute {
             return;
         }
 
-        const plan = await dailyNutritionPlanner.generate(request);
+        const plan = await edamamDailyPlanner.generate(request);
 
         log(JSON.stringify(plan, null, 2));
         await telegramMessagingService.sendMessage(context, this.generateDailyMealsTemplate(plan));

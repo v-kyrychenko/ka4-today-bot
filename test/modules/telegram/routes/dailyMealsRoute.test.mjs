@@ -7,13 +7,11 @@ const clientId = 777;
 
 test('/meals route generates a daily nutrition plan and sends a daily menu template', async () => {
     const calls = [];
-    const plan = createPlan();
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({goals: 'fat_loss', height: 181.5}),
         weight: createWeight({amount: 80}),
         scheduled: {id: 1},
-        plan,
     });
 
     const route = new DailyMealsRoute();
@@ -21,65 +19,63 @@ test('/meals route generates a daily nutrition plan and sends a daily menu templ
 
     await route.execute(createContext());
 
-    assert.deepEqual(calls, [
-        ['findByClientId', clientId],
-        ['findLatestForClientByType', clientId, 'WEIGHT'],
-        ['getUserScheduledForDay', chatId],
-        ['generate', {
-            clientId,
-            gender: 'M',
-            birthday: '1989-01-15',
-            goal: 'fat_loss',
-            weight: createWeight({amount: 80}),
-            height: 181.5,
-            activityLevel: 'active',
-            dayType: 'training_day',
-        }],
-        ['send', chatId, [
-            '🍽 Меню на сьогодні',
-            '',
-            'Тренувальний день · зниження ваги',
-            '',
-            '📊 Разом за день:',
-            '1406 ккал · Б 157 г · Ж 25 г · В 145 г',
-            '',
-            '🥣 Сніданок',
-            'Яєчні білки з моцарелою та грибами',
-            '',
-            '• Яєчні білки — 150 г',
-            '• Моцарела light — 40 г',
-            '',
-            '🍽 Обід',
-            'Біла риба з картоплею та салатом',
-            '',
-            '• Біла риба — 180 г',
-            '• Картопля варена — 340 г',
-        ].join('\n')],
+    const message = calls.find((item) => item[0] === 'send')[2];
+    console.log(message);
+    assert.deepEqual(calls.map((item) => item[0]), [
+        'findByClientId',
+        'findLatestForClientByType',
+        'selectMealPlan',
+        'getRecipe',
+        'getRecipe',
+        'getRecipe',
+        'send',
     ]);
+    assert.deepEqual(calls.filter((item) => item[0] === 'getRecipe'), [
+        ['getRecipe', 'https://api.edamam.com/api/recipes/v2/breakfast-recipe-id'],
+        ['getRecipe', 'https://api.edamam.com/api/recipes/v2/lunch-recipe-id'],
+        ['getRecipe', 'https://api.edamam.com/api/recipes/v2/dinner-recipe-id'],
+    ]);
+    assert.equal(message, [
+        '🍽 Меню на сьогодні',
+        '',
+        'Тренувальний день · зниження ваги',
+        '',
+        '📊 Разом за день:',
+        '1020 ккал · Б 69 г · Ж 35 г · В 109 г',
+        '',
+        '🥣 Сніданок',
+        'Oat protein pancakes',
+        '',
+        '• Oats — 77.5 г',
+        '• Whey protein — 77.5 г',
+        '',
+        '🍽 Обід',
+        'Chicken rice bowl',
+        '',
+        '• Chicken breast — 105 г',
+        '• Rice — 105 г',
+        '',
+        '🌙 Вечеря',
+        'Salmon potato plate',
+        '',
+        '• Salmon — 90 г',
+        '• Potato — 90 г',
+    ].join('\n'));
 });
 
-test('/meals route defaults missing goal to maintenance and unscheduled day to rest day', async () => {
+test('/meals route defaults missing goal to maintenance', async () => {
     const calls = [];
     const {DailyMealsRoute} = await loadRoute({
         calls,
         client: createClient({goals: null, height: 170}),
         weight: createWeight({amount: 75}),
         scheduled: null,
-        plan: createPlan({goal: 'maintenance', dayType: 'rest_day'}),
     });
 
     await new DailyMealsRoute().execute(createContext());
 
-    assert.deepEqual(calls.find((item) => item[0] === 'generate')[1], {
-        clientId,
-        gender: 'M',
-        birthday: '1989-01-15',
-        goal: 'maintenance',
-        weight: createWeight({amount: 75}),
-        height: 170,
-        activityLevel: 'active',
-        dayType: 'rest_day',
-    });
+    assert.equal(calls.find((item) => item[0] === 'selectMealPlan')[1].plan.fit.PROCNT.max, 128);
+    assert.match(calls.find((item) => item[0] === 'send')[2], /Тренувальний день · підтримка форми/);
 });
 
 test('/meals route blocks when height is missing', async () => {
@@ -177,13 +173,63 @@ const routeMocks = {
             '    },',
             '};',
         ]);
-        mockModule(buildContext, /dailyNutritionPlanner\.js$/, [
-            'export const dailyNutritionPlanner = {',
-            '    async generate(request) {',
-            '        globalThis.__dailyMealsRouteMocks.calls.push(["generate", request]);',
-            '        return globalThis.__dailyMealsRouteMocks.plan ?? {ok: true};',
+        mockModule(buildContext, /shared\/logging$/, [
+            'export function log() {}',
+            'export function logError() {}',
+        ]);
+        mockModule(buildContext, /edamamClient\.js$/, [
+            'export const edamamClient = {',
+            '    async selectMealPlan(request) {',
+            '        globalThis.__dailyMealsRouteMocks.calls.push(["selectMealPlan", request]);',
+            '        return {',
+            '            selection: [{',
+            '                sections: {',
+            '                    Breakfast: createSection("breakfast-recipe-id"),',
+            '                    Lunch: createSection("lunch-recipe-id"),',
+            '                    Dinner: createSection("dinner-recipe-id"),',
+            '                },',
+            '            }],',
+            '            status: "OK",',
+            '        };',
+            '    },',
+            '    async getRecipe(recipeHref) {',
+            '        globalThis.__dailyMealsRouteMocks.calls.push(["getRecipe", recipeHref]);',
+            '        return {',
+            '            recipe: createRecipe(recipeHref),',
+            '            _links: {self: {href: recipeHref, title: "Self"}},',
+            '        };',
             '    },',
             '};',
+            'function createSection(recipeId) {',
+            '    return {',
+            '        assigned: `http://www.edamam.com/ontologies/edamam.owl#recipe_${recipeId}`,',
+            '        _links: {self: {href: `https://api.edamam.com/api/recipes/v2/${recipeId}`, title: "Recipe details"}},',
+            '    };',
+            '}',
+            'function createRecipe(recipeHref) {',
+            '    const recipes = {',
+            '        "https://api.edamam.com/api/recipes/v2/breakfast-recipe-id": createRecipeData("Oat protein pancakes", 640, 42, 18, 68, 310, ["Oats", "Whey protein"]),',
+            '        "https://api.edamam.com/api/recipes/v2/lunch-recipe-id": createRecipeData("Chicken rice bowl", 820, 55, 24, 86, 420, ["Chicken breast", "Rice"]),',
+            '        "https://api.edamam.com/api/recipes/v2/dinner-recipe-id": createRecipeData("Salmon potato plate", 580, 40, 28, 64, 360, ["Salmon", "Potato"]),',
+            '    };',
+            '    return recipes[recipeHref];',
+            '}',
+            'function createRecipeData(label, calories, protein, fat, carbs, totalWeight, ingredientNames) {',
+            '    return {',
+            '        uri: `recipe:${label.toLowerCase().replaceAll(" ", "-")}`,',
+            '        label,',
+            '        yield: 2,',
+            '        calories,',
+            '        totalWeight,',
+            '        ingredients: ingredientNames.map((food) => ({food, text: food, weight: totalWeight / ingredientNames.length})),',
+            '        totalNutrients: {',
+            '            ENERC_KCAL: {label: "Energy", quantity: calories, unit: "kcal"},',
+            '            PROCNT: {label: "Protein", quantity: protein, unit: "g"},',
+            '            FAT: {label: "Fat", quantity: fat, unit: "g"},',
+            '            CHOCDF: {label: "Carbs", quantity: carbs, unit: "g"},',
+            '        },',
+            '    };',
+            '}',
         ]);
         mockModule(buildContext, /tgUserRepository\.js$/, [
             'export const tgUserRepository = {',
