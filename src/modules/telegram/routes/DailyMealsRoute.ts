@@ -1,5 +1,5 @@
 import {clientsRepository} from '../../coach/client/repository/clientsRepository.js';
-import {CLIENT_GENDERS, ClientProfile} from '../../coach/client/domain/client.js';
+import {ClientProfile} from '../../coach/client/domain/client.js';
 import {NotFoundError, TelegramError} from '../../../shared/errors';
 import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../shared/i18n/i18nService.js';
@@ -13,16 +13,16 @@ import {
     type ActivityLevel,
     type DayTag,
     type DailyNutritionPlannerRequest,
-    type GoalTag,
-    MEAL_TYPE,
-    type TelegramMealView,
+    type GoalTag, TelegramMealView,
 } from '../features/nutrition/nutritionModel.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import type {ProcessorContext} from '../model/context.js';
 import {BaseRoute} from './BaseRoute.js';
 import {DAILY_MEALS} from './constants.js';
-import {log} from '../../../shared/logging';
 import {edamamDailyPlanner} from "../features/nutrition/edamamDailyPlanner";
+import {promptReplyService} from "../features/prompts/promptReplyService";
+
+const DAILE_MEALS_PROMPT_REF = 'daily_meals';
 
 export class DailyMealsRoute extends BaseRoute {
     canHandle(text: string | null): boolean {
@@ -37,43 +37,20 @@ export class DailyMealsRoute extends BaseRoute {
 
         const plan = await edamamDailyPlanner.generate(request);
 
-        log(JSON.stringify(plan, null, 2));
-        await telegramMessagingService.sendMessage(context, this.generateDailyMealsTemplate(plan));
+        const result = await formatDailyMealsPlan(plan, context.user.lang)
+        await telegramMessagingService.sendMessage(context, result);
     }
+}
 
-    private generateDailyMealsTemplate(plan: TelegramMealView): string {
-        const mealLabels = {
-            [MEAL_TYPE.BREAKFAST]: {emoji: '🥣', title: 'Сніданок'},
-            [MEAL_TYPE.LUNCH]: {emoji: '🍽', title: 'Обід'},
-            [MEAL_TYPE.DINNER]: {emoji: '🌙', title: 'Вечеря'},
-            [MEAL_TYPE.SNACK]: {emoji: '🍓', title: 'Перекус'},
-        };
-        const formatAmount = (amount: number): string => Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
-        const lines = [
-            plan.title,
-            '',
-            plan.subtitle,
-            '',
-            '📊 Разом за день:',
-            `${Math.round(plan.totals.calories)} ккал · Б ${Math.round(plan.totals.protein)} г`
-            + ` · Ж ${Math.round(plan.totals.fat)} г · В ${Math.round(plan.totals.carbs)} г`,
-        ];
+async function formatDailyMealsPlan(plan: TelegramMealView, lang: string | null | undefined): Promise<string> {
+    const inText = JSON.stringify(plan)
+    const reply = await promptReplyService.fetchOpenAiReply({
+        lang,
+        promptRef: DAILE_MEALS_PROMPT_REF,
+        variables: {MEAL_PLAN_JSON: inText},
+    });
 
-        for (const meal of plan.meals) {
-            const label = mealLabels[meal.mealType];
-            lines.push('', `${label.emoji} ${label.title}`, meal.title, '');
-
-            for (const item of meal.mainIngredients) {
-                lines.push(`• ${item.name} — ${formatAmount(item.amount)} ${item.unit}`);
-            }
-
-            if (meal.additionalIngredients.items.length > 0) {
-                lines.push(`${meal.additionalIngredients.label}: ${meal.additionalIngredients.items.join(', ')}`);
-            }
-        }
-
-        return lines.join('\n');
-    }
+    return reply;
 }
 
 async function initPlannerRequest(context: ProcessorContext): Promise<DailyNutritionPlannerRequest | null> {
@@ -103,13 +80,13 @@ async function initPlannerRequest(context: ProcessorContext): Promise<DailyNutri
 
     return {
         clientId,
-        gender: CLIENT_GENDERS.FEMALE,//client.gender,
+        gender: client.gender,
         birthday: client.birthday,
         goal: getGoal(client),
         weight,
         height,
         activityLevel: getActivityLevel(),
-        dayType: DAY_TAG.TRAINING_DAY// await getDayType(getChatId(context)),
+        dayType: await getDayType(getChatId(context)),
     };
 }
 

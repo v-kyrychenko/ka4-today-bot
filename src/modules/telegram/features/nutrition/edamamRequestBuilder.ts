@@ -30,8 +30,9 @@ const MEAL_CALORIE_SPLIT = {
 const BREAKFAST_ACCEPT: EdamamMealPlannerAccept = {
     all: [{
         dish: [
-            'egg',
-            'cereals',
+            "egg",
+            "sandwiches",
+            "bread"
         ],
     }, {
         meal: [
@@ -43,18 +44,11 @@ const BREAKFAST_ACCEPT: EdamamMealPlannerAccept = {
 const LUNCH_ACCEPT: EdamamMealPlannerAccept = {
     all: [{
         dish: [
-            'main course',
-            'pasta',
-            'egg',
-            'salad',
-            'soup',
-            'sandwiches',
-            'pizza',
-            'seafood',
+            "main course"
         ],
-    }, {
+    },{
         meal: [
-            'lunch/dinner',
+            'lunch',
         ],
     }],
 };
@@ -62,16 +56,11 @@ const LUNCH_ACCEPT: EdamamMealPlannerAccept = {
 const DINNER_ACCEPT: EdamamMealPlannerAccept = {
     all: [{
         dish: [
-            'seafood',
-            'egg',
-            'salad',
-            'pizza',
-            'pasta',
             'main course',
         ],
     }, {
         meal: [
-            'lunch/dinner',
+            'dinner',
         ],
     }],
 };

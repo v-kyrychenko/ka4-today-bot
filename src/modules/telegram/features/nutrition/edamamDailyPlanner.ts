@@ -31,7 +31,9 @@ export async function generate(request: DailyNutritionPlannerRequest): Promise<T
     const recipesByMealType = await fetchRecipesByMealType(mealPlan);
     log('### EDAMAM_DAILY_PLANNER:generate:recipesByMealType', Array.from(recipesByMealType.keys()));
 
-    return buildDailyNutritionPlan(request, recipesByMealType);
+    const plan = buildDailyNutritionPlan(request, recipesByMealType);
+    log('### EDAMAM_DAILY_PLANNER:generate:result', JSON.stringify(plan));
+    return plan
 }
 
 async function fetchRecipesByMealType(mealPlan: EdamamMealPlannerSelectResponse): Promise<Map<MealType, EdamamSelectedRecipe>> {
