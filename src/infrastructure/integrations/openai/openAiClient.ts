@@ -37,9 +37,11 @@ interface OpenAiResponseCreatePayload {
 
 export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
     const background = request.background ?? false;
+    const store = background; // Background responses must be stored so they can be polled.
+
     const body: OpenAiResponseCreatePayload = {
         model: request.model ?? DEFAULT_MODEL,
-        store: background,
+        store,
         background,
         temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         input: [
