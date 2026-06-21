@@ -12,6 +12,7 @@ export interface FetchOpenAiReplyRequest {
     lang?: string | null;
     promptRef: string;
     variables?: Record<string, TemplateVariableValue>;
+    background?: boolean;
 }
 
 interface PromptTemplates {
@@ -29,7 +30,7 @@ export async function fetchOpenAiReply(request: FetchOpenAiReplyRequest): Promis
     const systemPrompt = renderPromptTemplate(templates.systemPrompt, request.variables);
     const userPrompt = renderPromptTemplate(templates.userPrompt, request.variables);
 
-    return runOpenAiReply(systemPrompt, userPrompt, prompt);
+    return runOpenAiReply(systemPrompt, userPrompt, prompt, request.background);
 }
 
 function resolvePromptTemplates(prompt: PromptDict, lang: string): PromptTemplates {
@@ -51,22 +52,42 @@ function resolvePromptTemplates(prompt: PromptDict, lang: string): PromptTemplat
     return {systemPrompt, userPrompt};
 }
 
-async function runOpenAiReply(systemPrompt: string, userPrompt: string, dictPrompt: PromptDict): Promise<string> {
+async function runOpenAiReply(
+    systemPrompt: string,
+    userPrompt: string,
+    dictPrompt: PromptDict,
+    background?: boolean
+): Promise<string> {
     const response = await openAiClient.createResponse(
-        buildOpenAiCreateResponseInput(systemPrompt, userPrompt, dictPrompt));
+        buildOpenAiCreateResponseInput(systemPrompt, userPrompt, dictPrompt, background));
 
-    const responseId = response.id;
-
-    const completed = await openAiClient.waitForResponse(responseId);
-    if (!completed) {
-        throw new OpenAIError(`Run ${responseId} did not complete successfully`);
+    if (response.status === 'completed') {
+        return extractAssistantReply(response);
     }
 
-    const messages = await openAiClient.getResponse(responseId);
+    if (response.status === 'requires_action' && response.required_action?.type === 'submit_tool_outputs') {
+        throw new OpenAIError('submit_tool_outputs is not implemented');
+    }
+
+    if (!shouldWaitForResponse(response)) {
+        throw new OpenAIError(`Run ${response.id} finished with status ${response.status}`);
+    }
+
+    const completed = await openAiClient.waitForResponse(response.id);
+    if (!completed) {
+        throw new OpenAIError(`Run ${response.id} did not complete successfully`);
+    }
+
+    const messages = await openAiClient.getResponse(response.id);
     return extractAssistantReply(messages);
 }
 
-function buildOpenAiCreateResponseInput(systemPrompt: string, userPrompt: string, dictPrompt: PromptDict): OpenAiCreateResponseInput {
+function buildOpenAiCreateResponseInput(
+    systemPrompt: string,
+    userPrompt: string,
+    dictPrompt: PromptDict,
+    background?: boolean
+): OpenAiCreateResponseInput {
     return {
         systemPrompt,
         userPrompt,
@@ -74,7 +95,12 @@ function buildOpenAiCreateResponseInput(systemPrompt: string, userPrompt: string
         model: resolvePromptSetting(dictPrompt.model, dictPrompt.systemPrompt?.model ?? null),
         temperature: resolvePromptSetting(dictPrompt.temperature, dictPrompt.systemPrompt?.temperature ?? null),
         textFormat: resolvePromptSetting(dictPrompt.textFormat, dictPrompt.systemPrompt?.textFormat ?? null),
+        background: background ?? false,
     };
+}
+
+function shouldWaitForResponse(response: OpenAiResponseDetails): boolean {
+    return response.background && (response.status === 'queued' || response.status === 'in_progress');
 }
 
 function resolvePromptSetting<T>(value: T | null, fallback: T | null): T | null {
