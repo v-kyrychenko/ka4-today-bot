@@ -1,5 +1,9 @@
 {
   "telegram": {
+    "routes": {
+      "processing": "⏳ Got your message, I’ll be back with an answer.",
+      "unknownCommand": "This command isn’t available yet. Try the menu or /start."
+    },
     "conversations": {
       "bodyMeasurements": {
         "initialMessage": "📏 Send your body measurements.\n\nYou can write everything in one message in any format — I’ll figure it out.\n\nFor example:\nweight 78.4, waist 84, chest 101, hips 97, thigh 56",

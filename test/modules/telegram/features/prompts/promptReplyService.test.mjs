@@ -62,8 +62,6 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
     assert.equal(harness.calls.promptRef, 'coach.reply');
     assert.deepEqual(harness.calls.sequence, [
         ['createResponse', 'response_123'],
-        ['waitForResponse', 'response_123'],
-        ['getResponse', 'response_123'],
     ]);
     assert.deepEqual(harness.calls.createResponseInput, {
         systemPrompt: 'Ty trener dlia Oksana. Tegi: legs, , strength. Profil: level: advanced, goals: {"primary":"power"}. Optional: ${missing}.',
@@ -72,7 +70,31 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
         model: 'gpt-4.1-mini',
         temperature: 0.9,
         textFormat: {format: {type: 'text'}},
+        background: false,
     });
+});
+
+test('fetchOpenAiReply polls background responses when explicitly requested', async () => {
+    const harness = await loadPromptReplyService({
+        createResponseResult: createResponseDetails({
+            background: true,
+            status: 'queued',
+            output: [],
+        }),
+    });
+
+    const reply = await harness.module.fetchOpenAiReply({
+        promptRef: 'coach.reply',
+        background: true,
+    });
+
+    assert.equal(reply, 'assistant reply');
+    assert.deepEqual(harness.calls.sequence, [
+        ['createResponse', 'response_123'],
+        ['waitForResponse', 'response_123'],
+        ['getResponse', 'response_123'],
+    ]);
+    assert.equal(harness.calls.createResponseInput.background, true);
 });
 
 test('fetchOpenAiReply falls back to DEFAULT_LANG when lang is missing', async () => {
@@ -253,11 +275,16 @@ test('fetchOpenAiReply sends null OpenAI settings when both prompt and system pr
 
 test('fetchOpenAiReply throws when the OpenAI run does not complete', async () => {
     const harness = await loadPromptReplyService({
+        createResponseResult: createResponseDetails({
+            background: true,
+            status: 'queued',
+            output: [],
+        }),
         waitForResponseResult: false,
     });
 
     await assert.rejects(
-        () => harness.module.fetchOpenAiReply({promptRef: 'coach.reply'}),
+        () => harness.module.fetchOpenAiReply({promptRef: 'coach.reply', background: true}),
         (error) => {
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Run response_123 did not complete successfully');
@@ -266,9 +293,27 @@ test('fetchOpenAiReply throws when the OpenAI run does not complete', async () =
     );
 });
 
+test('fetchOpenAiReply throws when synchronous OpenAI response is not completed', async () => {
+    const harness = await loadPromptReplyService({
+        createResponseResult: createResponseDetails({
+            status: 'failed',
+            output: [],
+        }),
+    });
+
+    await assert.rejects(
+        () => harness.module.fetchOpenAiReply({promptRef: 'coach.reply'}),
+        (error) => {
+            assert.equal(error.name, 'OpenAIError');
+            assert.equal(error.message, 'Run response_123 finished with status failed');
+            return true;
+        }
+    );
+});
+
 test('fetchOpenAiReply throws when OpenAI response output is not an array', async () => {
     const harness = await loadPromptReplyService({
-        responseDetails: {id: 'response_123', output: null},
+        responseDetails: {id: 'response_123', status: 'completed', background: false, output: null},
     });
 
     await assert.rejects(
@@ -363,9 +408,9 @@ async function loadPromptReplyService(options = {}) {
         sequence: [],
     };
     const prompt = options.prompt ?? createPrompt();
-    const createResponseResult = options.createResponseResult ?? {id: 'response_123'};
     const waitForResponseResult = options.waitForResponseResult ?? true;
     const responseDetails = options.responseDetails ?? createResponseDetails();
+    const createResponseResult = options.createResponseResult ?? responseDetails;
 
     globalThis.__promptReplyServiceMocks = {
         dictPromptRepository: {
@@ -496,6 +541,7 @@ function createResponseDetails(overrides = {}) {
     return {
         id: 'response_123',
         status: 'completed',
+        background: false,
         output: [
             createMessage({
                 role: 'assistant',

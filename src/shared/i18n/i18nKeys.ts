@@ -16,6 +16,10 @@ export const I18N_KEYS = {
         ],
     },
     telegram: {
+        routes: {
+            processing: 'telegram.routes.processing',
+            unknownCommand: 'telegram.routes.unknownCommand',
+        },
         conversations: {
             bodyMeasurements: {
                 buttonCancel: 'telegram.conversations.bodyMeasurements.buttonCancel',

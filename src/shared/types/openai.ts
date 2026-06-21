@@ -24,6 +24,7 @@ export interface OpenAiCreateResponseInput {
     model: string | null;
     temperature: number | null;
     textFormat: OpenAiTextFormat | null;
+    background?: boolean;
 }
 
 export interface OpenAiOutputTextPart {
@@ -50,6 +51,7 @@ export class OpenAiOutputMessage {
 export class OpenAiResponseDetails {
     id = '';
     status: OpenAiResponseStatus = 'in_progress';
+    background = false;
     output: OpenAiOutputMessage[] = [];
     required_action?: OpenAiRequiredAction;
     incomplete_details?: Object;

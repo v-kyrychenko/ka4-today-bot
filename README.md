@@ -129,7 +129,7 @@ After rebuilding the layer, build the function and run the event:
 
 ```bash
 sam build Ka4TodayAsyncTelegramProcessor
-npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/progress.json
+npm run local -- Ka4TodayAsyncTelegramProcessor event-samples/default-event.json
 ```
 
 Run HttpApiClients

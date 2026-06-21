@@ -97,6 +97,62 @@ test('terminal measurement callback removes old inline buttons', async () => {
     ]);
 });
 
+test('matched route sends processing notice before execution by default', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({calls});
+
+    await processor.routesProcessor.execute(messageRequest('/progress'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, '/progress'],
+        ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
+        ['routeExecute'],
+    ]);
+});
+
+test('matched route can opt out of processing notice', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        route: {
+            canHandle() {
+                return true;
+            },
+            shouldSendProcessingNotice() {
+                return false;
+            },
+            async execute() {
+                calls.push(['routeExecute']);
+            },
+        },
+    });
+
+    await processor.routesProcessor.execute(messageRequest('/measurements'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, '/measurements'],
+        ['routeExecute'],
+    ]);
+});
+
+test('unknown route sends localized fallback without processing notice', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        routeRegistry: [],
+    });
+
+    await processor.routesProcessor.execute(messageRequest('/unknown'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, '/unknown'],
+        ['send', chatId, 'This command isn’t available yet. Try the menu or /start.', undefined],
+    ]);
+});
+
 async function loadRoutesProcessor(options) {
     return loadModule('src/modules/telegram/routes/routesProcessor.ts', {
         conversationEngine: {
@@ -120,8 +176,11 @@ async function loadRoutesProcessor(options) {
             },
         },
         messagingService: createMessagingService(options.calls),
-        routeRegistry: [{
+        routeRegistry: options.routeRegistry ?? [options.route ?? {
             canHandle() {
+                return true;
+            },
+            shouldSendProcessingNotice() {
                 return true;
             },
             async execute() {
