@@ -23,8 +23,8 @@ export const ACTIVITY_LEVEL = {
     LOW_ACTIVE: 'low_active',
 
     /**
-     * Regular daily movement or a typical training day.
-     * Example: gym training, regular walking, or moderately active routine.
+     * Regular daily movement with moderate activity.
+     * Example: regular walking, gym training, or an active daily routine.
      */
     ACTIVE: 'active',
 
