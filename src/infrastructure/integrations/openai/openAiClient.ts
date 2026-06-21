@@ -36,10 +36,11 @@ interface OpenAiResponseCreatePayload {
 }
 
 export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
+    const background = request.background ?? false;
     const body: OpenAiResponseCreatePayload = {
         model: request.model ?? DEFAULT_MODEL,
-        store: false,
-        background: true,
+        store: background,
+        background,
         temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         input: [
             {role: 'system', content: request.systemPrompt},
