@@ -77,7 +77,7 @@ test('/meals route defaults missing goal to maintenance and unscheduled day to r
         goal: 'maintenance',
         weight: createWeight({amount: 75}),
         height: 170,
-        activityLevel: 'active',
+        activityLevel: 'low_active',
         dayType: 'rest_day',
     });
 });

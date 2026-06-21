@@ -2,13 +2,14 @@ import {
     ACTIVITY_LEVEL,
     ActivityLevel, BmrParams,
     DailyMacroTargets,
-    DailyNutritionPlannerRequest, DAY_TAG, DayTag,
+    DailyNutritionContext, DAY_TAG, DayTag,
     GOAL_TAG,
     GoalTag, TargetCaloriesParams,
 } from './nutritionModel';
 import {BodyMeasurement} from '../measurements/bodyMeasurementsModel';
 import {CLIENT_GENDERS, ClientGender,} from "../../../coach/client/domain/client";
 import {calculateAge} from "../../../../shared/utils/dateUtils";
+import {log} from "../../../../shared/logging";
 
 const DEFAULT_GOAL: GoalTag = GOAL_TAG.MAINTENANCE;
 
@@ -125,7 +126,9 @@ const NUTRITION_ENERGY = {
     },
 } as const;
 
-export function calculateMacroTargets(request: DailyNutritionPlannerRequest): DailyMacroTargets {
+export function calculateMacroTargets(request: DailyNutritionContext): DailyMacroTargets {
+    log('[telegram.nutrition.macroTargets] Calculating macro targets', {request});
+
     const goal = request.goal ?? DEFAULT_GOAL;
     const weightKg = getWeightKg(request.weight);
     const age = calculateAge(request.birthday);
@@ -146,12 +149,15 @@ export function calculateMacroTargets(request: DailyNutritionPlannerRequest): Da
     const carbs = calculateCarbsTarget(targetCalories, protein, fat, weightKg, goal, dayType, activity);
     const calories = calculateCaloriesFromMacros(protein, fat, carbs);
 
-    return {
+    const targets = {
         calories,
         protein,
         fat,
         carbs,
     };
+    log('[telegram.nutrition.macroTargets] Macro targets calculated', {targets});
+
+    return targets;
 }
 
 function calculateCaloriesFromMacros(protein: number, fat: number, carbs: number): number {

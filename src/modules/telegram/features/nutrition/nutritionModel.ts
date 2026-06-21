@@ -171,7 +171,7 @@ export class MealTemplate {
     }
 }
 
-export interface DailyNutritionPlannerRequest {
+export interface DailyNutritionContext {
     clientId: number;
     gender: ClientGender;
     birthday: string;

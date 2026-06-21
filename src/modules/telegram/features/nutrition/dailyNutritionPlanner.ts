@@ -3,7 +3,7 @@ import {
     MEAL_TYPE,
     type DailyNutritionPlan,
     type DailyNutritionPlanMeal,
-    type DailyNutritionPlannerRequest,
+    type DailyNutritionContext,
     type GoalTag,
     type MealType,
 } from './nutritionModel.js';
@@ -25,7 +25,7 @@ export const dailyNutritionPlanner = {
     generate,
 };
 
-export async function generate(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
+export async function generate(request: DailyNutritionContext): Promise<DailyNutritionPlan> {
     //TODO get history of daily plans and pass it to buildDraftDailyPlan
     log('### DAILY_NUTRITION_PLANNER:generate:request', request);
 
@@ -37,7 +37,7 @@ export async function generate(request: DailyNutritionPlannerRequest): Promise<D
     return adjustedPlan
 }
 
-async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promise<DailyNutritionPlan> {
+async function buildDraftDailyPlan(request: DailyNutritionContext): Promise<DailyNutritionPlan> {
     const goal = request.goal ?? GOAL_TAG.MAINTENANCE;
 
     const meals: DailyNutritionPlanMeal[] = [];
@@ -54,7 +54,7 @@ async function buildDraftDailyPlan(request: DailyNutritionPlannerRequest): Promi
     };
 }
 
-function initDraftPlan(request: DailyNutritionPlannerRequest,
+function initDraftPlan(request: DailyNutritionContext,
                        goal: GoalTag,
                        meals: DailyNutritionPlanMeal[]): DailyNutritionPlan {
     const targetDate = today();
@@ -73,7 +73,7 @@ function initDraftPlan(request: DailyNutritionPlannerRequest,
     };
 }
 
-async function pickDraftMeal(request: DailyNutritionPlannerRequest,
+async function pickDraftMeal(request: DailyNutritionContext,
                              mealType: MealType,
                              goal: GoalTag): Promise<DailyNutritionPlanMeal> {
     const result = await mealTemplatePicker.pickMealTemplate({

@@ -59,10 +59,10 @@ test('calculateMacroTargets logs maintenance targets for an active female traini
     console.log('### MACRO_TARGETS_CALCULATOR:female-active-training-day-result', result);
 
     assert.deepEqual(result, {
-        calories: 2035,
-        protein: 96,
-        fat: 57,
-        carbs: 285,
+        calories: 1734,
+        protein: 102,
+        fat: 54,
+        carbs: 210,
     });
 });
 

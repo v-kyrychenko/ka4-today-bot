@@ -44,6 +44,18 @@ export const I18N_KEYS = {
             heightMissing: 'telegram.dailyMeals.heightMissing',
             weightMissing: 'telegram.dailyMeals.weightMissing',
         },
+        foodTargets: {
+            dayType: {
+                restDay: 'telegram.foodTargets.dayType.restDay',
+                trainingDay: 'telegram.foodTargets.dayType.trainingDay',
+            },
+            goal: {
+                fatLoss: 'telegram.foodTargets.goal.fatLoss',
+                maintenance: 'telegram.foodTargets.goal.maintenance',
+                muscleGain: 'telegram.foodTargets.goal.muscleGain',
+            },
+            message: 'telegram.foodTargets.message',
+        },
         progress: {
             caption: {
                 title: 'telegram.progress.caption.title',

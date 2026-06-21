@@ -28,6 +28,18 @@
       "heightMissing": "To build your menu, I need your height. Add it to your profile, and I will generate the nutrition plan right away.",
       "weightMissing": "To build your menu, I need your current weight. Send your measurements, and I will generate the nutrition plan right away."
     },
+    "foodTargets": {
+      "message": "🎯 Daily macro targets\n\n{dayType} · {goal}\n\n{calories} kcal · Protein {protein} g · Fat {fat} g · Carbs {carbs} g",
+      "goal": {
+        "fatLoss": "fat loss",
+        "maintenance": "maintenance",
+        "muscleGain": "muscle gain"
+      },
+      "dayType": {
+        "trainingDay": "Training day",
+        "restDay": "Rest day"
+      }
+    },
     "progress": {
       "caption": {
         "title": "📊 Metrics dynamics"
