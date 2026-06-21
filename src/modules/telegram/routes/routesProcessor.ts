@@ -1,6 +1,8 @@
 import {TG_ERROR_POSTGRES_UNAVAILABLE, TG_ERROR_DEFAULT} from '../../../app/config/constants.js';
 import {isPostgresUnavailableError} from '../../../infrastructure/persistence/postgres/postgresErrors.js';
 import {BadRequestError, OpenAIError} from '../../../shared/errors';
+import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
+import {i18nService} from '../../../shared/i18n/i18nService.js';
 import {log} from '../../../shared/logging';
 import {conversationEngine} from '../features/conversations/engine.js';
 import type {ConversationResponse} from '../features/conversations/model.js';
@@ -122,11 +124,21 @@ async function executeRoute(context: ProcessorContext): Promise<void> {
 
     if (!route) {
         log('[telegram.routes] No route found', {chatId: context.chatId, text: context.text});
+        await telegramMessagingService.sendMessage(
+            context,
+            i18nService.tr(context.user.lang, I18N_KEYS.telegram.routes.unknownCommand)
+        );
         return;
     }
 
     const routeName = route.constructor?.name ?? 'AnonymousRoute';
     log('[telegram.routes] Executing route', {chatId: context.chatId, routeName});
+    if (route.shouldSendProcessingNotice()) {
+        await telegramMessagingService.sendMessage(
+            context,
+            i18nService.tr(context.user.lang, I18N_KEYS.telegram.routes.processing)
+        );
+    }
     await route.execute(context);
 }
 
