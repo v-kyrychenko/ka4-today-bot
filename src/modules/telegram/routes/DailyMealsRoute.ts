@@ -1,12 +1,11 @@
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import {dailyNutritionPlanner} from '../features/nutrition/dailyNutritionPlanner.js';
+import {buildDailyNutritionContext, dailyNutritionPlanner} from '../features/nutrition/dailyNutritionPlanner.js';
 import {
     DAY_TAG,
     GOAL_TAG,
     type DailyNutritionPlan,
     MEAL_TYPE,
 } from '../features/nutrition/nutritionModel.js';
-import {initNutritionPlannerRequest} from '../features/nutrition/nutritionPlannerRequest.js';
 import type {ProcessorContext} from '../model/context.js';
 import {BaseRoute} from './BaseRoute.js';
 import {DAILY_MEALS} from './constants.js';
@@ -18,14 +17,12 @@ export class DailyMealsRoute extends BaseRoute {
     }
 
     async execute(context: ProcessorContext): Promise<void> {
-        const request = await initNutritionPlannerRequest(context);
+        const request = await buildDailyNutritionContext(context);
         if (request == null) {
             return;
         }
 
         const plan = await dailyNutritionPlanner.generate(request);
-
-        log(JSON.stringify(plan, null, 2));
         await telegramMessagingService.sendMessage(context, this.generateDailyMealsTemplate(plan));
     }
 

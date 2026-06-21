@@ -138,6 +138,18 @@ const dailyNutritionPlannerMocks = {
             '    },',
             '};',
         ]);
+        mockModule(buildContext, /clientsRepository\.js$/, [
+            'export const clientsRepository = { async findByClientId() { return null; } };',
+        ]);
+        mockModule(buildContext, /bodyMeasurementRepository\.js$/, [
+            'export const bodyMeasurementRepository = { async findLatestForClientByType() { return null; } };',
+        ]);
+        mockModule(buildContext, /telegramMessagingService\.js$/, [
+            'export const telegramMessagingService = { async sendMessage() {} };',
+        ]);
+        mockModule(buildContext, /tgUserRepository\.js$/, [
+            'export const tgUserRepository = { async getUserScheduledForDay() { return null; } };',
+        ]);
         mockModule(buildContext, /dateUtils\.js$/, [
             'export function today() { return "2026-05-10"; }',
             'export function calculateAge() { return 37; }',

@@ -159,6 +159,12 @@ const routeMocks = {
             '    },',
             '};',
         ]);
+        mockModule(buildContext, /mealTemplatePicker\.js$/, [
+            'export const mealTemplatePicker = { async pickMealTemplate() { return null; } };',
+        ]);
+        mockModule(buildContext, /nutritionAdjuster$/, [
+            'export async function adjust(plan) { return plan; }',
+        ]);
     },
 };
 

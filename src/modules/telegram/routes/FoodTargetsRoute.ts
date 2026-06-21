@@ -2,7 +2,7 @@ import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../shared/i18n/i18nService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {calculateMacroTargets} from '../features/nutrition/macroTargetsCalculator.js';
-import {initNutritionPlannerRequest} from '../features/nutrition/nutritionPlannerRequest.js';
+import {buildDailyNutritionContext} from '../features/nutrition/dailyNutritionPlanner.js';
 import {DAY_TAG, GOAL_TAG, type DayTag, type GoalTag} from '../features/nutrition/nutritionModel.js';
 import type {ProcessorContext} from '../model/context.js';
 import {BaseRoute} from './BaseRoute.js';
@@ -14,7 +14,7 @@ export class FoodTargetsRoute extends BaseRoute {
     }
 
     async execute(context: ProcessorContext): Promise<void> {
-        const request = await initNutritionPlannerRequest(context);
+        const request = await buildDailyNutritionContext(context);
         if (request == null) {
             return;
         }
