@@ -10,6 +10,10 @@ export class MeasurementsRoute extends BaseRoute {
         return text === MEASUREMENTS_ROUTE;
     }
 
+    shouldSendProcessingNotice(): boolean {
+        return false;
+    }
+
     async execute(context: ProcessorContext): Promise<void> {
         const response = await conversationEngine.start({
             type: CONVERSATION_TYPE_BODY_MEASUREMENTS,

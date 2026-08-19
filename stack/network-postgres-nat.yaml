@@ -80,11 +80,11 @@ Parameters:
     Description: IANA timezone used by the instance start and stop schedules
   InstanceStartScheduleExpression:
     Type: String
-    Default: cron(0 4 ? * MON-SAT *)
+    Default: cron(45 6 ? * MON-SAT *)
     Description: EventBridge Scheduler cron expression used to start the instance Monday through Saturday
   InstanceStopScheduleExpression:
     Type: String
-    Default: cron(0 9 ? * MON-SAT *)
+    Default: cron(0 10 ? * MON-SAT *)
     Description: EventBridge Scheduler cron expression used to stop the instance Monday through Saturday
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>

@@ -124,12 +124,14 @@ Resources:
           - !ImportValue
               'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
       Events:
-        DailySchedule:
-          Type: Schedule
+        DailyScheduleV2:
+          Type: ScheduleV2
           Properties:
-            Schedule: cron(0 3 ? * 2-7 *)  # 2:00 UTC = 5:00 by Kyiv (summer), 03:00 UTC = 05:00 Kyiv (winter)
-            #Schedule: rate(3 minutes)
-            Enabled: true
+            ScheduleExpression: cron(0 7 ? * MON-SAT *)
+            ScheduleExpressionTimezone: Europe/Kyiv
+            FlexibleTimeWindow:
+              Mode: 'OFF'
+            State: ENABLED
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSLambdaVPCAccessExecutionRole
