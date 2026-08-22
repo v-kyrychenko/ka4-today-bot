@@ -15,7 +15,23 @@ target_surfaces: []  # filled in §4 — subset of: backend-service | web-fronte
 
 ## 1. Introduction and goals
 
-_pending Socratic walk_
+**Intent.** Give clients a low-friction way to record what they actually did in the gym, in free text and their own language, linking back to the exercise catalog whenever a confident match exists — closing the gap where every workout is invisible once it's finished.
+
+**Top-3 quality goals (1-liners; full scenarios in §10):**
+
+1. **Trustworthy capture** — nothing is ever silently misrecorded; every exercise+numbers pair is shown back and confirmed before it's saved (AC-03/05/06/07/08 — the feature's actual differentiator).
+2. **Responsiveness** — parse+confirm round trip ≤5000ms p95; start/end acknowledgement ≤300ms p95 (spec §6 NFR).
+3. **Session-state consistency** — a client never has more than one open logging session at a time (AC-01/04/10/11/12).
+
+**Stakeholders.**
+
+| Role | Interest | Sign-off owner? |
+|---|---|---|
+| Client | records their own workouts in free text | No |
+| Tech Lead | SAD approval | Yes |
+| Security Lead | reviews personal-data handling (reps/weight/free text) | No |
+
+<!-- Decision overrides (¶4) — populated by the critic resolution loop, empty otherwise. -->
 
 ## 2. Constraints
 
