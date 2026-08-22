@@ -227,7 +227,15 @@ No new deployment unit (ADR-0003) — `workout-logging` runs entirely inside the
 
 ## 8. Crosscutting concepts
 
-_pending Socratic walk_
+| Concept | Convention | Where defined |
+|---|---|---|
+| Logging | Structured `log()`/`logError()` from `shared/logging`, one-line calls | `AGENTS.md`, `shared/logging` |
+| Authentication | Telegram chat identity + registered-client check (AC-02) | existing pattern, e.g. `bodyMeasurementsConversation.ts` |
+| Error handling | Typed error classes (`OpenAIError`, `BadRequestError`) from `shared/errors`; the one-retry-then-raw-save fallback (AC-07/AC-08) is domain flow control tracked in conversation `data`, not an error path | `shared/errors/index.ts` |
+| ID strategy | Postgres `bigserial` numeric PK | repo convention (§2) |
+| Internationalisation | Reply language = the client's already-stored `lang` (from `tgUser`/`client`), never per-message detection (AC-14) | existing `i18nService` + `tgUserRepository` |
+| Observability | No new metrics/instrumentation (§7) — existing production logs only | §7 |
+| Events | N/A — no new queue/event introduced (ADR-0003) | — |
 
 ## 9. Architecture decisions
 
