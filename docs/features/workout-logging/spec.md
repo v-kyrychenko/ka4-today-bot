@@ -25,7 +25,7 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 
 - Give clients a low-friction way to record every workout they actually perform, in their own words, without needing a structured form.
 - Preserve the exercise catalog's value as a reference by linking recorded exercises back to it whenever a confident match exists.
-- Keep the logging flow forgiving of informal, native-language phrasing across the bot's supported languages.
+- Keep the logging flow forgiving of informal phrasing in whatever language the client writes, and always reply in the language already on file for them.
 
 ## 3. Non-goals
 
@@ -86,8 +86,8 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 
 ### AC-03 (US-02) — happy path
 **Given** a client with an open logging session
-**When** the client describes an exercise they performed, including how much weight, how many times, and how many sets
-**Then** the system extracts these details and asks the client to confirm the exact entry before saving it
+**When** the client describes an exercise they performed, including how many times and how many sets, and how much weight when the exercise uses external weight
+**Then** the system extracts these details together with any matching catalog exercise and asks the client to confirm the exercise and its numbers together, in one combined message, before saving anything
 
 ### AC-04 (US-02) — domain invariant
 **Given** a client with no open logging session
@@ -97,7 +97,12 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 ### AC-05 (US-03) — happy path
 **Given** a client just described an exercise
 **When** the system can suggest close matches from the exercise catalog
-**Then** it shows up to three candidate exercises, each with its picture, for the client to choose from before the entry is saved
+**Then** it shows up to three candidate exercises, each with its parsed numbers alongside and a picture when the catalog has one (text-only when it doesn't), for the client to confirm in one action which candidate, if any, is correct together with the numbers
+
+### AC-05b (US-04) — domain invariant
+**Given** a client just described an exercise
+**When** the catalog search returns no close-matching candidates at all
+**Then** the system treats it the same as if every candidate had been rejected: it confirms the described entry with the client and, once confirmed, records it without linking it to the catalog
 
 ### AC-06 (US-04) — domain invariant
 **Given** none of the suggested candidates match what the client meant
@@ -105,9 +110,14 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 **Then** the system records the exercise entry without linking it to the catalog, and confirms it was saved as described
 
 ### AC-07 (US-05) — error
-**Given** a client's message doesn't include enough detail to identify the weight, reps, or sets, or is otherwise unclear
+**Given** a client's message doesn't include enough detail to identify the reps or sets, or the weight for an exercise that uses external weight, describes more than one exercise, or is otherwise unclear
 **When** the system cannot confidently interpret it
-**Then** the system tells the client what's missing or unclear and gives them one more chance to restate it in the same exchange
+**Then** the system tells the client what's missing, unclear, or that only one exercise can be logged per message, and gives them one more chance to restate it in the same exchange
+
+### AC-07b (US-05) — domain invariant
+**Given** the system showed a client a combined exercise-and-numbers confirmation (per AC-03/AC-05)
+**When** the client says the confirmed entry is wrong, rather than picking a different candidate or keeping their own description
+**Then** the system treats it the same as an unclear message: it asks the client to restate the exercise and gives them one more chance in the same exchange, following AC-07/AC-08
 
 ### AC-08 (US-05) — error
 **Given** a client's restated message still can't be confidently interpreted after that one retry
@@ -119,30 +129,35 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 **When** the client explicitly ends the session
 **Then** the system closes the session and confirms the workout is complete
 
+### AC-09b (US-06) — domain invariant
+**Given** a client has an open logging session with no recorded exercises yet
+**When** the client explicitly ends the session, or it auto-closes from inactivity (AC-11)
+**Then** the system closes the session without creating a workout record, confirms nothing was logged, and this session is not counted in the §7 session-completion metric
+
 ### AC-10 (US-06, US-07) — cross-context
 **Given** a client has an open logging session
-**When** a scheduled reminder or another bot command is triggered for that client
-**Then** the system ends the logging session early, as if the client had ended it themselves, before handling the other interaction
+**When** a scheduled reminder, or a bot command other than starting a new logging session, is triggered for that client
+**Then** the system ends the logging session early as if the client had ended it themselves, discarding any not-yet-confirmed exercise entry, before handling the other interaction
 
 ### AC-11 (US-07) — domain invariant
-**Given** a client's logging session has had no new exercise for more than 2 hours
+**Given** a client's logging session has had no new exercise for more than 2 hours, measured from the session's start or its most recently recorded exercise, whichever is later
 **When** that period elapses
-**Then** the system closes the session on its own, and the client is treated as having no open session from then on
+**Then** the system actively closes the session on its own, without waiting for the client's next message, and the client is treated as having no open session from then on
 
 ### AC-12 (US-01) — domain invariant
 **Given** a client already has an open logging session
 **When** the client tries to start another logging session
-**Then** the system tells the client a session is already open and that they need to end it first, and does not open a second one
+**Then** the system tells the client a session is already open and that they need to end it first, and does not open a second one or pre-empt the existing session (AC-10's pre-emption does not apply to a repeat start attempt)
 
 ### AC-13 (US-06) — domain invariant
 **Given** a client's logging session started before midnight and is still open, or was auto-closed, after midnight
 **When** the session's exercises are recorded
-**Then** the system attributes every exercise entry in that session to the day the session started, regardless of the exact time each entry was logged
+**Then** the system attributes every exercise entry in that session to the day the session started in the client's own local time, regardless of the exact time each entry was logged
 
 ### AC-14 (US-02) — happy path
-**Given** a client with an open logging session writes their exercise message in any of the bot's supported languages
+**Given** a client with an open logging session writes their exercise message in any language
 **When** the system interprets the message
-**Then** it extracts the exercise details and replies to the client in that same language
+**Then** it extracts the exercise details regardless of the message's language, and replies using the language preference already stored for that client, not a fresh per-message detection
 
 ## 6. Non-functional requirements
 
@@ -168,9 +183,10 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 
 - **Weekly active loggers** (clients recording ≥1 exercise entry in a 7-day window) — baseline: 0 (new capability), target: establish a real baseline within 30 days of launch; no fixed target set yet.
 - **Catalog match rate** (share of saved entries linked to a catalog exercise vs. kept as free text) — baseline: 0, target: measure for 30 days to gauge catalog/matching quality; informs whether the catalog needs filling in.
-- **Session completion rate** (sessions explicitly ended by the client vs. auto-closed by inactivity) — baseline: 0, target: measure for 30 days; a low completion rate signals the flow feels heavier than expected.
+- **Session completion rate** (sessions with at least one recorded exercise, explicitly ended by the client vs. auto-closed by inactivity — empty sessions per AC-09b don't count) — baseline: 0, target: measure for 30 days; a low completion rate signals the flow feels heavier than expected.
 
 ## 8. Open questions
 
 - [ ] Exactly how free text is turned into structured fields (model/approach) and where candidate-match images are served from? Default now: forwarded as design-stage notes (AI-based parse, existing object storage), not committed here. — owner: Tech Lead, due: before `sdd:design`
 - [ ] Whether unmatched free-text entries should ever feed back into the exercise catalog (e.g. a future coach-side review queue)? Default now: out of scope (§3). — owner: PM, due: before a future workout-history feature is specified
+- [ ] What confidence/similarity threshold distinguishes a direct catalog link, a shown candidate list (AC-05), and a retry-triggering unclear message (AC-07)? Default now: left entirely to `design`'s matching-algorithm choice, no plain-language bar added to the spec. — owner: Tech Lead, due: before `sdd:design`
