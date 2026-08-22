@@ -57,7 +57,39 @@ target_surfaces: []  # filled in §4 — subset of: backend-service | web-fronte
 
 ## 3. Context and scope
 
-_pending Socratic walk_
+The Telegram bot already delivers coach-prescribed plans and reminds clients about body measurements. This feature adds the one capability still missing: a client-initiated conversation to record what they actually performed, matched against the same read-only exercise catalog the prescribed-plan flow already uses, and persisted as the client's own training history.
+
+<!-- brownfield: ka4-today-bot — Telegram webhook → SQS → async processor Lambda (routesProcessor + conversation engine) → Postgres/Drizzle; exercise catalog + OpenAI integration + S3 image signing already exist (docs/architecture-map.md, reflects 1f46d76) -->
+
+**External systems (in / out):**
+
+| Actor or system | Type | Interaction |
+|---|---|---|
+| Client | Person | starts/ends a logging session, describes exercises in free text |
+| Telegram Bot API | System (external) | delivers/receives chat messages |
+| OpenAI API | System (external) | parses free-text exercise descriptions into structured fields |
+| PostgreSQL (RDS) | System (internal datastore) | exercise catalog, client/conversation state, logged entries |
+| S3 (`ka4-today-exercises`) | System (external) | serves exercise-catalog images via signed URL |
+
+**C4 Context (L1):**
+
+```mermaid
+C4Context
+    title workout-logging — System Context
+
+    Person(client, "Client", "records workouts they performed, in free text")
+    System(bot, "ka4-today-bot", "Telegram bot: routes, conversations, exercise catalog, workout logging")
+    System_Ext(telegramApi, "Telegram Bot API", "message delivery")
+    System_Ext(openaiApi, "OpenAI API", "parses free text into structured exercise fields")
+    SystemDb(postgres, "PostgreSQL (RDS)", "clients, exercise catalog, conversation state, logged entries")
+    System_Ext(objectStorage, "S3 (ka4-today-exercises)", "serves exercise-catalog images")
+
+    Rel(client, telegramApi, "sends/receives messages", "Telegram")
+    Rel(telegramApi, bot, "delivers updates", "webhook/SQS")
+    Rel(bot, openaiApi, "parses exercise text", "HTTPS")
+    Rel(bot, postgres, "reads/writes", "Drizzle ORM")
+    Rel(bot, objectStorage, "signs image URLs", "HTTPS")
+```
 
 ## 4. Solution strategy
 
