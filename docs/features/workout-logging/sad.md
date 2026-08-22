@@ -4,7 +4,7 @@ owner: "vitalii.kyrychenko"
 reviewers: ["Tech Lead", "Security Lead"]
 updated_at: "2026-08-22"
 feature_size: "M"
-target_surfaces: []  # filled in §4 — subset of: backend-service | web-frontend | mobile-app | desktop-app | cli | worker | library-sdk. Read (never re-derived) by api/sequences/tasks/plan-tests/review → _shared/surfaces.md
+target_surfaces: [backend-service]  # subset of: backend-service | web-frontend | mobile-app | desktop-app | cli | worker | library-sdk. Read (never re-derived) by api/sequences/tasks/plan-tests/review → _shared/surfaces.md
 ---
 
 # Software Architecture Document — workout-logging
@@ -93,7 +93,16 @@ C4Context
 
 ## 4. Solution strategy
 
-_pending Socratic walk_
+**Target surface:** `backend-service` only — this feature extends the existing Telegram bot backend (a new conversation type + a session-lifecycle wiring); no new UI, mobile, desktop, or CLI surface is introduced.
+
+**Top strategic choices (the seeds for ADRs):**
+
+1. **OpenAI structured-output parse** (ADR-0001) — one OpenAI call per exercise message, using the existing client's JSON-mode support, extracts exercise name/reps/sets/weight regardless of language (AC-14). Chosen over a deterministic regex/keyword parser, which cannot satisfy the any-language requirement.
+2. **Reuse `search_dict_exercises` for catalog matching** (ADR-0002) — the OpenAI-normalized exercise name is matched against the catalog via the existing stored Postgres function, ranked into up to 3 candidates (AC-05) or a no-match outcome (AC-05b). Chosen over introducing a new embedding/pgvector search, which would add new infrastructure this repo has no migration tooling to manage safely.
+3. **Lazy TTL-based session expiry, no new cron** (ADR-0003) — session-state invariants (no double-start AC-12, cross-context pre-emption AC-10, 2h auto-close AC-11) are enforced by extending the conversation engine's existing `expires_at` lazy-check mechanism and wiring pre-emption into `routesProcessor` + the cron-reminder handler, rather than adding a dedicated scheduled sweep. Accepted trade-off: auto-close is discovered on next check, not proactively pushed to the client — flagged in §11.
+4. **Session record + entries persistence** (ADR-0004) — a new `workout_log_session` (with `end_reason`) plus `workout_log_entry` table, so §7's completion-rate KPI and AC-09b's empty-session exclusion have a durable row to read, rather than deriving session boundaries from the transient conversation-state row.
+
+Each tactical decision in later sections traces to one of these four seeds.
 
 ## 5. Building block view
 
