@@ -34,3 +34,7 @@ function.zip
 # 🔸 Event mocks / test files
 event-samples/*.json
 /layers/
+
+# 🟠 SDD plugin (per-developer, not committed)
+.claude/*.local.md
+.worktrees/
