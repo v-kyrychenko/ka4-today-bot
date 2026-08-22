@@ -250,7 +250,20 @@ ADR files live under `docs/features/workout-logging/adr/`.
 
 ## 10. Quality requirements
 
-_pending Socratic walk_
+**QG-1. Trustworthy capture**
+- **When:** a client's exercise message has been parsed and matched (or found to have no match).
+- **Then:** the client is shown the combined exercise+numbers proposal and nothing is written to `workout_log_entry` until they confirm (AC-03/AC-05/AC-05b/AC-06/AC-07/AC-07b/AC-08).
+- **How verify:** an integration test asserting no entry row exists before a confirmation action is processed, for each of the confirm/keep-own/reject/retry-fallback branches.
+
+**QG-2. Responsiveness**
+- **When:** a client sends an exercise-description message, or a start/end session command.
+- **Then:** parse+confirmation round trip ≤ 5000 ms p95; start/end acknowledgement ≤ 300 ms p95 (spec §6 NFR, verbatim).
+- **How verify:** the existing production-log latency signal (same one used for the slow-reply notice) — no new instrumentation added (§7).
+
+**QG-3. Session-state consistency**
+- **When:** a client with an already-open logging session attempts to start another, or any other route/scheduled reminder fires for them.
+- **Then:** a client never has more than one open logging session at a time (AC-01/AC-04/AC-10/AC-11/AC-12).
+- **How verify:** an integration test against `tgConversationStateRepository` asserting a second `startConversation` of the same type is blocked while one is active, and that a pre-emption/expiry check always leaves at most one active row per `chat_id`.
 
 ## 11. Risks and technical debt
 
