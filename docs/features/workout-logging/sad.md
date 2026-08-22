@@ -216,7 +216,14 @@ design seeds these two flows; `sequences` covers every remaining §5 acceptance 
 
 ## 7. Deployment view
 
-_pending Socratic walk_
+No new deployment unit (ADR-0003) — `workout-logging` runs entirely inside the existing `Ka4TodayAsyncTelegramProcessor` Lambda, behind the existing `MainMessageQueue` SQS FIFO, at the existing batch-size-1 / concurrency profile. The new tables (`workout_log_session`, `workout_log_entry`) live in the same PostgreSQL/RDS instance under the existing pooled connection (`max: 5`).
+
+**Monitoring:**
+- No new metrics or timing instrumentation added for this feature — the spec's §6 NFR latency target is measured from the existing production-log signal already used for the slow-reply notice, as-is.
+- OpenAI parse failures/timeouts logged via the existing `toShortErrorLog()` / `OpenAIError` path — no new error class needed.
+
+**Scaling thresholds:**
+- Matches the existing async-processing concurrency ceiling (spec §6 NFR: ≥2 concurrent logging exchanges per instance) — no separate scaling policy for this feature.
 
 ## 8. Crosscutting concepts
 
