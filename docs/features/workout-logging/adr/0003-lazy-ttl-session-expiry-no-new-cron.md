@@ -17,12 +17,13 @@ ticket: ""
 
 The logging session must enforce: no double-start (AC-12), pre-emption by any other bot interaction — a route or a scheduled reminder (AC-10), and an active 2h-inactivity auto-close (AC-11). The conversation engine (`tgConversationStateRepository.ts`) already has `expires_at` + a lazy `isExpired()` check inside `findActiveByChatId` (deactivates on next read), and an `expireOutdated()` batch function that exists but is wired to nothing. It replaces any active conversation whenever a *new* conversation of any type starts (`deactivatePreviousActiveConversations`), but has no same-type guard and nothing hooks routes or cron into ending a session early.
 
+Both a new dedicated scheduled Lambda and reusing the existing lazy-expiry mechanism were genuinely viable options going into this decision — the choice below was made by preference between two real alternatives, not forced by an existing constraint.
+
 ## Decision drivers
 
 - AC-12: a repeat start of the same session type must be blocked, not silently replaced.
 - AC-10: any other route or a scheduled reminder must end an open session before proceeding.
 - AC-11: the session auto-closes after 2h of inactivity, measured from start or the last recorded exercise, whichever is later.
-- User's explicit direction: reuse the existing lazy TTL/expiry mechanism; no additional scheduled job.
 
 ## Considered options
 
@@ -31,11 +32,11 @@ The logging session must enforce: no double-start (AC-12), pre-emption by any ot
 
 ## Decision outcome
 
-**Chosen:** Option 2. It reuses infrastructure the repo already has (the `expires_at` column + lazy check) and avoids adding a new Lambda/EventBridge rule, per explicit direction to add no new cron job.
+**Chosen:** Option 2, by preference — reusing infrastructure the repo already has (the `expires_at` column + lazy check) and avoiding a new Lambda/EventBridge rule, over Option 1's cleaner-but-heavier dedicated schedule. Option 1 remains a legitimate future path (see §11 of the SAD) if the AC-11 gap noted below proves costly in practice.
 
 **Mechanism:**
 - `startConversation` for the `workout-logging` type is blocked (not replaced) when a session of that same type is already active (AC-12) — a same-type guard added ahead of `deactivatePreviousActiveConversations`.
-- `routesProcessor.ts` (any other route/command) and the cron-reminder handler both call the existing pre-emption path to end an active workout-logging session before continuing (AC-10) — unconditional, independent of TTL.
+- `routesProcessor.ts` calls the existing pre-emption path (`deactivateActiveByChatId`) to end an active workout-logging session before continuing (AC-10) — unconditional, independent of TTL. This is a **single call site**: cron-triggered reminders already reach `routesProcessor` as synthetic webhook-shaped messages (see `cronMeasurementsReminder.ts`), so no separate hook into the cron handler itself is needed.
 - The session TTL is set to 120 minutes on start and refreshed to +120 minutes on every recorded exercise (so it always measures from "start or the most recent entry, whichever is later" — AC-11), stored in the existing `expires_at` column.
 - Expiry is discovered lazily: the next call to `findActiveByChatId` for that chat (the client's next message, or the pre-emption check itself) sees the row past `expires_at` and deactivates it before returning `null`.
 

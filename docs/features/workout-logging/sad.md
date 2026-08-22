@@ -19,7 +19,7 @@ target_surfaces: [backend-service]  # subset of: backend-service | web-frontend 
 
 **Top-3 quality goals (1-liners; full scenarios in §10):**
 
-1. **Trustworthy capture** — nothing is ever silently misrecorded; every exercise+numbers pair is shown back and confirmed before it's saved (AC-03/05/06/07/08 — the feature's actual differentiator).
+1. **Trustworthy capture** — nothing is ever silently misrecorded; every exercise+numbers pair is shown back and confirmed before it's saved (AC-03/05/06/07 — the feature's actual differentiator), with one named exception: AC-08 saves the client's original wording unconfirmed only after a restated message also fails to parse.
 2. **Responsiveness** — parse+confirm round trip ≤5000ms p95; start/end acknowledgement ≤300ms p95 (spec §6 NFR).
 3. **Session-state consistency** — a client never has more than one open logging session at a time (AC-01/04/10/11/12).
 
@@ -98,8 +98,8 @@ C4Context
 **Top strategic choices (the seeds for ADRs):**
 
 1. **OpenAI structured-output parse** (ADR-0001) — one OpenAI call per exercise message, using the existing client's JSON-mode support, extracts exercise name/reps/sets/weight regardless of language (AC-14). Chosen over a deterministic regex/keyword parser, which cannot satisfy the any-language requirement.
-2. **Reuse `search_dict_exercises` for catalog matching** (ADR-0002) — the OpenAI-normalized exercise name is matched against the catalog via the existing stored Postgres function, ranked into up to 3 candidates (AC-05) or a no-match outcome (AC-05b). Chosen over introducing a new embedding/pgvector search, which would add new infrastructure this repo has no migration tooling to manage safely.
-3. **Lazy TTL-based session expiry, no new cron** (ADR-0003) — session-state invariants (no double-start AC-12, cross-context pre-emption AC-10, 2h auto-close AC-11) are enforced by extending the conversation engine's existing `expires_at` lazy-check mechanism and wiring pre-emption into `routesProcessor` + the cron-reminder handler, rather than adding a dedicated scheduled sweep. Accepted trade-off: auto-close is discovered on next check, not proactively pushed to the client — flagged in §11.
+2. **Reuse `search_dict_exercises` for catalog matching** (ADR-0002) — the OpenAI-normalized exercise name is matched via `search_dict_exercises(query, 0, 3)`; 3 is a pagination limit, not a required count — 0 rows is a no-match outcome (AC-05b), 1–3 rows are always shown to the client for confirmation (AC-05), since the spec never has the system auto-accept a match without confirmation. Chosen over introducing a new embedding/pgvector search, which would add new infrastructure this repo has no migration tooling to manage safely.
+3. **Lazy TTL-based session expiry, no new cron** (ADR-0003) — session-state invariants (no double-start AC-12, cross-context pre-emption AC-10, 2h auto-close AC-11) are enforced by extending the conversation engine's existing `expires_at` lazy-check mechanism and wiring pre-emption into `routesProcessor` (a single call site — cron-triggered reminders already reach it as synthetic webhook messages), rather than adding a dedicated scheduled sweep. Accepted trade-off: auto-close is discovered on next check, not proactively pushed to the client — flagged in §11.
 4. **Session record + entries persistence** (ADR-0004) — a new `workout_log_session` (with `end_reason`) plus `workout_log_entry` table, so §7's completion-rate KPI and AC-09b's empty-session exclusion have a durable row to read, rather than deriving session boundaries from the transient conversation-state row.
 
 Each tactical decision in later sections traces to one of these four seeds.
@@ -170,9 +170,9 @@ sequenceDiagram
         AsyncProcessor-->>Client: saved as written
     else parse succeeded
         AsyncProcessor->>ExerciseModule: search_dict_exercises(parsed name)
-        ExerciseModule->>Postgres: search_dict_exercises(query, offset, limit)
-        Postgres-->>ExerciseModule: scored candidates
-        ExerciseModule-->>AsyncProcessor: up to 3 candidates, or none
+        ExerciseModule->>Postgres: search_dict_exercises(query, 0, 3)
+        Postgres-->>ExerciseModule: 0-3 ranked rows
+        ExerciseModule-->>AsyncProcessor: candidates (0-3), always shown for confirmation if any
         AsyncProcessor-->>Client: candidate(s) + numbers to confirm (image if available)
         Client->>AsyncProcessor: confirms a candidate, or keeps own description, or rejects
         alt confirmed a candidate
@@ -200,14 +200,18 @@ sequenceDiagram
         AsyncProcessor-->>Client: a session is already open, end it first
     else no active session (or one just lazily expired)
         Postgres-->>AsyncProcessor: none active
+        opt a previous session had just lazily expired
+            AsyncProcessor->>Postgres: close its workout_log_session (ended_at=now, end_reason=auto-closed)
+        end
         AsyncProcessor->>Postgres: startConversation (TTL 120min, opens workout_log_session)
         AsyncProcessor-->>Client: session ready to receive exercises
     end
     Note over AsyncProcessor,Postgres: later — any other route, or a cron-enqueued reminder, arrives for the same client
     AsyncProcessor->>Postgres: findActiveByChatId
     alt active workout-logging session exists
-        AsyncProcessor->>Postgres: deactivateActiveByChatId (standard conversation-engine mechanism, end_reason=pre-empted)
-        Note over AsyncProcessor: unconfirmed candidate was never persisted (Flow 1 saves only on confirm) — nothing to discard beyond deactivating the row
+        AsyncProcessor->>Postgres: deactivateActiveByChatId (standard conversation-engine mechanism)
+        AsyncProcessor->>Postgres: close its workout_log_session (ended_at=now, end_reason=pre-empted)
+        Note over AsyncProcessor: unconfirmed candidate was never persisted (Flow 1 saves only on confirm) — nothing to discard beyond closing the rows
     end
     AsyncProcessor-->>Client: proceeds with the other interaction
 ```
@@ -252,13 +256,13 @@ ADR files live under `docs/features/workout-logging/adr/`.
 
 **QG-1. Trustworthy capture**
 - **When:** a client's exercise message has been parsed and matched (or found to have no match).
-- **Then:** the client is shown the combined exercise+numbers proposal and nothing is written to `workout_log_entry` until they confirm (AC-03/AC-05/AC-05b/AC-06/AC-07/AC-07b/AC-08).
-- **How verify:** an integration test asserting no entry row exists before a confirmation action is processed, for each of the confirm/keep-own/reject/retry-fallback branches.
+- **Then:** the client is shown the combined exercise+numbers proposal and nothing is written to `workout_log_entry` until they confirm (AC-03/AC-05/AC-05b/AC-06/AC-07/AC-07b). The one named exception is AC-08: after a restated message also fails to parse, the original wording is saved unconfirmed.
+- **How verify:** an integration test asserting no entry row exists before a confirmation action is processed, for the confirm/keep-own/reject branches, and that the AC-08 fallback path is the only one that saves without a confirmation.
 
 **QG-2. Responsiveness**
 - **When:** a client sends an exercise-description message, or a start/end session command.
 - **Then:** parse+confirmation round trip ≤ 5000 ms p95; start/end acknowledgement ≤ 300 ms p95 (spec §6 NFR, verbatim).
-- **How verify:** the existing production-log latency signal (same one used for the slow-reply notice) — no new instrumentation added (§7).
+- **How verify:** not independently verifiable per-feature in v1 — no new instrumentation was added (§7), so the existing production-log signal covers all bot activity, not this feature's flow specifically. Tracked as an accepted-debt row in §11.
 
 **QG-3. Session-state consistency**
 - **When:** a client with an already-open logging session attempts to start another, or any other route/scheduled reminder fires for them.
@@ -274,10 +278,12 @@ ADR files live under `docs/features/workout-logging/adr/`.
 | `exerciseRepository.search()`'s current inline SQL does not call the real production search function and must be corrected as part of this feature (ADR-0002) | Medium | Fix folded into this feature's task breakdown, not deferred | Backend |
 | Two new hand-edited tables (`workout_log_session`, `workout_log_entry`, ADR-0004) with no migration tooling to manage or roll them back | Medium | Follow the existing hand-edit convention carefully; no automated rollback available if the schema needs correction post-deploy | Backend |
 | OpenAI dependency for every exercise message (ADR-0001) — cost and reliability of an external call on the write path | Medium | Bounded by the existing one-retry cap (AC-08, spec §6.1) — a message either resolves or falls back to a raw save, never loops | Backend |
+| Fixing `exerciseRepository.search()` to call `search_dict_exercises` (ADR-0002) also changes results for its existing caller, the coach exercise-search API — currently disabled in `template.yaml`, so no live impact today, but re-enabling it later inherits this feature's matching behavior | Low | No action needed while the API stays disabled; re-verify search behavior for that API if/when it's re-enabled | Backend |
 | Open question: feature deadline/effort budget | Open question | Resolve before `tasks`; no deadline stated in spec | PM |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
 - Session records carry no edit/audit history — acceptable for a write-only v1 (spec §3 non-goal: no viewing/editing past entries yet).
+- QG-2's latency targets (§10) are not independently verifiable per-feature in v1 — no new instrumentation was added (§7), so only the existing, untagged production-log signal covers this feature's flow.
 
 ## 12. Glossary
 
@@ -286,5 +292,5 @@ ADR files live under `docs/features/workout-logging/adr/`.
 | Client | The person receiving coaching through the Telegram bot, identified by their Telegram chat and a linked client record (repo-root `CONTEXT.md`). |
 | Logging session | An explicit, client-started period during which one or more exercise entries are recorded; ended explicitly, by pre-emption, or by lazy auto-expiry (feature `CONTEXT.md`). |
 | Exercise entry | One record of a single exercise actually performed, captured from free text, holding its identity (catalog-linked or free-text) plus reps/sets/weight (feature `CONTEXT.md`). |
-| Candidate | One of up to 3 catalog exercises `search_dict_exercises` suggests as a possible match for a parsed exercise description (AC-05) — surfaced during this design pass, not yet in `CONTEXT.md`; recommend a `glossary` follow-up. |
+| Candidate | One of up to 3 catalog exercises `search_dict_exercises` ranks as a possible match for a parsed exercise description (0–3 results; the limit is pagination, not a required count) — always shown for confirmation, never auto-accepted (AC-05) — surfaced during this design pass, not yet in `CONTEXT.md`; recommend a `glossary` follow-up. |
 | Unlinked entry | An exercise entry saved without a catalog reference — either no candidate matched, or the client kept their own description (AC-05b/AC-06) — surfaced during this design pass; recommend a `glossary` follow-up. |

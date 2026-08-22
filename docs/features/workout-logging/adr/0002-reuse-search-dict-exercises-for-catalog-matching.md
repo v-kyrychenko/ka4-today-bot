@@ -20,17 +20,19 @@ After a client message is parsed into a structured exercise name (ADR-0001), tha
 ## Decision drivers
 
 - Spec AC-05 / AC-05b: up to 3 ranked candidates, or an explicit no-match outcome.
-- Spec §8 open question: no plain-language similarity threshold was fixed in the spec — left to design.
+- Spec §8 open question: no plain-language similarity threshold was fixed in the spec — left to design (resolved below).
 - §2 Constraints: no migration tooling exists — reusing a function the database already has avoids introducing new schema-migration risk.
 
 ## Considered options
 
-1. **Reuse `search_dict_exercises`** — call the existing stored Postgres function with the OpenAI-normalized exercise name, rank up to 3 results by its returned score, and bucket the score into confident-link / candidate-list / no-match bands.
+1. **Reuse `search_dict_exercises`** — call the existing stored Postgres function with the OpenAI-normalized exercise name and take its ranked results directly.
 2. **New embedding-based semantic search (pgvector)** — add a vector-embedding column + the `pgvector` extension, embed the catalog and generate an embedding per parsed message, rank by vector similarity.
 
 ## Decision outcome
 
 **Chosen:** Option 1. It reuses an existing, already-implemented database capability with zero new infrastructure, fits the OpenAI-normalized name the parse step already produces, and avoids adding a new Postgres extension in a repo with no migration tooling to manage it safely.
+
+**Matching rule (resolves spec §8's confidence-threshold open question):** call `search_dict_exercises(query, 0, 3)` — `3` is a pagination limit passed to the function, not a required result count; the function may legitimately return 0, 1, 2, or 3 rows. Zero rows is the no-match outcome (AC-05b). One to three rows are always shown to the client as candidates for confirmation (AC-05) — the spec never has the system auto-accept a match without confirmation, so there is no separate "confident single link" tier to define at the application layer. Ranking/scoring is entirely `search_dict_exercises`'s responsibility; the app does not compute or threshold a score itself.
 
 ## Consequences
 
