@@ -35,7 +35,25 @@ target_surfaces: []  # filled in §4 — subset of: backend-service | web-fronte
 
 ## 2. Constraints
 
-_pending Socratic walk_
+**Technical.**
+- TypeScript 5.8.2, Node.js 22.x ARM64 (Lambda), ESM source bundled to CJS via esbuild
+- `drizzle-orm` 0.45.2 + `pg` 8.16.3 (PostgreSQL/RDS) — the only datastore
+- AWS SDK v3 (`@aws-sdk/client-s3` already used for exercise images, `@aws-sdk/client-sqs` for the existing async queue)
+- Architecture convention: layered modules (`handlers/ → features/ or routes/ → repository/ → domain`), no DI container, services exported as `export const xService = {...}`
+
+**Organisational.**
+- Effort budget: `<TBD by PM>`
+- Deadline: `<TBD by PM>` — see §11 open-question row
+- Team composition: not stated
+
+**Conventions.**
+- `AGENTS.md` + `docs/architecture-map.md` — 4-space indent, semicolons, single quotes, named exports, mapper boundary (row↔domain) for persistence
+- ID strategy: Postgres `bigserial` numeric PK (repo convention — no UUID/nanoid)
+- No migration tooling exists (no `drizzle.config.*`, no migrations dir) — schema is hand-edited directly in Drizzle schema files; any new table for this feature inherits that gap
+
+**Regulatory / external.**
+- Data classification: Internal — same tier as existing body-measurement logs (spec §6.1)
+- No new authorization boundary — only an already-registered client can act (AC-02)
 
 ## 3. Context and scope
 
