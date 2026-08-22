@@ -147,7 +147,72 @@ C4Container
 
 ## 6. Runtime view
 
-_pending Socratic walk_
+**Critical flow 1: Record and confirm an exercise entry**
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant AsyncProcessor
+    participant OpenAiApi
+    participant ExerciseModule
+    participant Postgres
+    Client->>AsyncProcessor: describes an exercise performed
+    AsyncProcessor->>OpenAiApi: structured-output parse request
+    OpenAiApi-->>AsyncProcessor: exercise name, reps, sets, weight
+    alt message unclear (missing reps/sets/weight, multiple exercises)
+        AsyncProcessor-->>Client: what's missing/unclear, restate once
+        Client->>AsyncProcessor: restated description
+        AsyncProcessor->>OpenAiApi: structured-output parse request (retry)
+        OpenAiApi-->>AsyncProcessor: parse result or still unclear
+    end
+    alt retry still unclear
+        AsyncProcessor->>Postgres: save entry as raw wording, unlinked
+        AsyncProcessor-->>Client: saved as written
+    else parse succeeded
+        AsyncProcessor->>ExerciseModule: search_dict_exercises(parsed name)
+        ExerciseModule->>Postgres: search_dict_exercises(query, offset, limit)
+        Postgres-->>ExerciseModule: scored candidates
+        ExerciseModule-->>AsyncProcessor: up to 3 candidates, or none
+        AsyncProcessor-->>Client: candidate(s) + numbers to confirm (image if available)
+        Client->>AsyncProcessor: confirms a candidate, or keeps own description, or rejects
+        alt confirmed a candidate
+            AsyncProcessor->>Postgres: save entry linked to catalog exercise
+        else kept own description / no candidates existed
+            AsyncProcessor->>Postgres: save entry unlinked
+        else rejected the confirmation
+            AsyncProcessor-->>Client: treated as unclear — restate once (see retry branch)
+        end
+        AsyncProcessor-->>Client: entry saved confirmation
+    end
+```
+
+**Critical flow 2: Session lifecycle — start, pre-emption, lazy auto-expiry**
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant AsyncProcessor
+    participant Postgres
+    Client->>AsyncProcessor: starts a logging session
+    AsyncProcessor->>Postgres: findActiveByChatId (lazy expiry check)
+    alt already has an active workout-logging session
+        Postgres-->>AsyncProcessor: active row, not expired
+        AsyncProcessor-->>Client: a session is already open, end it first
+    else no active session (or one just lazily expired)
+        Postgres-->>AsyncProcessor: none active
+        AsyncProcessor->>Postgres: startConversation (TTL 120min, opens workout_log_session)
+        AsyncProcessor-->>Client: session ready to receive exercises
+    end
+    Note over AsyncProcessor,Postgres: later — any other route, or a cron-enqueued reminder, arrives for the same client
+    AsyncProcessor->>Postgres: findActiveByChatId
+    alt active workout-logging session exists
+        AsyncProcessor->>Postgres: deactivateActiveByChatId (standard conversation-engine mechanism, end_reason=pre-empted)
+        Note over AsyncProcessor: unconfirmed candidate was never persisted (Flow 1 saves only on confirm) — nothing to discard beyond deactivating the row
+    end
+    AsyncProcessor-->>Client: proceeds with the other interaction
+```
+
+design seeds these two flows; `sequences` covers every remaining §5 acceptance criterion in a later stage.
 
 ## 7. Deployment view
 
