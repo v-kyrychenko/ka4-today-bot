@@ -2,7 +2,7 @@
 status: Draft
 owner: "vitalii.kyrychenko"
 reviewers: ["Tech Lead", "Security Lead"]
-updated_at: "2026-08-22"
+updated_at: "2026-08-23"
 feature_size: "M"
 target_surfaces: [backend-service]  # subset of: backend-service | web-frontend | mobile-app | desktop-app | cli | worker | library-sdk. Read (never re-derived) by api/sequences/tasks/plan-tests/review → _shared/surfaces.md
 ---
@@ -217,6 +217,52 @@ sequenceDiagram
 ```
 
 design seeds these two flows; `sequences` covers every remaining §5 acceptance criterion in a later stage.
+
+**Critical flow 3: End a logging session**
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant AsyncProcessor
+    participant Postgres
+    Note over Client,AsyncProcessor: Precondition: client has an open workout-logging session (Flow 2)
+    Client->>AsyncProcessor: ends the logging session
+    AsyncProcessor->>Postgres: findActiveByChatId + count recorded entries
+    Postgres-->>AsyncProcessor: active session, entry count
+    alt at least one exercise recorded
+        AsyncProcessor->>Postgres: close workout_log_session (ended_at=now, end_reason=client-ended)
+        Note over AsyncProcessor,Postgres: persists session close
+        AsyncProcessor-->>Client: workout complete confirmation
+    else no exercises recorded
+        AsyncProcessor->>Postgres: close workout_log_session (ended_at=now, end_reason=client-ended), no workout record created
+        Note over AsyncProcessor,Postgres: no workout record created (AC-09b)
+        AsyncProcessor-->>Client: nothing was logged confirmation
+    end
+    Note over AsyncProcessor,Postgres: the same recorded-vs-empty distinction (AC-09b) also applies when a session auto-closes instead of being explicitly ended (Flow 2's auto-close branch)
+    Note over Client,AsyncProcessor: Postcondition: client has no open logging session
+```
+
+**§5 acceptance-criteria coverage:**
+
+| AC | Shown by | Note |
+|---|---|---|
+| AC-01 | Flow 2 | happy path, open session |
+| AC-02 | N/A | unregistered-caller path replies with the bot's standard "not a client yet" reply, shared across features, not a workout-logging-specific branch |
+| AC-03 | Flow 1 | happy path, parse + combined confirm |
+| AC-04 | N/A | no-open-session path replies with the bot's standard default reply for an out-of-context message, not a workout-logging-specific branch |
+| AC-05 | Flow 1 | up to 3 candidates shown for confirmation |
+| AC-05b | Flow 1 | no candidates, same as reject-all, confirm-then-save-unlinked |
+| AC-06 | Flow 1 | keeps own description, saved unlinked |
+| AC-07 | Flow 1 | unclear message, restate once |
+| AC-07b | Flow 1 | confirmation rejected, treated as unclear |
+| AC-08 | Flow 1 | retry still unclear, saves raw wording |
+| AC-09 | Flow 3 | happy path, recorded exercises, closes the session |
+| AC-09b | Flow 3 | empty session, closes without a workout record (both explicit-end and auto-close per the cross-reference note) |
+| AC-10 | Flow 2 | cross-context pre-emption, discards unconfirmed entry |
+| AC-11 | Flow 2 | lazy auto-expiry after 2h inactivity |
+| AC-12 | Flow 2 | repeat start attempt, told to end first, no pre-emption |
+| AC-13 | N/A | day attribution to the session's local start date is a computed attribute at persist/read time (see `data-model`), not a distinct runtime branch |
+| AC-14 | N/A | any-language parsing happens inside Flow 1's parse step regardless of language; the reply language is a stored per-client preference read at reply time, not a distinct branch |
 
 ## 7. Deployment view
 

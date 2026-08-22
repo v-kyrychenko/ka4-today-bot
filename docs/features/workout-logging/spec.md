@@ -92,7 +92,7 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 ### AC-04 (US-02) — domain invariant
 **Given** a client with no open logging session
 **When** the client sends a message describing an exercise
-**Then** the system tells the client no workout is in progress and that they need to start one first, and records nothing
+**Then** the system tells that did't understand, and user should try to visit menu
 
 ### AC-05 (US-03) — happy path
 **Given** a client just described an exercise
