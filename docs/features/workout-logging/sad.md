@@ -239,7 +239,14 @@ No new deployment unit (ADR-0003) — `workout-logging` runs entirely inside the
 
 ## 9. Architecture decisions
 
-_pending Socratic walk_
+| # | Title | Status | Section |
+|---|---|---|---|
+| 0001 | Use OpenAI structured-output parse for exercise messages | Accepted | §4 |
+| 0002 | Reuse search_dict_exercises for catalog matching | Accepted | §4 |
+| 0003 | Reuse lazy TTL-based expiry for session auto-close, no new cron | Accepted | §4 |
+| 0004 | Persist a first-class workout-log session record plus entries | Accepted | §4 |
+
+ADR files live under `docs/features/workout-logging/adr/`.
 
 ## 10. Quality requirements
 
