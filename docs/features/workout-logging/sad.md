@@ -281,4 +281,10 @@ ADR files live under `docs/features/workout-logging/adr/`.
 
 ## 12. Glossary
 
-_pending Socratic walk_
+| Term | Meaning |
+|---|---|
+| Client | The person receiving coaching through the Telegram bot, identified by their Telegram chat and a linked client record (repo-root `CONTEXT.md`). |
+| Logging session | An explicit, client-started period during which one or more exercise entries are recorded; ended explicitly, by pre-emption, or by lazy auto-expiry (feature `CONTEXT.md`). |
+| Exercise entry | One record of a single exercise actually performed, captured from free text, holding its identity (catalog-linked or free-text) plus reps/sets/weight (feature `CONTEXT.md`). |
+| Candidate | One of up to 3 catalog exercises `search_dict_exercises` suggests as a possible match for a parsed exercise description (AC-05) — surfaced during this design pass, not yet in `CONTEXT.md`; recommend a `glossary` follow-up. |
+| Unlinked entry | An exercise entry saved without a catalog reference — either no candidate matched, or the client kept their own description (AC-05b/AC-06) — surfaced during this design pass; recommend a `glossary` follow-up. |
