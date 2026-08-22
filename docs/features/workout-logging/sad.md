@@ -267,7 +267,17 @@ ADR files live under `docs/features/workout-logging/adr/`.
 
 ## 11. Risks and technical debt
 
-_pending Socratic walk_
+| Risk / debt | Severity | Mitigation | Owner |
+|---|---|---|---|
+| AC-11 requires the session to actively close "without waiting for the client's next message"; the chosen lazy-TTL mechanism (ADR-0003) only discovers expiry on the next check, not proactively | Medium | Accepted trade-off per explicit direction to add no new cron; revisit with a dedicated sweep (ADR-0003's rejected Option 1) if staleness becomes a real client complaint | Backend |
+| `search_dict_exercises` (the catalog-matching function, ADR-0002) exists only in the live database, untracked by any migration — consistent with the repo's known no-migration-tooling gap (§2) | Medium | Document its exact signature/behavior in the upcoming `data-model` stage; no rollback path if it changes underneath this feature | Backend |
+| `exerciseRepository.search()`'s current inline SQL does not call the real production search function and must be corrected as part of this feature (ADR-0002) | Medium | Fix folded into this feature's task breakdown, not deferred | Backend |
+| Two new hand-edited tables (`workout_log_session`, `workout_log_entry`, ADR-0004) with no migration tooling to manage or roll them back | Medium | Follow the existing hand-edit convention carefully; no automated rollback available if the schema needs correction post-deploy | Backend |
+| OpenAI dependency for every exercise message (ADR-0001) — cost and reliability of an external call on the write path | Medium | Bounded by the existing one-retry cap (AC-08, spec §6.1) — a message either resolves or falls back to a raw save, never loops | Backend |
+| Open question: feature deadline/effort budget | Open question | Resolve before `tasks`; no deadline stated in spec | PM |
+
+**Accepted debt (acceptable in v1, plan to fix later):**
+- Session records carry no edit/audit history — acceptable for a write-only v1 (spec §3 non-goal: no viewing/editing past entries yet).
 
 ## 12. Glossary
 
