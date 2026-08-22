@@ -106,7 +106,44 @@ Each tactical decision in later sections traces to one of these four seeds.
 
 ## 5. Building block view
 
-_pending Socratic walk_
+Layered, mirroring the repo's existing Telegram feature convention (handler → feature service → repository → domain) — no divergence from `docs/architecture-map.md`. `workout-logging` is a new feature folder alongside `features/measurements/`, registered as a new conversation type; it reads the exercise catalog directly (in-process import, same Lambda, no network call) via the coach module's exercise repository, corrected to call the existing `search_dict_exercises` stored function (ADR-0002). No new Lambda or queue is introduced (ADR-0003) — the pre-emption/expiry guards extend the existing conversation engine and `routesProcessor`, which already handle both webhook-origin and cron-origin messages through the same code path.
+
+**Internal decomposition:**
+
+```
+src/modules/telegram/features/workoutLogging/
+├── workoutLoggingConversation.ts   <steps: WAITING_INPUT / WAITING_CONFIRMATION, mirrors bodyMeasurementsConversation.ts>
+├── workoutLoggingService.ts        <parse via OpenAI (ADR-0001), match via exerciseRepository (ADR-0002), confirm/save/end orchestration>
+├── repository/
+│   └── workoutLogRepository.ts     <workout_log_session + workout_log_entry CRUD (ADR-0004)>
+└── domain/
+    └── workoutLogEntry.ts          <WorkoutLogSession / WorkoutLogEntry domain models>
+```
+
+**C4 Container (L2):**
+
+```mermaid
+C4Container
+    title workout-logging — Containers
+
+    Person(client, "Client")
+
+    Container_Boundary(app, "ka4-today-bot") {
+        Container(asyncProcessor, "Ka4TodayAsyncTelegramProcessor", "Lambda (nodejs22.x)", "routesProcessor + conversation engine, incl. workout-logging conversation + pre-emption/expiry guards (ADR-0003)")
+        Container(exerciseModule, "Exercise catalog (coach module)", "TypeScript module", "search_dict_exercises-backed matching (ADR-0002)")
+    }
+
+    ContainerDb(postgres, "PostgreSQL (RDS)", "Drizzle ORM", "workout_log_session, workout_log_entry (ADR-0004), dict_exercise, tg_conversation_state")
+    System_Ext(openaiApi, "OpenAI API", "structured-output exercise parse (ADR-0001)")
+    System_Ext(objectStorage, "S3 (ka4-today-exercises)", "candidate exercise images")
+
+    Rel(client, asyncProcessor, "describes exercises / starts-ends session", "Telegram")
+    Rel(asyncProcessor, exerciseModule, "matches parsed exercise", "in-process call")
+    Rel(asyncProcessor, openaiApi, "parses exercise text", "HTTPS")
+    Rel(asyncProcessor, postgres, "reads/writes", "Drizzle ORM")
+    Rel(asyncProcessor, objectStorage, "signs candidate image URLs", "HTTPS")
+    Rel(exerciseModule, postgres, "search_dict_exercises(...)", "Drizzle ORM")
+```
 
 ## 6. Runtime view
 
