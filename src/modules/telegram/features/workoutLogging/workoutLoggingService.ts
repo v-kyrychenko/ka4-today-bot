@@ -1,5 +1,9 @@
 import {toIsoDate} from '../../../../shared/utils/dateUtils.js';
 import {workoutLogRepository} from './repository/workoutLogRepository.js';
+import {matchCandidates} from './workoutCandidateMatcher.js';
+import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
+import {parseExerciseMessage} from './workoutExerciseParser.js';
+import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 
 export interface StartSessionRequest {
     clientId: number | null;
@@ -20,10 +24,17 @@ export interface CloseExpiredSessionRequest {
     now: Date;
 }
 
+export interface HandleExerciseMessageRequest {
+    sessionId: number;
+    message: string;
+    lang: string;
+}
+
 export type StartSessionOutcome = 'not-a-client' | 'already-open' | 'started';
 export type EndSessionOutcome = 'no-active-session' | 'ended-empty' | 'ended-recorded';
 export type PreemptActiveSessionOutcome = 'no-active-session' | 'pre-empted';
 export type CloseExpiredSessionOutcome = 'no-active-session' | 'active' | 'auto-closed';
+export type HandleExerciseMessageOutcome = 'confirmation-proposed' | 'unclear';
 
 export interface StartSessionResult {
     outcome: StartSessionOutcome;
@@ -41,6 +52,13 @@ export interface CloseExpiredSessionResult {
     outcome: CloseExpiredSessionOutcome;
 }
 
+export interface HandleExerciseMessageResult {
+    outcome: HandleExerciseMessageOutcome;
+    parsedExercise?: ParsedWorkoutExercise;
+    candidates?: WorkoutCandidate[];
+    retryRemaining?: boolean;
+}
+
 const CLIENT_ENDED_REASON = 'client-ended';
 const PRE_EMPTED_REASON = 'pre-empted';
 const AUTO_CLOSED_REASON = 'auto-closed';
@@ -51,6 +69,7 @@ export const workoutLoggingService = {
     endSession,
     preemptActiveSession,
     closeExpiredSession,
+    handleExerciseMessage,
 };
 
 export async function startSession(request: StartSessionRequest): Promise<StartSessionResult> {
@@ -112,6 +131,20 @@ export async function closeExpiredSession(request: CloseExpiredSessionRequest): 
     await workoutLogRepository.closeSession(activeSession.id, AUTO_CLOSED_REASON);
 
     return {outcome: 'auto-closed'};
+}
+
+export async function handleExerciseMessage(
+    request: HandleExerciseMessageRequest,
+): Promise<HandleExerciseMessageResult> {
+    const parseResult = await parseExerciseMessage({message: request.message, lang: request.lang});
+    if (parseResult.outcome === 'unclear') {
+        return {outcome: 'unclear', retryRemaining: true};
+    }
+
+    const matchResult = await matchCandidates({parsedExercise: parseResult.exercise});
+    const candidates = matchResult.outcome === 'matched' ? matchResult.candidates : [];
+
+    return {outcome: 'confirmation-proposed', parsedExercise: parseResult.exercise, candidates};
 }
 
 function toLocalSessionDay(now: Date, timezoneOffsetMinutes: number): string {

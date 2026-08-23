@@ -162,5 +162,25 @@ const workoutLoggingServiceMocks = {
                 'export const workoutLogRepository = globalThis.__workoutLoggingServiceMocks.workoutLogRepository;',
             loader: 'js',
         }));
+
+        buildContext.onResolve({filter: /workoutExerciseParser\.js$/}, () => ({
+            namespace: 'workout-logging-service-mock-parser',
+            path: 'parser',
+        }));
+
+        buildContext.onLoad({filter: /^parser$/, namespace: 'workout-logging-service-mock-parser'}, () => ({
+            contents: 'export async function parseExerciseMessage() { return {outcome: "unclear", exercise: null}; }',
+            loader: 'js',
+        }));
+
+        buildContext.onResolve({filter: /workoutCandidateMatcher\.js$/}, () => ({
+            namespace: 'workout-logging-service-mock-matcher',
+            path: 'matcher',
+        }));
+
+        buildContext.onLoad({filter: /^matcher$/, namespace: 'workout-logging-service-mock-matcher'}, () => ({
+            contents: 'export async function matchCandidates() { return {outcome: "noMatch"}; }',
+            loader: 'js',
+        }));
     },
 };
