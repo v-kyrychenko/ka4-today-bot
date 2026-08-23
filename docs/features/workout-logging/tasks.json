@@ -1,0 +1,145 @@
+{
+  "slug": "workout-logging",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Promote workout_log_session staged migration",
+      "layer": "migration",
+      "deps": [],
+      "acs": ["AC-01", "AC-09", "AC-09b", "AC-10", "AC-11", "AC-12", "AC-13"],
+      "dod": "Staged 01_create_workout_log_session up/down SQL applies and reverts cleanly against a local/dev Postgres instance, including the uq_workout_log_session_open_client partial unique index.",
+      "files_hint": [
+        "docs/features/workout-logging/migrations/01_create_workout_log_session.up.sql",
+        "docs/features/workout-logging/migrations/01_create_workout_log_session.down.sql"
+      ]
+    },
+    {
+      "id": "T2",
+      "title": "Promote workout_log_entry staged migration",
+      "layer": "migration",
+      "deps": ["T1"],
+      "acs": ["AC-03", "AC-05", "AC-05b", "AC-06", "AC-07", "AC-08"],
+      "dod": "Staged 02_create_workout_log_entry up/down SQL applies and reverts cleanly against a local/dev Postgres instance, with both FKs (session_id, dict_exercise_id) and both indexes in place.",
+      "files_hint": [
+        "docs/features/workout-logging/migrations/02_create_workout_log_entry.up.sql",
+        "docs/features/workout-logging/migrations/02_create_workout_log_entry.down.sql"
+      ]
+    },
+    {
+      "id": "T3",
+      "title": "Add WorkoutLogSession/WorkoutLogEntry domain models",
+      "layer": "domain",
+      "deps": [],
+      "acs": ["AC-01", "AC-03", "AC-13"],
+      "dod": "Unit tests confirm the domain types capture session_day/started_at/ended_at/end_reason and reps/sets/weight/dict_exercise_id exactly as data-model.md defines, with no persistence concerns leaking in.",
+      "files_hint": ["src/modules/telegram/features/workoutLogging/domain/workoutLogEntry.ts"]
+    },
+    {
+      "id": "T4",
+      "title": "Build workoutLogRepository for session + entry CRUD",
+      "layer": "infra",
+      "deps": ["T1", "T2", "T3"],
+      "acs": ["AC-01", "AC-09", "AC-09b", "AC-10", "AC-11", "AC-12", "AC-13"],
+      "dod": "Integration tests cover findActiveByChatOrClientId, startSession, closeSession(end_reason), and addEntry/countEntries against the promoted tables via the mapper boundary (row <-> domain).",
+      "files_hint": [
+        "src/modules/telegram/features/workoutLogging/repository/workoutLogRepository.ts",
+        "src/infrastructure/persistence/postgres/schema/workoutLogSession.ts",
+        "src/infrastructure/persistence/postgres/schema/workoutLogEntry.ts",
+        "src/infrastructure/persistence/postgres/models/workoutLogSessionRow.ts",
+        "src/infrastructure/persistence/postgres/models/workoutLogEntryRow.ts",
+        "src/infrastructure/persistence/postgres/mappers/workoutLogSessionMapper.ts",
+        "src/infrastructure/persistence/postgres/mappers/workoutLogEntryMapper.ts"
+      ]
+    },
+    {
+      "id": "T5",
+      "title": "Fix exerciseRepository.search to call search_dict_exercises",
+      "layer": "infra",
+      "deps": [],
+      "acs": ["AC-05", "AC-05b"],
+      "dod": "Unit/integration test confirms search() issues search_dict_exercises(query, 0, 3) instead of the current inline SQL, returning 0-3 ranked rows, and the existing coach exercise-search API caller is unaffected in behavior beyond the corrected ranking.",
+      "files_hint": ["src/modules/coach/exercise/repository/exerciseRepository.ts"]
+    },
+    {
+      "id": "T6",
+      "title": "Add OpenAI structured-output parse for exercise messages",
+      "layer": "app",
+      "deps": [],
+      "acs": ["AC-03", "AC-07", "AC-08", "AC-14"],
+      "dod": "Unit tests (mocked OpenAI client) confirm the parser extracts exercise name/reps/sets/weight regardless of input language (AC-14) and returns an explicit unclear/incomplete result when reps, sets, weight-if-needed are missing or multiple exercises are described (AC-07/AC-08), per ADR-0001.",
+      "files_hint": ["src/modules/telegram/features/workoutLogging/workoutExerciseParser.ts"]
+    },
+    {
+      "id": "T7",
+      "title": "Build candidate-match confirmation payload",
+      "layer": "app",
+      "deps": ["T5"],
+      "acs": ["AC-05", "AC-05b"],
+      "dod": "Unit test confirms up to 3 candidates are returned each paired with the parsed numbers and a signed S3 image URL when the catalog exercise has one (text-only otherwise), and 0 candidates is surfaced as a distinct no-match outcome per AC-05b.",
+      "files_hint": ["src/modules/telegram/features/workoutLogging/workoutCandidateMatcher.ts"]
+    },
+    {
+      "id": "T8",
+      "title": "Handle initial exercise-description message",
+      "layer": "app",
+      "deps": ["T4", "T6", "T7"],
+      "acs": ["AC-03", "AC-05", "AC-05b", "AC-07", "AC-14"],
+      "dod": "Unit test confirms an exercise message is parsed (T6), matched (T7), and turned into a combined exercise+numbers confirmation prompt on success, or an unclear-message reply with one retry allowed (AC-07) on parse failure, replying in the client's stored language (AC-14) — and that nothing is written to workout_log_entry before confirmation.",
+      "files_hint": ["src/modules/telegram/features/workoutLogging/workoutLoggingService.ts"]
+    },
+    {
+      "id": "T9",
+      "title": "Handle exercise confirmation response",
+      "layer": "app",
+      "deps": ["T8"],
+      "acs": ["AC-06", "AC-07b", "AC-08"],
+      "dod": "Unit test covers: confirming a candidate saves it linked, keeping own description or rejecting all candidates saves it unlinked (AC-06), rejecting the confirmed proposal triggers the same one-retry restate flow as AC-07 (AC-07b), and a retry that still fails to parse saves the original wording unconfirmed (AC-08).",
+      "files_hint": ["src/modules/telegram/features/workoutLogging/workoutLoggingService.ts"]
+    },
+    {
+      "id": "T10",
+      "title": "Implement session start/end lifecycle",
+      "layer": "app",
+      "deps": ["T4"],
+      "acs": ["AC-01", "AC-02", "AC-09", "AC-09b", "AC-12", "AC-13"],
+      "dod": "Unit test covers: starting a session for a registered client opens one and sets session_day from local start time (AC-01/AC-13), a non-client is denied (AC-02), a repeat start is rejected without pre-empting the existing session (AC-12), and ending closes the session with end_reason=client-ended, distinguishing an empty session (AC-09b) from one with recorded entries (AC-09).",
+      "files_hint": ["src/modules/telegram/features/workoutLogging/workoutLoggingService.ts"]
+    },
+    {
+      "id": "T11",
+      "title": "Wire workoutLoggingConversation into the conversation engine",
+      "layer": "ports",
+      "deps": ["T9", "T10"],
+      "acs": ["AC-01", "AC-03", "AC-04", "AC-05", "AC-06", "AC-07", "AC-07b", "AC-08", "AC-09", "AC-09b", "AC-12", "AC-14"],
+      "dod": "Integration test drives the WAITING_INPUT/WAITING_CONFIRMATION steps through the registered conversation type end to end (start -> describe -> confirm -> end), and a message sent with no open session gets the standard out-of-context reply (AC-04).",
+      "files_hint": [
+        "src/modules/telegram/features/workoutLogging/workoutLoggingConversation.ts",
+        "src/modules/telegram/features/conversations/registry.ts"
+      ]
+    },
+    {
+      "id": "T12",
+      "title": "Wire cross-context pre-emption and lazy auto-expiry",
+      "layer": "wiring",
+      "deps": ["T10"],
+      "acs": ["AC-10", "AC-11"],
+      "dod": "Integration test confirms an open workout-logging session is pre-empted (end_reason=pre-empted, unconfirmed entry discarded) when another route or a cron-enqueued reminder arrives for the same client (AC-10), and a session idle for more than 2h from its start or last entry is lazily closed (end_reason=auto-closed) on the next check (AC-11), per ADR-0003's existing expires_at mechanism.",
+      "files_hint": [
+        "src/modules/telegram/routes/routesProcessor.ts",
+        "src/modules/telegram/features/conversations/engine.ts"
+      ]
+    },
+    {
+      "id": "T13",
+      "title": "Add QG-1/QG-3 integration test coverage",
+      "layer": "tests",
+      "deps": ["T11", "T12"],
+      "acs": [
+        "AC-01", "AC-03", "AC-05", "AC-05b", "AC-06", "AC-07", "AC-07b", "AC-08",
+        "AC-09", "AC-09b", "AC-10", "AC-11", "AC-12"
+      ],
+      "dod": "Integration test suite asserts no workout_log_entry row exists before a confirmation action is processed for confirm/keep-own/reject branches (QG-1), and that a second startConversation of type workout-logging is blocked while one is active and pre-emption/expiry always leaves at most one active row per chat_id (QG-3).",
+      "files_hint": ["test/modules/telegram/features/workoutLogging/"]
+    }
+  ]
+}
