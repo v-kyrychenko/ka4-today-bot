@@ -13,7 +13,7 @@ export function toAppModel(
     scheduleRow: WorkoutScheduleRow,
     userRow: TgUserRow,
     workoutRow: WorkoutRow,
-    prompt: Pick<PromptDict, 'id' | 'key'>
+    prompt: Pick<PromptDict, 'id' | 'key'>,
 ): WorkoutSchedule {
     return new WorkoutSchedule({
         id: scheduleRow.id,

@@ -57,10 +57,7 @@ export function parseRequiredDate(body: Record<string, unknown>, name: string): 
     return value;
 }
 
-export function parseOptionalNullableString(
-    body: Record<string, unknown>,
-    name: string
-): string | null | undefined {
+export function parseOptionalNullableString(body: Record<string, unknown>, name: string): string | null | undefined {
     if (!(name in body)) {
         return undefined;
     }
@@ -76,18 +73,21 @@ export function parseOptionalNullableString(
     return value;
 }
 
-export function parseOptionalInteger(value: string | undefined, options: {
-    defaultValue: number;
-    min: number;
-    max: number;
-    name: string;
-}): number {
+export function parseOptionalInteger(
+    value: string | undefined,
+    options: {
+        defaultValue: number;
+        min: number;
+        max: number;
+        name: string;
+    },
+): number {
     if (!value) return options.defaultValue;
 
     const parsed = Number(value);
     if (!Number.isInteger(parsed) || parsed < options.min || parsed > options.max) {
         throw new BadRequestError(
-            `Query param '${options.name}' must be an integer between ${options.min} and ${options.max}`
+            `Query param '${options.name}' must be an integer between ${options.min} and ${options.max}`,
         );
     }
 

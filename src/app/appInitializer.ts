@@ -11,9 +11,7 @@ export async function initializeApp(): Promise<void> {
     }
 
     log('[app.init] Starting app initialization');
-    appInitializationPromise = Promise.all([
-        initializePostgresDb(),
-    ])
+    appInitializationPromise = Promise.all([initializePostgresDb()])
         .then(() => {
             log('[app.init] App initialization completed');
         })

@@ -15,10 +15,11 @@ import {
 import {localizedButton, localizedResponse} from '../conversations/conversationResponses.js';
 import {promptReplyService} from '../prompts/promptReplyService.js';
 import {bodyMeasurementService} from './bodyMeasurementService.js';
+import type {
+    BodyMeasurementType} from './bodyMeasurementsModel.js';
 import {
     BODY_MEASUREMENT_METRIC_I18N_KEYS,
     type BodyMeasurementCreateInput,
-    BodyMeasurementType,
     CONVERSATION_TYPE_BODY_MEASUREMENTS,
 } from './bodyMeasurementsModel.js';
 import {
@@ -42,20 +43,20 @@ export const bodyMeasurementsConversation: ConversationDefinition = {
     ttlMinutes: 30 * 2 * 24, // 24 hours
     steps: {
         [CONVERSATION_STEP_WAITING_INPUT]: {
-            onText: (context) =>
-                handleMeasurementInput(context, []),
+            onText: (context) => handleMeasurementInput(context, []),
         },
         [CONVERSATION_STEP_WAITING_CONFIRMATION]: {
             onCallback: handleConfirmationCallback,
         },
     },
-    getInitialMessage: (user) => localizedResponse(
-        user.lang,
-        I18N_KEYS.telegram.conversations.bodyMeasurements.initialMessage,
-    ),
+    getInitialMessage: (user) =>
+        localizedResponse(user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.initialMessage),
 };
 
-async function handleMeasurementInput(context: ConversationTextContext, existingMeasurements: MeasurementDraft[]): Promise<ConversationResponse> {
+async function handleMeasurementInput(
+    context: ConversationTextContext,
+    existingMeasurements: MeasurementDraft[],
+): Promise<ConversationResponse> {
     const parsed = await parseMeasurementsFromText(context.text, context.user.lang);
 
     if (!parsed.length) {
@@ -99,7 +100,7 @@ async function saveMeasurementsSafely(context: ConversationCallbackContext): Pro
             log('### CONVERSATION:cancel_too_soon', {chatId: context.user.chatId, type: context.state.type});
 
             return withReplyMarkupRemoval(
-                localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.tooSoon)
+                localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.tooSoon),
             );
         }
 
@@ -120,7 +121,7 @@ async function saveMeasurements(context: ConversationCallbackContext): Promise<C
     log('### CONVERSATION:complete', {chatId: context.user.chatId, type: context.state.type});
 
     return withReplyMarkupRemoval(
-        localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.saveSuccess)
+        localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.saveSuccess),
     );
 }
 
@@ -142,7 +143,7 @@ async function cancelMeasurements(context: ConversationCallbackContext): Promise
     log('### CONVERSATION:cancel', {chatId: context.user.chatId, type: context.state.type});
 
     return withReplyMarkupRemoval(
-        localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.cancel)
+        localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.cancel),
     );
 }
 
@@ -156,17 +157,26 @@ async function parseMeasurementsFromText(text: string, lang: string | null | und
     return parseMeasurementsReply(reply);
 }
 
-function buildConfirmationResponse(lang: string | null | undefined, measurements: MeasurementDraft[]): ConversationResponse {
+function buildConfirmationResponse(
+    lang: string | null | undefined,
+    measurements: MeasurementDraft[],
+): ConversationResponse {
     return {
         text: i18nService.tr(lang, I18N_KEYS.telegram.conversations.bodyMeasurements.confirmation, {
             measurements: formatMeasurements(lang, measurements),
         }),
         replyMarkup: {
-            inline_keyboard: [[
-                localizedButton(lang, I18N_KEYS.telegram.conversations.bodyMeasurements.buttonSave, SAVE_CALLBACK),
-                localizedButton(lang, I18N_KEYS.telegram.conversations.bodyMeasurements.buttonEdit, EDIT_CALLBACK),
-                localizedButton(lang, I18N_KEYS.telegram.conversations.bodyMeasurements.buttonCancel, CANCEL_CALLBACK),
-            ]],
+            inline_keyboard: [
+                [
+                    localizedButton(lang, I18N_KEYS.telegram.conversations.bodyMeasurements.buttonSave, SAVE_CALLBACK),
+                    localizedButton(lang, I18N_KEYS.telegram.conversations.bodyMeasurements.buttonEdit, EDIT_CALLBACK),
+                    localizedButton(
+                        lang,
+                        I18N_KEYS.telegram.conversations.bodyMeasurements.buttonCancel,
+                        CANCEL_CALLBACK,
+                    ),
+                ],
+            ],
         },
     };
 }
@@ -191,10 +201,6 @@ function formatMeasurements(lang: string | null | undefined, measurements: Measu
     return measurements
         .map((item) => `${formatType(lang, item.type)}: ${formatAmount(item.value)} ${item.unit}`)
         .join('\n');
-}
-
-function formatTypeList(lang: string | null | undefined, types: BodyMeasurementType[]): string {
-    return types.map((type) => formatType(lang, type)).join(', ');
 }
 
 function formatType(lang: string | null | undefined, type: BodyMeasurementType): string {

@@ -25,7 +25,7 @@ export interface ConversationCallbackInput {
 }
 
 export interface ConversationStartInput {
-    type: ConversationType | string;
+    type: ConversationType;
     user: TelegramUserAccount;
 }
 

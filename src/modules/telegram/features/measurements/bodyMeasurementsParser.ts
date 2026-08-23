@@ -1,9 +1,6 @@
 import {parseJsonFromText} from '../../../../shared/utils/json.js';
-import {
-    BODY_MEASUREMENT_TYPES,
-    BodyMeasurementType,
-    getExpectedBodyMeasurementUnit,
-} from './bodyMeasurementsModel.js';
+import type { BodyMeasurementType} from './bodyMeasurementsModel.js';
+import {BODY_MEASUREMENT_TYPES, getExpectedBodyMeasurementUnit} from './bodyMeasurementsModel.js';
 
 const MAX_MEASUREMENT_VALUE = 9999.9;
 
@@ -84,7 +81,7 @@ function parseMeasurementType(value: unknown): BodyMeasurementType | null {
 
     const normalized = value.trim().toUpperCase();
     return BODY_MEASUREMENT_TYPES.includes(normalized as BodyMeasurementType)
-        ? normalized as BodyMeasurementType
+        ? (normalized as BodyMeasurementType)
         : null;
 }
 

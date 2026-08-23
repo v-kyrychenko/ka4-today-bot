@@ -1,6 +1,6 @@
 import {
     tgConversationStateRepository,
-    type TgConversationStateRow
+    type TgConversationStateRow,
 } from '../../repository/tgConversationStateRepository.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
@@ -89,10 +89,7 @@ export async function handleCallback(input: ConversationCallbackInput): Promise<
 }
 
 export async function cancel(chatId: number): Promise<ConversationResponse | null> {
-    const state = await tgConversationStateRepository.deactivateActiveByChatId(
-        chatId,
-        CONVERSATION_STEP_CANCELLED,
-    );
+    const state = await tgConversationStateRepository.deactivateActiveByChatId(chatId, CONVERSATION_STEP_CANCELLED);
 
     if (state) {
         log('### CONVERSATION:cancel', {chatId, type: state.type});

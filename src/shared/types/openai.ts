@@ -1,13 +1,7 @@
 export const DEFAULT_MODEL = 'gpt-4o-mini';
-export const DEFAULT_TEMPERATURE =  0.8;
+export const DEFAULT_TEMPERATURE = 0.8;
 
-export type OpenAiResponseStatus =
-    | 'queued'
-    | 'in_progress'
-    | 'completed'
-    | 'requires_action'
-    | 'failed'
-    | 'cancelled';
+export type OpenAiResponseStatus = 'queued' | 'in_progress' | 'completed' | 'requires_action' | 'failed' | 'cancelled';
 
 export interface OpenAiRequiredAction {
     type: string;
@@ -54,7 +48,7 @@ export class OpenAiResponseDetails {
     background = false;
     output: OpenAiOutputMessage[] = [];
     required_action?: OpenAiRequiredAction;
-    incomplete_details?: Object;
+    incomplete_details?: object;
 
     constructor(init?: Partial<OpenAiResponseDetails>) {
         Object.assign(this, init);

@@ -18,7 +18,7 @@ export const telegramSentMessageLogMapper = {
 export function toCreateRow(
     input: TelegramSentMessageLogInput,
     dictPromptId: number | null,
-    createdAt: string
+    createdAt: string,
 ): TgMsgCreateRow {
     return {
         chat_id: input.chatId,

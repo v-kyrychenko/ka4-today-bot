@@ -134,11 +134,7 @@ test('matched route can opt out of processing notice', async () => {
 
     await processor.routesProcessor.execute(messageRequest('/measurements'));
 
-    assert.deepEqual(calls, [
-        ['getOrCreateUser', chatId],
-        ['handleText', chatId, '/measurements'],
-        ['routeExecute'],
-    ]);
+    assert.deepEqual(calls, [['getOrCreateUser', chatId], ['handleText', chatId, '/measurements'], ['routeExecute']]);
 });
 
 test('unknown route sends localized fallback without processing notice', async () => {
@@ -180,17 +176,19 @@ async function loadRoutesProcessor(options) {
             },
         },
         messagingService: createMessagingService(options.calls),
-        routeRegistry: options.routeRegistry ?? [options.route ?? {
-            canHandle() {
-                return true;
+        routeRegistry: options.routeRegistry ?? [
+            options.route ?? {
+                canHandle() {
+                    return true;
+                },
+                shouldSendProcessingNotice() {
+                    return true;
+                },
+                async execute() {
+                    options.calls.push(['routeExecute']);
+                },
             },
-            shouldSendProcessingNotice() {
-                return true;
-            },
-            async execute() {
-                options.calls.push(['routeExecute']);
-            },
-        }],
+        ],
     });
 }
 

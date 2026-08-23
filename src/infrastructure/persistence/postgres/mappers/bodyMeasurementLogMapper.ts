@@ -1,5 +1,6 @@
+import type {
+    BodyMeasurementType} from '../../../../modules/telegram/features/measurements/bodyMeasurementsModel.js';
 import {
-    BodyMeasurementType,
     type BodyMeasurement,
     type BodyMeasurementCreateInput,
 } from '../../../../modules/telegram/features/measurements/bodyMeasurementsModel.js';

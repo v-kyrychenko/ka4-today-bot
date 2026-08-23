@@ -38,7 +38,7 @@ function normalizeLogValue(value: unknown): unknown {
 
     if (value && typeof value === 'object') {
         return Object.fromEntries(
-            Object.entries(value).map(([key, entryValue]) => [key, normalizeLogValue(entryValue)])
+            Object.entries(value).map(([key, entryValue]) => [key, normalizeLogValue(entryValue)]),
         );
     }
 

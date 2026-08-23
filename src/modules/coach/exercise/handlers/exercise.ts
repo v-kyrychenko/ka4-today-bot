@@ -1,5 +1,7 @@
 import {
-    PAGINATION_DEFAULT_LIMIT, PAGINATION_DEFAULT_PAGE, PAGINATION_MAX_LIMIT,
+    PAGINATION_DEFAULT_LIMIT,
+    PAGINATION_DEFAULT_PAGE,
+    PAGINATION_MAX_LIMIT,
 } from '../../../../app/config/constants.js';
 import {BadRequestError} from '../../../../shared/errors';
 import {getQueryParam, jsonResponse, parseOptionalInteger} from '../../../../shared/http/apiHelpers.js';

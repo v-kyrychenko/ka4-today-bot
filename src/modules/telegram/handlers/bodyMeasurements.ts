@@ -11,9 +11,10 @@ import type {ApiGatewayHttpEvent, LambdaResponse} from '../../../shared/types/aw
 import {toIsoDate} from '../../../shared/utils/dateUtils.js';
 import {bodyMeasurementService} from '../features/measurements/bodyMeasurementService.js';
 import {miniAppService} from '../features/web/miniAppService.js';
+import type {
+    BodyMeasurementType} from '../features/measurements/bodyMeasurementsModel.js';
 import {
     BODY_MEASUREMENT_TYPES,
-    BodyMeasurementType,
     getExpectedBodyMeasurementUnit,
     type BodyMeasurementCreateInput,
 } from '../features/measurements/bodyMeasurementsModel.js';
@@ -111,18 +112,14 @@ function parseMeasurementType(item: Record<string, unknown>, index: number): Bod
 
     if (typeof value !== 'string' || !BODY_MEASUREMENT_TYPES.includes(value as BodyMeasurementType)) {
         throw new BadRequestError(
-            `Field 'measurements[${index}].type' must be one of: ${BODY_MEASUREMENT_TYPES.join(', ')}`
+            `Field 'measurements[${index}].type' must be one of: ${BODY_MEASUREMENT_TYPES.join(', ')}`,
         );
     }
 
     return value as BodyMeasurementType;
 }
 
-function parseMeasurementUnit(
-    item: Record<string, unknown>,
-    type: BodyMeasurementType,
-    index: number
-): string {
+function parseMeasurementUnit(item: Record<string, unknown>, type: BodyMeasurementType, index: number): string {
     const value = item.unit;
     const expected = getExpectedBodyMeasurementUnit(type);
 
@@ -138,7 +135,7 @@ function parseMeasurementValue(item: Record<string, unknown>, index: number): nu
 
     if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || value > MAX_MEASUREMENT_VALUE) {
         throw new BadRequestError(
-            `Field 'measurements[${index}].value' must be a positive number up to ${MAX_MEASUREMENT_VALUE}`
+            `Field 'measurements[${index}].value' must be a positive number up to ${MAX_MEASUREMENT_VALUE}`,
         );
     }
     if (!hasSingleDecimalPlace(value)) {

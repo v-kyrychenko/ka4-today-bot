@@ -61,7 +61,7 @@ async function handleDataBackedProgress(context: ProcessorContext, progress: Pro
 async function sendCachedProgress(
     context: ProcessorContext,
     viewModel: ViewModel,
-    cached: BodyMeasurementSummary
+    cached: BodyMeasurementSummary,
 ): Promise<void> {
     viewModel.insightText = cached.summaryText;
 
@@ -71,7 +71,7 @@ async function sendCachedProgress(
 async function generateAndCacheProgress(
     context: ProcessorContext,
     progress: ProgressResult,
-    dataHash: string
+    dataHash: string,
 ): Promise<void> {
     const {insightText, png} = await generateProgressMedia(context, progress.viewModel);
     progress.viewModel.insightText = insightText;
@@ -92,7 +92,7 @@ async function cacheGeneratedProgress(
     progress: ProgressResult,
     dataHash: string,
     insightText: string,
-    png: Buffer
+    png: Buffer,
 ): Promise<void> {
     if (progress.clientId == null || !progress.periodStart || !progress.periodEnd) {
         log('[telegram.progress.cache] Cache write skipped, missing cache metadata', {dataHash});
@@ -147,7 +147,5 @@ async function fetchProgressInsight(context: ProcessorContext, metrics: MetricVi
 }
 
 export function createProgressDataHash(metrics: MetricViewModel[]): string {
-    return createHash('sha256')
-        .update(JSON.stringify(metrics))
-        .digest('hex');
+    return createHash('sha256').update(JSON.stringify(metrics)).digest('hex');
 }

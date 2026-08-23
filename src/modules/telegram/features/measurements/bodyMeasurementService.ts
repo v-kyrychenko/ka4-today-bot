@@ -1,11 +1,7 @@
 import {HttpApiError} from '../../../../shared/errors';
 import {parseIsoDate} from '../../../../shared/utils/dateUtils.js';
-import {
-    type BodyMeasurementCreateInput,
-} from './bodyMeasurementsModel.js';
-import {
-    bodyMeasurementRepository,
-} from './repository/bodyMeasurementRepository.js';
+import {type BodyMeasurementCreateInput} from './bodyMeasurementsModel.js';
+import {bodyMeasurementRepository} from './repository/bodyMeasurementRepository.js';
 
 export const MIN_DAYS_BETWEEN_MEASUREMENTS = 30;
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -28,7 +24,7 @@ export async function store(input: BodyMeasurementCreateInput[]): Promise<void> 
         throw new HttpApiError(
             409,
             'BODY_MEASUREMENT_TOO_SOON',
-            'Body measurements can be submitted once every 30 days'
+            'Body measurements can be submitted once every 30 days',
         );
     }
 

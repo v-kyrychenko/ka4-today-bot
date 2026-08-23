@@ -7,7 +7,7 @@ import {
     OpenAiResponseDetails,
     type OpenAiCreateResponseInput,
     DEFAULT_MODEL,
-    DEFAULT_TEMPERATURE
+    DEFAULT_TEMPERATURE,
 } from '../../../shared/types/openai.js';
 import {pollUntil} from '../../../shared/utils/poller.js';
 
@@ -30,9 +30,9 @@ interface OpenAiResponseCreatePayload {
     store: boolean;
     background: boolean;
     temperature: number;
-    input: Array<{ role: 'system' | 'user'; content: string }>;
+    input: Array<{role: 'system' | 'user'; content: string}>;
     text: OpenAiCreateResponseInput['textFormat'] | null;
-    tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
+    tools?: Array<{type: 'file_search'; vector_store_ids: string[]}>;
 }
 
 export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
@@ -70,20 +70,24 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
 }
 
 export async function waitForResponse(responseId: string): Promise<boolean> {
-    return pollUntil(async () => {
-        const response = await getResponse(responseId);
-        log(`Run status: ${response.status}, incomplete_details: ${JSON.stringify(response.incomplete_details)}`);
+    return pollUntil(
+        async () => {
+            const response = await getResponse(responseId);
+            log(`Run status: ${response.status}, incomplete_details: ${JSON.stringify(response.incomplete_details)}`);
 
-        if (response.status === 'completed') {
-            return true;
-        }
+            if (response.status === 'completed') {
+                return true;
+            }
 
-        if (response.status === 'requires_action' && response.required_action?.type === 'submit_tool_outputs') {
-            throw new OpenAIError('submit_tool_outputs is not implemented');
-        }
+            if (response.status === 'requires_action' && response.required_action?.type === 'submit_tool_outputs') {
+                throw new OpenAIError('submit_tool_outputs is not implemented');
+            }
 
-        return false;
-    }, POLLING.DELAY_MS, POLLING.MAX_RETRIES);
+            return false;
+        },
+        POLLING.DELAY_MS,
+        POLLING.MAX_RETRIES,
+    );
 }
 
 export async function getResponse(responseId: string): Promise<OpenAiResponseDetails> {

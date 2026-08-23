@@ -64,11 +64,10 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
 
     assert.equal(reply, 'Latest reply');
     assert.equal(harness.calls.promptRef, 'coach.reply');
-    assert.deepEqual(harness.calls.sequence, [
-        ['createResponse', 'response_123'],
-    ]);
+    assert.deepEqual(harness.calls.sequence, [['createResponse', 'response_123']]);
     assert.deepEqual(harness.calls.createResponseInput, {
-        systemPrompt: 'Ty trener dlia Oksana. Tegi: legs, , strength. Profil: level: advanced, goals: {"primary":"power"}. Optional: ${missing}.',
+        systemPrompt:
+            'Ty trener dlia Oksana. Tegi: legs, , strength. Profil: level: advanced, goals: {"primary":"power"}. Optional: ${missing}.',
         userPrompt: 'Pytannia vid Oksana: How many reps?',
         vectorStoreIds: ['vs_1', 'vs_2'],
         model: 'gpt-4.1-mini',
@@ -135,7 +134,7 @@ test('fetchOpenAiReply throws when prompt has no system prompt configuration', a
             assert.equal(error.name, 'BadRequestError');
             assert.equal(error.message, "Prompt 'coach.reply' has no systemPromptRef configuration");
             return true;
-        }
+        },
     );
 });
 
@@ -156,7 +155,7 @@ test('fetchOpenAiReply throws when system prompt translation is missing for the 
             assert.equal(error.name, 'BadRequestError');
             assert.equal(error.message, "Prompt 'system.missing.ua' has no translation for language 'ua'.");
             return true;
-        }
+        },
     );
 });
 
@@ -177,7 +176,7 @@ test('fetchOpenAiReply throws when user prompt translation is missing for the re
             assert.equal(error.name, 'BadRequestError');
             assert.equal(error.message, "Prompt 'coach.reply' has no translation for language 'ua'.");
             return true;
-        }
+        },
     );
 });
 
@@ -209,7 +208,7 @@ test('fetchOpenAiReply prefers prompt-level OpenAI settings over system prompt s
             model: 'gpt-4.1',
             temperature: 0.2,
             textFormat: {format: {type: 'json_schema', name: 'promptLevel'}},
-        }
+        },
     );
 });
 
@@ -241,7 +240,7 @@ test('fetchOpenAiReply falls back to system prompt OpenAI settings when prompt-l
             model: 'gpt-4.1-mini',
             temperature: 0.3,
             textFormat: {format: {type: 'json_schema', name: 'systemLevel'}},
-        }
+        },
     );
 });
 
@@ -273,7 +272,7 @@ test('fetchOpenAiReply sends null OpenAI settings when both prompt and system pr
             model: null,
             temperature: null,
             textFormat: null,
-        }
+        },
     );
 });
 
@@ -293,7 +292,7 @@ test('fetchOpenAiReply throws when the OpenAI run does not complete', async () =
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Run response_123 did not complete successfully');
             return true;
-        }
+        },
     );
 });
 
@@ -311,7 +310,7 @@ test('fetchOpenAiReply throws when synchronous OpenAI response is not completed'
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Run response_123 finished with status failed');
             return true;
-        }
+        },
     );
 });
 
@@ -326,7 +325,7 @@ test('fetchOpenAiReply throws when OpenAI response output is not an array', asyn
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Invalid messages format: expected output[] array');
             return true;
-        }
+        },
     );
 });
 
@@ -343,7 +342,7 @@ test('fetchOpenAiReply throws when OpenAI response has no assistant messages', a
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'No assistant messages found in thread');
             return true;
-        }
+        },
     );
 });
 
@@ -366,7 +365,7 @@ test('fetchOpenAiReply throws when the newest assistant message has no valid out
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Assistant message does not contain valid text content');
             return true;
-        }
+        },
     );
 });
 
@@ -400,7 +399,7 @@ test('fetchOpenAiReply keeps empty templates empty while replacing nullish and s
 
     assert.equal(
         harness.calls.createResponseInput.systemPrompt,
-        'A:|B:|C:one, two|D:city: Kyiv, metrics: {"prs":4}|E:${unused}'
+        'A:|B:|C:one, two|D:city: Kyiv, metrics: {"prs":4}|E:${unused}',
     );
     assert.equal(harness.calls.createResponseInput.userPrompt, '');
 });

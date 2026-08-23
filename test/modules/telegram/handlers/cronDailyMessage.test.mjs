@@ -8,9 +8,7 @@ import {build} from 'esbuild';
 
 test('daily cron queues daily greeting with scheduled job FIFO metadata', async () => {
     const mocks = {
-        scheduledUsers: [
-            {client: {chatId: 303}, dictPrompt: {key: 'daily.prompt'}},
-        ],
+        scheduledUsers: [{client: {chatId: 303}, dictPrompt: {key: 'daily.prompt'}}],
         queued: [],
         repositoryCalls: 0,
         logs: [],
@@ -64,9 +62,7 @@ const cronDailyMessageMocks = {
         mockModule(buildContext, /withAppInitialization\.js$/, [
             'export function withAppInitialization(handler) { return handler; }',
         ]);
-        mockModule(buildContext, /app\/config\/env\.js$/, [
-            'export const MAIN_MESSAGE_QUEUE_URL = "queue-url";',
-        ]);
+        mockModule(buildContext, /app\/config\/env\.js$/, ['export const MAIN_MESSAGE_QUEUE_URL = "queue-url";']);
         mockModule(buildContext, /shared\/logging$/, [
             'export function log(...args) { globalThis.__cronDailyMessageMocks.logs.push(args); }',
             'export function logError(...args) { globalThis.__cronDailyMessageMocks.logs.push(args); }',
@@ -79,9 +75,7 @@ const cronDailyMessageMocks = {
             '    },',
             '};',
         ]);
-        mockModule(buildContext, /routes\/constants\.js$/, [
-            'export const DAILY_GREETING_ROUTE = "/daily_greeting";',
-        ]);
+        mockModule(buildContext, /routes\/constants\.js$/, ['export const DAILY_GREETING_ROUTE = "/daily_greeting";']);
     },
 };
 

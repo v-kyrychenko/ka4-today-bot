@@ -2,13 +2,9 @@ export const CLIENT_STATUS_ACTIVE = 'ACTIVE';
 export const CLIENT_STATUS_ONLINE = 'ONLINE';
 export const CLIENT_STATUS_INACTIVE = 'INACTIVE';
 
-export const CLIENT_STATUSES = [
-    CLIENT_STATUS_ACTIVE,
-    CLIENT_STATUS_ONLINE,
-    CLIENT_STATUS_INACTIVE,
-] as const;
+export const CLIENT_STATUSES = [CLIENT_STATUS_ACTIVE, CLIENT_STATUS_ONLINE, CLIENT_STATUS_INACTIVE] as const;
 
-export type ClientStatus = typeof CLIENT_STATUSES[number];
+export type ClientStatus = (typeof CLIENT_STATUSES)[number];
 
 export class ClientItem {
     id = 0;

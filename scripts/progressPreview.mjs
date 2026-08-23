@@ -18,7 +18,7 @@ try {
         packages: 'external',
         platform: 'node',
         target: 'node22',
-        sourcemap: false
+        sourcemap: false,
     });
 
     const {runProgressPreview} = await import(pathToFileURL(outfile).href);

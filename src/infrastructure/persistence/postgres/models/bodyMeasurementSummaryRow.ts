@@ -8,4 +8,3 @@ export interface BodyMeasurementSummaryRow {
     summary_text: string;
     summary_png: Buffer;
 }
-

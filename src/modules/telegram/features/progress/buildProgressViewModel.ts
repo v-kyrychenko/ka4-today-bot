@@ -3,12 +3,13 @@ import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {parseIsoDate, toIsoDate} from '../../../../shared/utils/dateUtils.js';
 import {bodyMeasurementRepository} from '../measurements/repository/bodyMeasurementRepository.js';
+import type {
+    BodyMeasurementType} from '../measurements/bodyMeasurementsModel.js';
 import {
     BODY_MEASUREMENT_METRIC_I18N_KEYS,
     BODY_MEASUREMENT_TREND_CONFIG,
     BODY_MEASUREMENT_TYPES,
     type BodyMeasurement,
-    BodyMeasurementType,
     TrendDirection,
 } from '../measurements/bodyMeasurementsModel.js';
 import type {MetricViewModel, ViewModel} from './template/viewModel.js';
@@ -89,14 +90,16 @@ function buildMetric(lang: string, type: BodyMeasurementType, measurements: Body
 
     const latest = measurements[measurements.length - 1];
 
-    return [{
-        label: buildMetricLabel(lang, type),
-        value: formatMeasurement(latest),
-        delta: buildDelta(lang, measurements),
-        deltaStatus: buildDeltaStatus(type, measurements),
-        trend: measurements.map((item) => item.amount),
-        trendDates: measurements.map((item) => formatDate(lang, item.createdAt)),
-    }];
+    return [
+        {
+            label: buildMetricLabel(lang, type),
+            value: formatMeasurement(latest),
+            delta: buildDelta(lang, measurements),
+            deltaStatus: buildDeltaStatus(type, measurements),
+            trend: measurements.map((item) => item.amount),
+            trendDates: measurements.map((item) => formatDate(lang, item.createdAt)),
+        },
+    ];
 }
 
 function buildMetricLabel(lang: string, type: BodyMeasurementType): string {
@@ -137,7 +140,7 @@ function getLatestMeasurementPair(measurements: BodyMeasurement[]) {
     };
 }
 
-function getActualTrendDirection(pair: { previous: BodyMeasurement; latest: BodyMeasurement }): TrendDirection {
+function getActualTrendDirection(pair: {previous: BodyMeasurement; latest: BodyMeasurement}): TrendDirection {
     const diff = roundAmount(pair.latest.amount - pair.previous.amount);
 
     return getTrendDirection(diff);
@@ -186,7 +189,7 @@ function findByType(measurements: BodyMeasurement[], type: BodyMeasurementType):
     return measurements.filter((item) => item.type === type);
 }
 
-function buildPeriod(measurements: BodyMeasurement[]): { start?: string; end?: string } {
+function buildPeriod(measurements: BodyMeasurement[]): {start?: string; end?: string} {
     if (!measurements.length) {
         return {};
     }
@@ -199,7 +202,7 @@ function buildPeriod(measurements: BodyMeasurement[]): { start?: string; end?: s
     };
 }
 
-function buildTitle(lang: string, period: { start?: string; end?: string }): string {
+function buildTitle(lang: string, period: {start?: string; end?: string}): string {
     if (!period.start || !period.end) {
         return i18nService.tr(lang, I18N_KEYS.telegram.progress.dateRange.empty);
     }

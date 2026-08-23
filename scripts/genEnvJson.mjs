@@ -26,13 +26,11 @@ try {
         lines.map((line) => {
             const [key, ...val] = line.split('=');
             return [key.trim(), val.join('=').trim()];
-        })
+        }),
     );
 
     const targetFunctions = functionAliases[functionName] ?? [functionName];
-    const result = Object.fromEntries(
-        targetFunctions.map((targetFunctionName) => [targetFunctionName, envVars])
-    );
+    const result = Object.fromEntries(targetFunctions.map((targetFunctionName) => [targetFunctionName, envVars]));
 
     fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
     console.log(

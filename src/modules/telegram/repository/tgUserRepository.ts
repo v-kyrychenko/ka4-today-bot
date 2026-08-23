@@ -11,8 +11,8 @@ import {workout} from '../../../infrastructure/persistence/postgres/schema/worko
 import {workoutSchedule} from '../../../infrastructure/persistence/postgres/schema/workoutSchedule.js';
 import {BadRequestError} from '../../../shared/errors';
 import {getCurrentDayCode} from '../../../shared/utils/dayOfWeek.js';
-import {WorkoutSchedule} from '../features/workouts/workout.js';
-import {TelegramMessage} from '../model/telegram.js';
+import type {WorkoutSchedule} from '../features/workouts/workout.js';
+import type {TelegramMessage} from '../model/telegram.js';
 
 export const tgUserRepository = {
     getUsersScheduledForDay,
@@ -30,7 +30,7 @@ export async function getUsersScheduledForDay(dayOfWeek = getCurrentDayCode()): 
 
 export async function getUserScheduledForDay(
     chatId: number,
-    dayOfWeek = getCurrentDayCode()
+    dayOfWeek = getCurrentDayCode(),
 ): Promise<WorkoutSchedule | null> {
     const rows = await findScheduledRows(dayOfWeek, chatId);
     const [scheduled] = rows.flatMap(mapScheduledRow);
@@ -82,17 +82,11 @@ export async function markInactive(chatId: number): Promise<boolean> {
         }
 
         if (user.isActive) {
-            await tx
-                .update(tgUser)
-                .set({is_active: false})
-                .where(eq(tgUser.chat_id, chatId));
+            await tx.update(tgUser).set({is_active: false}).where(eq(tgUser.chat_id, chatId));
         }
 
         if (user.clientId != null) {
-            await tx
-                .update(client)
-                .set({status: CLIENT_STATUS_INACTIVE})
-                .where(eq(client.id, user.clientId));
+            await tx.update(client).set({status: CLIENT_STATUS_INACTIVE}).where(eq(client.id, user.clientId));
         }
 
         return true;
@@ -100,11 +94,7 @@ export async function markInactive(chatId: number): Promise<boolean> {
 }
 
 async function findByChatId(chatId: number) {
-    const [row] = await getPostgresDb()
-        .select()
-        .from(tgUser)
-        .where(eq(tgUser.chat_id, chatId))
-        .limit(1);
+    const [row] = await getPostgresDb().select().from(tgUser).where(eq(tgUser.chat_id, chatId)).limit(1);
 
     return row ? tgUserMapper.toAppModel(row) : null;
 }
@@ -113,20 +103,14 @@ async function findActiveByChatId(chatId: number) {
     const [row] = await getPostgresDb()
         .select()
         .from(tgUser)
-        .where(and(
-            eq(tgUser.chat_id, chatId),
-            eq(tgUser.is_active, true),
-        ))
+        .where(and(eq(tgUser.chat_id, chatId), eq(tgUser.is_active, true)))
         .limit(1);
 
     return row ? tgUserMapper.toAppModel(row) : null;
 }
 
 async function findScheduledRows(dayOfWeek: string, chatId?: number) {
-    const conditions = [
-        eq(workoutSchedule.day_of_week, dayOfWeek),
-        eq(tgUser.is_active, true),
-    ];
+    const conditions = [eq(workoutSchedule.day_of_week, dayOfWeek), eq(tgUser.is_active, true)];
 
     if (chatId != null) {
         conditions.push(eq(tgUser.chat_id, chatId));
@@ -153,8 +137,10 @@ function mapScheduledRow(row: Awaited<ReturnType<typeof findScheduledRows>>[numb
         return [];
     }
 
-    return [workoutScheduleMapper.toAppModel(row.schedule, row.user, row.workout, {
-        id: row.promptId,
-        key: promptRef,
-    })];
+    return [
+        workoutScheduleMapper.toAppModel(row.schedule, row.user, row.workout, {
+            id: row.promptId,
+            key: promptRef,
+        }),
+    ];
 }

@@ -1,0 +1,17 @@
+node_modules/
+.aws-sam/
+tmp/
+layers/
+docker/
+dist/
+build/
+coverage/
+event-samples/
+docs/
+*.md
+*.yaml
+*.yml
+package-lock.json
+food-catalog.json
+meal-templates.json
+test.json

@@ -17,11 +17,8 @@ export function createTemplate(viewModel: ViewModel, logoSrc: string): SatoriNod
         type: 'div',
         props: {
             style: styles.root,
-            children: [
-                createHeader(viewModel, logoSrc),
-                createMetricGrid(viewModel.metrics),
-            ]
-        }
+            children: [createHeader(viewModel, logoSrc), createMetricGrid(viewModel.metrics)],
+        },
     };
 }
 
@@ -36,10 +33,10 @@ function createMetricGrid(metrics: MetricViewModel[]): SatoriNode {
                 type: 'div',
                 props: {
                     style: styles.cardRow,
-                    children: row.map(createMetricCard)
-                }
-            }))
-        }
+                    children: row.map(createMetricCard),
+                },
+            })),
+        },
     };
 }
 
@@ -55,13 +52,13 @@ function createHeader(viewModel: ViewModel, logoSrc: string): SatoriNode {
                         style: styles.headerMain,
                         children: [
                             createText(viewModel.label, styles.label),
-                            createText(viewModel.title, styles.title)
-                        ]
-                    }
+                            createText(viewModel.title, styles.title),
+                        ],
+                    },
                 },
-                createLogo(logoSrc)
-            ]
-        }
+                createLogo(logoSrc),
+            ],
+        },
     };
 }
 
@@ -70,8 +67,8 @@ function createLogo(src: string): SatoriNode {
         type: 'img',
         props: {
             src,
-            style: styles.logo
-        }
+            style: styles.logo,
+        },
     };
 }
 
@@ -87,19 +84,19 @@ function createMetricCard(metric: MetricViewModel): SatoriNode {
                         style: styles.metricHeader,
                         children: [
                             createText(metric.label, styles.metricLabel),
-                            ...(metric.trend ? [createMetricStatRow(metric)] : [])
-                        ]
-                    }
+                            ...(metric.trend ? [createMetricStatRow(metric)] : []),
+                        ],
+                    },
                 },
                 {
                     type: 'div',
                     props: {
                         style: styles.metricBody,
-                        children: metric.trend ? createTrendChart(metric) : createNoDataState(metric)
-                    }
-                }
-            ]
-        }
+                        children: metric.trend ? createTrendChart(metric) : createNoDataState(metric),
+                    },
+                },
+            ],
+        },
     };
 }
 
@@ -110,9 +107,9 @@ function createMetricStatRow(metric: MetricViewModel): SatoriNode {
             style: styles.metricStatRow,
             children: [
                 createText(metric.value, styles.metricValue),
-                ...(metric.delta ? [createText(metric.delta, getMetricDeltaStyle(metric))] : [])
-            ]
-        }
+                ...(metric.delta ? [createText(metric.delta, getMetricDeltaStyle(metric))] : []),
+            ],
+        },
     };
 }
 
@@ -150,8 +147,8 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
                                 type: 'div',
                                 props: {
                                     style: styles.chartYAxis,
-                                    children: yAxisTicks.map((tick) => createText(tick, styles.chartXAxisTitle))
-                                }
+                                    children: yAxisTicks.map((tick) => createText(tick, styles.chartXAxisTitle)),
+                                },
                             },
                             {
                                 type: 'div',
@@ -180,29 +177,29 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
                                                                         props: {
                                                                             offset: '0%',
                                                                             stopColor: '#A3FF3F',
-                                                                            stopOpacity: '0.30'
-                                                                        }
+                                                                            stopOpacity: '0.30',
+                                                                        },
                                                                     },
                                                                     {
                                                                         type: 'stop',
                                                                         props: {
                                                                             offset: '100%',
                                                                             stopColor: '#A3FF3F',
-                                                                            stopOpacity: '0'
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            }
-                                                        }
-                                                    }
+                                                                            stopOpacity: '0',
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    },
                                                 },
                                                 ...createGridLines(),
                                                 {
                                                     type: 'path',
                                                     props: {
                                                         d: points.areaPath,
-                                                        fill: `url(#${gradientId})`
-                                                    }
+                                                        fill: `url(#${gradientId})`,
+                                                    },
                                                 },
                                                 {
                                                     type: 'path',
@@ -212,8 +209,8 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
                                                         stroke: '#A3FF3F',
                                                         strokeWidth: '6',
                                                         strokeLinecap: 'round',
-                                                        strokeLinejoin: 'round'
-                                                    }
+                                                        strokeLinejoin: 'round',
+                                                    },
                                                 },
                                                 {
                                                     type: 'circle',
@@ -221,16 +218,16 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
                                                         cx: String(points.lastPoint.x),
                                                         cy: String(points.lastPoint.y),
                                                         r: '8',
-                                                        fill: '#A3FF3F'
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        ]
-                    }
+                                                        fill: '#A3FF3F',
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
                 },
                 {
                     type: 'div',
@@ -240,13 +237,13 @@ function createTrendChart(metric: MetricViewModel): SatoriNode {
                             type: 'div',
                             props: {
                                 style: styles.chartXAxisTicks,
-                                children: xAxisTicks.map((tick) => createText(tick, styles.chartXAxisTitle))
-                            }
-                        }
-                    }
-                }
-            ]
-        }
+                                children: xAxisTicks.map((tick) => createText(tick, styles.chartXAxisTitle)),
+                            },
+                        },
+                    },
+                },
+            ],
+        },
     };
 }
 
@@ -257,16 +254,16 @@ function createNoDataState(metric: MetricViewModel): SatoriNode {
             style: styles.noDataState,
             children: [
                 createText(metric.emptyStateTitle ?? 'No measurements yet', styles.noDataTitle),
-                createText(metric.emptyStateHint ?? 'Add 2+ check-ins to see a trend.', styles.noDataHint)
-            ]
-        }
+                createText(metric.emptyStateHint ?? 'Add 2+ check-ins to see a trend.', styles.noDataHint),
+            ],
+        },
     };
 }
 
 function createChartPoints(
     trend: number[],
-    scale: ChartScale
-): { path: string; areaPath: string; lastPoint: { x: number; y: number } } {
+    scale: ChartScale,
+): {path: string; areaPath: string; lastPoint: {x: number; y: number}} {
     const chartWidth = 420;
     const chartHeight = 220;
     const paddingX = 10;
@@ -278,7 +275,7 @@ function createChartPoints(
 
         return {
             x: paddingX + index * stepX,
-            y: chartHeight - paddingY - normalized * (chartHeight - paddingY * 2)
+            y: chartHeight - paddingY - normalized * (chartHeight - paddingY * 2),
         };
     });
     const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
@@ -298,8 +295,8 @@ function createGridLines(): SatoriNode[] {
             x2: '410',
             y2: String(y),
             stroke: '#24301F',
-            strokeWidth: '2'
-        }
+            strokeWidth: '2',
+        },
     }));
     const verticalLines = [10, 210, 410].map((x) => ({
         type: 'line',
@@ -309,8 +306,8 @@ function createGridLines(): SatoriNode[] {
             x2: String(x),
             y2: '202',
             stroke: '#1B2530',
-            strokeWidth: '2'
-        }
+            strokeWidth: '2',
+        },
     }));
 
     return [...horizontalLines, ...verticalLines];
@@ -329,7 +326,7 @@ function createXAxisTicks(trendDates?: string[]): string[] {
         0,
         Math.floor((trendDates.length - 1) / 3),
         Math.floor(((trendDates.length - 1) * 2) / 3),
-        trendDates.length - 1
+        trendDates.length - 1,
     ]);
 
     return [...tickIndexes].sort((left, right) => left - right).map((index) => trendDates[index]);
@@ -366,7 +363,7 @@ function createChartScale(trend: number[]): ChartScale {
         min: scaledMin,
         max: adjustedMax,
         range: adjustedMax - scaledMin,
-        ticks: [adjustedMax, middleTick, scaledMin]
+        ticks: [adjustedMax, middleTick, scaledMin],
     };
 }
 
@@ -389,7 +386,7 @@ function createText(text: string, style: SatoriStyle): SatoriNode {
         type: 'div',
         props: {
             style,
-            children: text
-        }
+            children: text,
+        },
     };
 }

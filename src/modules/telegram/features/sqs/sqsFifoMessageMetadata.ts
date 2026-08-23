@@ -33,7 +33,7 @@ export function buildWebhookFifoMessageMetadata(payload: QueueRequestEnvelope): 
 export function buildScheduledJobFifoMessageMetadata(
     payload: QueueRequestEnvelope,
     jobName: string,
-    date = new Date()
+    date = new Date(),
 ): SqsFifoMessageMetadata {
     const chatId = extractChatId(payload);
     const normalizedJobName = jobName.trim();

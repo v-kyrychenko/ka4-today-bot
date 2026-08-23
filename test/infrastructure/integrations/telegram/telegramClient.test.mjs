@@ -37,7 +37,7 @@ test('telegram client routes all methods through httpRequest with masked logUrl'
             `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
             `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
             `/${TELEGRAM_BOT_TOKEN}/sendMediaGroup`,
-        ]
+        ],
     );
     assert.deepEqual(
         calls.map((call) => call.logUrl),
@@ -48,7 +48,7 @@ test('telegram client routes all methods through httpRequest with masked logUrl'
             'https://api.telegram.org/****/sendPhoto',
             'https://api.telegram.org/****/sendPhoto',
             'https://api.telegram.org/****/sendMediaGroup',
-        ]
+        ],
     );
     assert.deepEqual(calls[0].body, {callback_query_id: 'callback-id'});
     assert.deepEqual(calls[1].body, {chat_id: 7, message_id: 1001, reply_markup: {inline_keyboard: []}});
@@ -78,7 +78,7 @@ test('telegram client logs and errors never expose the real bot token', async ()
             assert.doesNotMatch(error.message, new RegExp(TELEGRAM_BOT_TOKEN, 'g'));
             assert.match(error.message, /https:\/\/api\.telegram\.org\/\*\*\*\*\/sendPhoto/);
             return true;
-        }
+        },
     );
 
     assert.equal(logs.length, 1);

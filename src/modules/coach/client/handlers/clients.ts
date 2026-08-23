@@ -20,12 +20,7 @@ import {createClient} from '../application/createClient.js';
 import {getClientById} from '../application/getClient.js';
 import {listClients} from '../application/listClients.js';
 import {updateClient} from '../application/updateClient.js';
-import {
-    CLIENT_STATUSES,
-    type ClientCreateInput,
-    type ClientStatus,
-    type ClientUpdateInput,
-} from '../domain/client.js';
+import {CLIENT_STATUSES, type ClientCreateInput, type ClientStatus, type ClientUpdateInput} from '../domain/client.js';
 
 export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     if (event.pathParameters?.clientId) {

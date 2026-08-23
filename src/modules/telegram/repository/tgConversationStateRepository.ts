@@ -57,10 +57,7 @@ export async function findActiveByChatId(chatId: number): Promise<TgConversation
     const [row] = await getPostgresDb()
         .select()
         .from(tgConversationState)
-        .where(and(
-            eq(tgConversationState.chat_id, chatId),
-            eq(tgConversationState.is_active, true),
-        ))
+        .where(and(eq(tgConversationState.chat_id, chatId), eq(tgConversationState.is_active, true)))
         .limit(1);
 
     if (!row) {
@@ -72,7 +69,7 @@ export async function findActiveByChatId(chatId: number): Promise<TgConversation
         return null;
     }
 
-    return row as TgConversationStateRow;
+    return row;
 }
 
 export async function deactivateActiveByChatId(
@@ -86,13 +83,10 @@ export async function deactivateActiveByChatId(
             current_step: finalStep,
             updated_at: nowIso(),
         })
-        .where(and(
-            eq(tgConversationState.chat_id, chatId),
-            eq(tgConversationState.is_active, true),
-        ))
+        .where(and(eq(tgConversationState.chat_id, chatId), eq(tgConversationState.is_active, true)))
         .returning();
 
-    return (row as TgConversationStateRow | undefined) ?? null;
+    return (row) ?? null;
 }
 
 export async function startConversation(input: StartConversationInput): Promise<TgConversationStateRow> {
@@ -101,12 +95,9 @@ export async function startConversation(input: StartConversationInput): Promise<
 
         await deactivatePreviousActiveConversations(tx, input.chatId, now);
 
-        const [row] = await tx
-            .insert(tgConversationState)
-            .values(toCreateValues(input, now))
-            .returning();
+        const [row] = await tx.insert(tgConversationState).values(toCreateValues(input, now)).returning();
 
-        return row as TgConversationStateRow;
+        return row;
     });
 }
 
@@ -114,13 +105,10 @@ export async function updateConversation(input: UpdateConversationInput): Promis
     const [row] = await getPostgresDb()
         .update(tgConversationState)
         .set(toUpdateValues(input))
-        .where(and(
-            eq(tgConversationState.id, input.id),
-            eq(tgConversationState.is_active, true),
-        ))
+        .where(and(eq(tgConversationState.id, input.id), eq(tgConversationState.is_active, true)))
         .returning();
 
-    return (row as TgConversationStateRow | undefined) ?? null;
+    return (row) ?? null;
 }
 
 export async function deactivateConversation(
@@ -133,13 +121,10 @@ export async function deactivateConversation(
             current_step: input.finalStep,
             updated_at: nowIso(),
         })
-        .where(and(
-            eq(tgConversationState.id, input.id),
-            eq(tgConversationState.is_active, true),
-        ))
+        .where(and(eq(tgConversationState.id, input.id), eq(tgConversationState.is_active, true)))
         .returning();
 
-    return (row as TgConversationStateRow | undefined) ?? null;
+    return (row) ?? null;
 }
 
 export async function expireOutdated(): Promise<TgConversationStateRow[]> {
@@ -150,13 +135,10 @@ export async function expireOutdated(): Promise<TgConversationStateRow[]> {
             current_step: EXPIRED_STEP,
             updated_at: nowIso(),
         })
-        .where(and(
-            eq(tgConversationState.is_active, true),
-            lte(tgConversationState.expires_at, nowIso()),
-        ))
+        .where(and(eq(tgConversationState.is_active, true), lte(tgConversationState.expires_at, nowIso())))
         .returning();
 
-    return rows as TgConversationStateRow[];
+    return rows;
 }
 
 async function deactivatePreviousActiveConversations(
@@ -171,10 +153,7 @@ async function deactivatePreviousActiveConversations(
             current_step: REPLACED_STEP,
             updated_at: now,
         })
-        .where(and(
-            eq(tgConversationState.chat_id, chatId),
-            eq(tgConversationState.is_active, true),
-        ));
+        .where(and(eq(tgConversationState.chat_id, chatId), eq(tgConversationState.is_active, true)));
 }
 
 function toCreateValues(input: StartConversationInput, now: string) {

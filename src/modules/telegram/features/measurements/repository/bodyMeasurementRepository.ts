@@ -1,11 +1,7 @@
 import {and, asc, desc, eq, gte, isNotNull, lte, sql} from 'drizzle-orm';
-import {
-    bodyMeasurementLogMapper,
-} from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementLogMapper.js';
+import {bodyMeasurementLogMapper} from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementLogMapper.js';
 import {getPostgresDb} from '../../../../../infrastructure/persistence/postgres/postgresDb.js';
-import {
-    bodyMeasurementLog,
-} from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementLog.js';
+import {bodyMeasurementLog} from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementLog.js';
 import {tgUser} from '../../../../../infrastructure/persistence/postgres/schema/tgUser.js';
 import type {BodyMeasurement, BodyMeasurementCreateInput} from '../bodyMeasurementsModel.js';
 
@@ -26,10 +22,7 @@ export async function findForClientSince(clientId: number, since: string): Promi
     const rows = await getPostgresDb()
         .select()
         .from(bodyMeasurementLog)
-        .where(and(
-            eq(bodyMeasurementLog.client_id, clientId),
-            gte(bodyMeasurementLog.created_at, since),
-        ))
+        .where(and(eq(bodyMeasurementLog.client_id, clientId), gte(bodyMeasurementLog.created_at, since)))
         .orderBy(asc(bodyMeasurementLog.type), asc(bodyMeasurementLog.created_at));
 
     return rows.map(bodyMeasurementLogMapper.toAppModel);
@@ -39,10 +32,7 @@ export async function findLatestForClientOnOrBefore(clientId: number, date: stri
     const [row] = await getPostgresDb()
         .select()
         .from(bodyMeasurementLog)
-        .where(and(
-            eq(bodyMeasurementLog.client_id, clientId),
-            lte(bodyMeasurementLog.created_at, date),
-        ))
+        .where(and(eq(bodyMeasurementLog.client_id, clientId), lte(bodyMeasurementLog.created_at, date)))
         .orderBy(desc(bodyMeasurementLog.created_at), desc(bodyMeasurementLog.id))
         .limit(1);
 
@@ -59,10 +49,7 @@ export async function findReminderCandidates(cutoffDate: string): Promise<BodyMe
         })
         .from(tgUser)
         .leftJoin(bodyMeasurementLog, eq(bodyMeasurementLog.client_id, tgUser.client_id))
-        .where(and(
-            eq(tgUser.is_active, true),
-            isNotNull(tgUser.client_id),
-        ))
+        .where(and(eq(tgUser.is_active, true), isNotNull(tgUser.client_id)))
         .groupBy(tgUser.chat_id, tgUser.client_id)
         .having(sql`${latestMeasurementDate} is null or ${latestMeasurementDate} < ${cutoffDate}`);
 
@@ -71,11 +58,13 @@ export async function findReminderCandidates(cutoffDate: string): Promise<BodyMe
             return [];
         }
 
-        return [{
-            chatId: row.chatId,
-            clientId: row.clientId,
-            latestMeasurementDate: row.latestMeasurementDate,
-        }];
+        return [
+            {
+                chatId: row.chatId,
+                clientId: row.clientId,
+                latestMeasurementDate: row.latestMeasurementDate,
+            },
+        ];
     });
 }
 

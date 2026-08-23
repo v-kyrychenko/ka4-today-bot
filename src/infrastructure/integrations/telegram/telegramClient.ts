@@ -50,7 +50,11 @@ export async function answerCallbackQuery(callbackQueryId: string): Promise<void
     });
 }
 
-export async function editMessageReplyMarkup(chatId: number, messageId: number, replyMarkup: unknown = {inline_keyboard: []}): Promise<void> {
+export async function editMessageReplyMarkup(
+    chatId: number,
+    messageId: number,
+    replyMarkup: unknown = {inline_keyboard: []},
+): Promise<void> {
     const telegramRequest = buildTelegramRequest('editMessageReplyMarkup');
     const body = {
         chat_id: chatId,
@@ -72,7 +76,7 @@ export async function editMessageReplyMarkup(chatId: number, messageId: number, 
 
 export async function sendMessage(chatId: number, message: string, replyMarkup?: unknown): Promise<void> {
     const telegramRequest = buildTelegramRequest('sendMessage');
-    const body: { chat_id: number; text: string; reply_markup?: unknown } = {
+    const body: {chat_id: number; text: string; reply_markup?: unknown} = {
         chat_id: chatId,
         text: message,
     };
@@ -97,7 +101,7 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
     const telegramRequest = buildTelegramRequest('sendPhoto');
 
     if (typeof photo === 'string') {
-        await httpRequest<TelegramApiResponse, { chat_id: number; photo: string; caption: string }>({
+        await httpRequest<TelegramApiResponse, {chat_id: number; photo: string; caption: string}>({
             method: 'POST',
             path: telegramRequest.path,
             endpointUrl: TELEGRAM_BASE_URL,
@@ -138,7 +142,7 @@ export async function sendMediaGroup(chatId: number, imageUrls: string[], captio
         ...(index === 0 && caption ? {caption} : {}),
     }));
 
-    await httpRequest<TelegramApiResponse, { chat_id: number; media: TelegramMediaItem[] }>({
+    await httpRequest<TelegramApiResponse, {chat_id: number; media: TelegramMediaItem[]}>({
         method: 'POST',
         path: telegramRequest.path,
         endpointUrl: TELEGRAM_BASE_URL,

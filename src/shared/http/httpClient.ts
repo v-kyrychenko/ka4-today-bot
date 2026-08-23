@@ -37,7 +37,7 @@ export async function httpRequest<TResponse, TBody = unknown>({
     headers = {},
     body = null,
     label = 'HTTP',
-    errorClass = Error as unknown as ErrorClassConstructor,
+    errorClass = Error,
     hideResponse = true,
 }: HttpRequestParams<TBody>): Promise<TResponse> {
     const fullUrl = endpointUrl ? `${endpointUrl}${path}` : path;
@@ -113,7 +113,7 @@ function truncate(text: string, maxLength = 1000): string {
 export function buildRequest<TBody = unknown>(
     method: HttpMethod,
     headers: Record<string, string> = {},
-    body: TBody | null = null
+    body: TBody | null = null,
 ): {requestInit: RequestInit; printableBody: string} {
     const isFormData = body instanceof FormData;
     let requestBody: BodyInit | null = null;
