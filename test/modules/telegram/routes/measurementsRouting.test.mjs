@@ -226,6 +226,15 @@ const routeMocks = {
         mockModule(buildContext, /tgUserRepository\.js$/, [
             'export const tgUserRepository = globalThis.__telegramRouteMocks.userRepository;',
         ]);
+        mockModule(buildContext, /features\/workoutLogging\/workoutLoggingService\.js$/, [
+            'export const workoutLoggingService = globalThis.__telegramRouteMocks.workoutLoggingService ?? {',
+            '    async preemptActiveSession() { return {outcome: "no-active-session"}; },',
+            '    async closeExpiredSession() { return {outcome: "no-active-session"}; },',
+            '};',
+        ]);
+        mockModule(buildContext, /features\/workoutLogging\/repository\/workoutLogRepository\.js$/, [
+            'export const workoutLogRepository = {};',
+        ]);
         mockModule(buildContext, /\/registry\.js$/, [
             'export const MEASUREMENTS_ROUTE = "/measurements";',
             'export const CANCEL_COMMANDS = new Set(["/cancel", "/stop"]);',

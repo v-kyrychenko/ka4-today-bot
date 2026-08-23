@@ -8,6 +8,7 @@ import {log} from '../../../shared/logging';
 import {conversationEngine} from '../features/conversations/engine.js';
 import type {ConversationResponse} from '../features/conversations/model.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
+import {workoutLoggingService} from '../features/workoutLogging/workoutLoggingService.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {ProcessorContext} from '../model/context.js';
 import type {TelegramMessage} from '../model/telegram.js';
@@ -20,6 +21,8 @@ export const routesProcessor = {
 
         try {
             const context = await buildContext(request);
+
+            await preemptOrCloseExpiredWorkoutLogSession(context);
 
             if (await handleCallback(request, context)) return;
             if (await handleCancelCommand(request, context)) return;
@@ -71,6 +74,20 @@ async function buildContext(request: ParsedTelegramRequest): Promise<ProcessorCo
         user,
         message: request.message,
     });
+}
+
+async function preemptOrCloseExpiredWorkoutLogSession(context: ProcessorContext): Promise<void> {
+    const clientId = context.user.clientId;
+    if (!clientId) {
+        return;
+    }
+
+    const closeExpiredResult = await workoutLoggingService.closeExpiredSession({clientId, now: new Date()});
+    if (closeExpiredResult.outcome === 'auto-closed') {
+        return;
+    }
+
+    await workoutLoggingService.preemptActiveSession({clientId});
 }
 
 async function handleCallback(request: ParsedTelegramRequest, context: ProcessorContext): Promise<boolean> {
