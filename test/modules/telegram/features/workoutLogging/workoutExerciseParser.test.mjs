@@ -27,6 +27,8 @@ test('parseExerciseMessage extracts name/reps/sets/weight from an English messag
         outcome: 'parsed',
         exercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
     });
+    assert.equal(harness.calls.fetchOpenAiReplyInput.promptRef, 'workout_exercise_parser');
+    assert.equal(harness.calls.fetchOpenAiReplyInput.variables.USER_INPUT, 'Bench press, 4 sets of 10 reps, 60kg');
 });
 
 test('parseExerciseMessage extracts the same details from a Ukrainian message without per-message language detection (AC-14)', async () => {
@@ -48,7 +50,7 @@ test('parseExerciseMessage extracts the same details from a Ukrainian message wi
 
     assert.equal(result.outcome, 'parsed');
     assert.deepEqual(result.exercise, {name: 'Zhym lezhachy', reps: 10, sets: 4, weight: 60});
-    assert.equal(harness.calls.createResponseInput.systemPrompt.includes('${'), false);
+    assert.equal(harness.calls.fetchOpenAiReplyInput.lang, 'ua');
 });
 
 test('parseExerciseMessage returns unclear when reps/sets are missing (AC-07)', async () => {
@@ -106,25 +108,14 @@ test('parseExerciseMessage returns unclear when more than one exercise is descri
 });
 
 async function loadWorkoutExerciseParser(options = {}) {
-    const calls = {createResponseInput: null};
+    const calls = {fetchOpenAiReplyInput: null};
     const assistantReplyText = options.assistantReplyText ?? '{}';
 
     globalThis.__workoutExerciseParserMocks = {
-        openAiClient: {
-            async createResponse(input) {
-                calls.createResponseInput = input;
-                return {
-                    id: 'response_123',
-                    status: 'completed',
-                    background: false,
-                    output: [
-                        {
-                            role: 'assistant',
-                            created_at: 1710000000,
-                            content: [{type: 'output_text', text: assistantReplyText}],
-                        },
-                    ],
-                };
+        promptReplyService: {
+            async fetchOpenAiReply(input) {
+                calls.fetchOpenAiReplyInput = input;
+                return assistantReplyText;
             },
         },
     };
@@ -153,13 +144,14 @@ async function loadWorkoutExerciseParser(options = {}) {
 const workoutExerciseParserMocks = {
     name: 'workout-exercise-parser-mocks',
     setup: (buildContext) => {
-        buildContext.onResolve({filter: /openAiClient\.js$/}, () => ({
+        buildContext.onResolve({filter: /promptReplyService\.js$/}, () => ({
             namespace: 'workout-exercise-parser-mock',
-            path: 'openAiClient',
+            path: 'promptReplyService',
         }));
 
-        buildContext.onLoad({filter: /^openAiClient$/, namespace: 'workout-exercise-parser-mock'}, () => ({
-            contents: 'export const openAiClient = globalThis.__workoutExerciseParserMocks.openAiClient;',
+        buildContext.onLoad({filter: /^promptReplyService$/, namespace: 'workout-exercise-parser-mock'}, () => ({
+            contents:
+                'export const promptReplyService = globalThis.__workoutExerciseParserMocks.promptReplyService;',
             loader: 'js',
         }));
     },
