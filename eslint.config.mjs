@@ -8,6 +8,7 @@ export default [
         ignores: [
             'node_modules/',
             '.aws-sam/',
+            'docs/',
             'tmp/',
             'layers/',
             'docker/',

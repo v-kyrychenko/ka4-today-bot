@@ -5,8 +5,8 @@
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| T1 | Promote workout_log_session staged migration | migration | <TBD lead> | S | — | todo |
-| T2 | Promote workout_log_entry staged migration | migration | <TBD lead> | S | T1 | todo |
+| T1 | Promote workout_log_session staged migration | migration | user | S | — | done |
+| T2 | Promote workout_log_entry staged migration | migration | user | S | T1 | done |
 | T3 | Add WorkoutLogSession/WorkoutLogEntry domain models | domain | <TBD lead> | S | — | todo |
 | T4 | Build workoutLogRepository for session + entry CRUD | infra | <TBD lead> | M | T1, T2, T3 | todo |
 | T5 | Fix exerciseRepository.search to call search_dict_exercises | infra | <TBD lead> | S | — | todo |
@@ -20,3 +20,5 @@
 | T13 | Add QG-1/QG-3 integration test coverage | tests | <TBD lead> | M | T11, T12 | todo |
 
 **Total:** 13 tasks, ~7-8 person-days.
+
+**Note (2026-08-23):** T1/T2 (promoting staged migrations to the live `migrations/` tree and applying/reverting against Postgres) were done manually by the user outside this automated run — this repo has no migration tool and no local/testcontainers Postgres for `implement` to do it itself. No real-DB integration tier exists for this feature's own test suite either way (nothing in the repo wires Docker to a disposable Postgres for tests), so T4/T13 are verified with unit tests only (mocked drizzle/pg client / mocked repositories). `sad.md` §10 QG-1/QG-3 "How verify" and the T4/T13 DoD in `tasks.json` were updated to match.

@@ -303,7 +303,7 @@ ADR files live under `docs/features/workout-logging/adr/`.
 **QG-1. Trustworthy capture**
 - **When:** a client's exercise message has been parsed and matched (or found to have no match).
 - **Then:** the client is shown the combined exercise+numbers proposal and nothing is written to `workout_log_entry` until they confirm (AC-03/AC-05/AC-05b/AC-06/AC-07/AC-07b). The one named exception is AC-08: after a restated message also fails to parse, the original wording is saved unconfirmed.
-- **How verify:** an integration test asserting no entry row exists before a confirmation action is processed, for the confirm/keep-own/reject branches, and that the AC-08 fallback path is the only one that saves without a confirmation.
+- **How verify:** a unit test (mocked repository, no real DB) asserting the entry-persist call is never made before a confirmation action is processed, for the confirm/keep-own/reject branches, and that the AC-08 fallback path is the only one that saves without a confirmation.
 
 **QG-2. Responsiveness**
 - **When:** a client sends an exercise-description message, or a start/end session command.
@@ -313,7 +313,7 @@ ADR files live under `docs/features/workout-logging/adr/`.
 **QG-3. Session-state consistency**
 - **When:** a client with an already-open logging session attempts to start another, or any other route/scheduled reminder fires for them.
 - **Then:** a client never has more than one open logging session at a time (AC-01/AC-04/AC-10/AC-11/AC-12).
-- **How verify:** an integration test against `tgConversationStateRepository` asserting a second `startConversation` of the same type is blocked while one is active, and that a pre-emption/expiry check always leaves at most one active row per `chat_id`.
+- **How verify:** a unit test (mocked `tgConversationStateRepository`, no real DB) asserting a second `startConversation` of the same type is blocked while one is active, and that a pre-emption/expiry check always leaves at most one active session per `chat_id`.
 
 ## 11. Risks and technical debt
 

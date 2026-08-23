@@ -40,7 +40,7 @@
       "layer": "infra",
       "deps": ["T1", "T2", "T3"],
       "acs": ["AC-01", "AC-09", "AC-09b", "AC-10", "AC-11", "AC-12", "AC-13"],
-      "dod": "Integration tests cover findActiveByChatOrClientId, startSession, closeSession(end_reason), and addEntry/countEntries against the promoted tables via the mapper boundary (row <-> domain).",
+      "dod": "Unit tests (mocked drizzle/pg client, no real DB — T1/T2 promotion is blocked) cover findActiveByChatOrClientId, startSession, closeSession(end_reason), and addEntry/countEntries, asserting the generated query shape and the mapper boundary (row <-> domain) round-trips correctly.",
       "files_hint": [
         "src/modules/telegram/features/workoutLogging/repository/workoutLogRepository.ts",
         "src/infrastructure/persistence/postgres/schema/workoutLogSession.ts",
@@ -138,7 +138,7 @@
         "AC-01", "AC-03", "AC-05", "AC-05b", "AC-06", "AC-07", "AC-07b", "AC-08",
         "AC-09", "AC-09b", "AC-10", "AC-11", "AC-12"
       ],
-      "dod": "Integration test suite asserts no workout_log_entry row exists before a confirmation action is processed for confirm/keep-own/reject branches (QG-1), and that a second startConversation of type workout-logging is blocked while one is active and pre-emption/expiry always leaves at most one active row per chat_id (QG-3).",
+      "dod": "Unit test suite (mocked repositories, no real DB) asserts the entry-persist call is never made before a confirmation action is processed for confirm/keep-own/reject branches (QG-1), and that a second startConversation of type workout-logging is blocked while one is active and pre-emption/expiry always leaves at most one active session per chat_id (QG-3).",
       "files_hint": ["test/modules/telegram/features/workoutLogging/"]
     }
   ]
