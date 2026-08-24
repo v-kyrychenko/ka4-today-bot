@@ -110,7 +110,7 @@ test('matched route sends processing notice before execution by default', async 
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
-        ['preemptActiveConversation', chatId],
+        ['preemptActiveConversation', chatId, undefined],
         ['handleText', chatId, '/progress'],
         ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
         ['routeExecute'],
@@ -138,8 +138,36 @@ test('matched route can opt out of processing notice', async () => {
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
-        ['preemptActiveConversation', chatId],
+        ['preemptActiveConversation', chatId, undefined],
         ['handleText', chatId, '/measurements'],
+        ['routeExecute'],
+    ]);
+});
+
+test('a route matching a conversationType passes it through to preemptActiveConversation as the except-type', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        route: {
+            conversationType: 'WORKOUT_LOGGING',
+            canHandle() {
+                return true;
+            },
+            shouldSendProcessingNotice() {
+                return false;
+            },
+            async execute() {
+                calls.push(['routeExecute']);
+            },
+        },
+    });
+
+    await processor.routesProcessor.execute(messageRequest('/log_workout'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['preemptActiveConversation', chatId, 'WORKOUT_LOGGING'],
+        ['handleText', chatId, '/log_workout'],
         ['routeExecute'],
     ]);
 });
@@ -175,8 +203,8 @@ async function loadRoutesProcessor(options) {
                 options.calls.push(['cancel', inputChatId]);
                 return options.cancelResponse ?? null;
             },
-            async preemptActiveConversation(inputChatId) {
-                options.calls.push(['preemptActiveConversation', inputChatId]);
+            async preemptActiveConversation(inputChatId, exceptType) {
+                options.calls.push(['preemptActiveConversation', inputChatId, exceptType]);
             },
         },
         userRepository: {

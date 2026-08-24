@@ -12,6 +12,7 @@ import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {ProcessorContext} from '../model/context.js';
 import type {TelegramMessage} from '../model/telegram.js';
 import { TelegramWebhookUpdate} from '../model/telegram.js';
+import type {BaseRoute} from './BaseRoute.js';
 import {CANCEL_COMMANDS, routeRegistry} from './registry.js';
 
 export const routesProcessor = {
@@ -23,12 +24,15 @@ export const routesProcessor = {
 
             if (await handleCallback(request, context)) return;
             if (await handleCancelCommand(request, context)) return;
-            if (matchesRegisteredRoute(context)) {
-                await conversationEngine.preemptActiveConversation(request.chatId);
+
+            const matchedRoute = findRoute(context);
+            if (matchedRoute) {
+                await conversationEngine.preemptActiveConversation(request.chatId, matchedRoute.conversationType ?? undefined);
             }
+
             if (await continueConversation(request, context)) return;
 
-            await executeRoute(context);
+            await executeRoute(context, matchedRoute);
         } catch (error) {
             await sendRouteError(request.chatId, error);
             throw error as BadRequestError | OpenAIError;
@@ -77,14 +81,17 @@ async function buildContext(request: ParsedTelegramRequest): Promise<ProcessorCo
 }
 
 /**
- * True when the incoming text is going to be handled as a plain route rather than as a
- * continuation of whatever conversation is currently active for this chat (a recognized command
- * like /progress, or a cron-enqueued reminder's synthetic route text) -- the AC-10 trigger for
- * cross-context pre-emption. A plain continuation message never matches a route, so it's left
- * alone here and flows to continueConversation as normal.
+ * The route that will handle this message, if any -- a recognized command like /progress, or a
+ * cron-enqueued reminder's synthetic route text. A match here (checked before
+ * continueConversation) is the AC-10 trigger for cross-context pre-emption; a plain continuation
+ * message never matches a route, so it's left alone and flows to continueConversation as normal.
  */
-function matchesRegisteredRoute(context: ProcessorContext): boolean {
-    return context.text != null && routeRegistry.some((route) => route.canHandle(context.text, context));
+function findRoute(context: ProcessorContext): BaseRoute | null {
+    if (context.text == null) {
+        return null;
+    }
+
+    return routeRegistry.find((route) => route.canHandle(context.text, context)) ?? null;
 }
 
 async function handleCallback(request: ParsedTelegramRequest, context: ProcessorContext): Promise<boolean> {
@@ -135,9 +142,7 @@ async function continueConversation(request: ParsedTelegramRequest, context: Pro
     return true;
 }
 
-async function executeRoute(context: ProcessorContext): Promise<void> {
-    const route = routeRegistry.find((item) => item.canHandle(context.text, context));
-
+async function executeRoute(context: ProcessorContext, route: BaseRoute | null): Promise<void> {
     if (!route) {
         log('[telegram.routes] No route found', {chatId: context.chatId, text: context.text});
         await telegramMessagingService.sendMessage(

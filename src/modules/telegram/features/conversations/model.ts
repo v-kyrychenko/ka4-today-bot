@@ -1,6 +1,7 @@
 import type {TgConversationStateRow} from '../../repository/tgConversationStateRepository.js';
 import type {TelegramUserAccount} from '../../model/telegram.js';
-import type {ConversationType} from '../measurements/bodyMeasurementsModel.js';
+
+export type ConversationType = string;
 
 export const CONVERSATION_STEP_COMPLETED = 'COMPLETED';
 export const CONVERSATION_STEP_CANCELLED = 'CANCELLED';

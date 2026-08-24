@@ -103,12 +103,14 @@ export async function cancel(chatId: number): Promise<ConversationResponse | nul
 /**
  * Ends a still-active conversation, of any type, in favor of another interaction for the same
  * chat (AC-10-style cross-context pre-emption) -- e.g. a recognized route or a cron-enqueued
- * reminder. A no-op if nothing is active, or if it just lazily expired instead (that already ran
- * its own onExpire hook via resolveActiveConversation).
+ * reminder. A no-op if nothing is active, if it just lazily expired instead (that already ran its
+ * own onExpire hook via resolveActiveConversation), or if the active conversation is already the
+ * SAME type the caller is about to start (exceptType) -- a same-type repeat-start is that
+ * conversation's own concern to reject or ignore, not a pre-emption.
  */
-export async function preemptActiveConversation(chatId: number): Promise<void> {
+export async function preemptActiveConversation(chatId: number, exceptType?: string): Promise<void> {
     const state = await resolveActiveConversation(chatId);
-    if (!state) {
+    if (!state || state.type === exceptType) {
         return;
     }
 

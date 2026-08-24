@@ -31,6 +31,18 @@ test('preemptActiveConversation() is a no-op when the chat has no active convers
     assert.equal(hookCalls.onExpire.length, 0);
 });
 
+// AC-12-style same-type restart: a route that would start the SAME type already active must not
+// pre-empt it -- that's the conversation's own start step's job to reject (existing session
+// untouched), not a cross-context pre-emption.
+test('preemptActiveConversation() does not pre-empt when the active conversation is already the except-type', async () => {
+    const {repository, hookCalls, engine} = await setup({expired: false});
+
+    await engine.conversationEngine.preemptActiveConversation(chatId, 'WORKOUT_LOGGING');
+
+    assert.ok(repository.activeState(), 'expected the conversation to remain active, untouched');
+    assert.equal(hookCalls.onPreempt.length, 0);
+});
+
 // AC-11-style lazy expiry: when the TTL already lapsed, preemptActiveConversation must treat it
 // as an expiry (onExpire, final step EXPIRED), not a pre-emption -- it must not double-close it.
 test('preemptActiveConversation() treats an already-expired conversation as an expiry, not a pre-emption', async () => {
