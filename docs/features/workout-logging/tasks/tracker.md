@@ -15,9 +15,9 @@
 | T8 | Handle initial exercise-description message | app | <TBD lead> | M | T4, T6, T7 | done |
 | T9 | Handle exercise confirmation response | app | <TBD lead> | M | T8 | done |
 | T10 | Implement session start/end lifecycle | app | <TBD lead> | M | T4 | done |
-| T11 | Wire workoutLoggingConversation into the conversation engine | ports | <TBD lead> | M | T9, T10 | todo |
+| T11 | Wire workoutLoggingConversation into the conversation engine | ports | <TBD lead> | M | T9, T10 | done |
 | T12 | Wire cross-context pre-emption and lazy auto-expiry | wiring | <TBD lead> | M | T10 | done |
-| T13 | Add QG-1/QG-3 integration test coverage | tests | <TBD lead> | M | T11, T12 | todo |
+| T13 | Add QG-1/QG-3 integration test coverage | tests | <TBD lead> | M | T11, T12 | done |
 
 **Total:** 13 tasks, ~7-8 person-days.
 
@@ -30,3 +30,9 @@
 **Note (2026-08-24):** T7's implementer reached GREEN logic-wise but escalated because the RED test's esbuild harness only mocked `@aws-sdk/s3-request-presigner`, not `@aws-sdk/client-s3` — bundling the real S3 SDK for an ESM import-in-same-process test hits a `Dynamic require of "buffer"` esbuild/AWS-SDK-v3 interop bug (doesn't affect the real Lambda build, which uses CJS). Fixed by extending the test's mock plugin to also stub `@aws-sdk/client-s3` (no-op `S3Client`, `GetObjectCommand` storing its input) — T7 is now `done`.
 
 **Note (2026-08-24):** User review flagged that T6's parser called `openAiClient` directly instead of the repo's established `promptReplyService.fetchOpenAiReply(promptRef, variables)` pattern (all prompts DB-managed via `dict_prompt`, which already has a `text_format` column for structured output). Fixed: `workoutExerciseParser.ts` now calls `promptReplyService` with `promptRef: 'workout_exercise_parser'`, matching `bodyMeasurementsConversation.ts`'s convention. Still needed before this runs against a live DB: a hand-inserted `dict_prompt` row for that key carrying the system prompt, a `${USER_INPUT}`-templated user prompt, and the JSON schema the parser expects back (exerciseName/reps/sets/weight/weightRequired/multipleExercises) — same manual-DB-object pattern as T1/T2's migrations.
+
+**Note (2026-08-24):** User review flagged that T12's original mechanism (routesProcessor.ts importing workoutLoggingService directly, called unconditionally before continueConversation) had a real correctness bug: it pre-empted a client's own session on their very next continuation message. Refactored to generic `onPreempt`/`onExpire` hooks on `ConversationDefinition`, invoked by `engine.ts` itself; `routesProcessor.ts` now only calls the generic `conversationEngine.preemptActiveConversation(chatId, exceptType)` when the incoming text matches a registered route, passing that route's `conversationType` (new `BaseRoute` field) as an exception so a same-type restart (AC-12) is never mistaken for a pre-emption. Recorded as ADR-0005, superseding ADR-0003's call-site mechanism. Also completed ADR-0003's flagged-but-undone TTL reuse: `closeExpiredSession` no longer recomputes its own idle window (dropped `workoutLogRepository.findLastEntryAt`) — the 2h AC-11 window is now enforced entirely by the generic `tg_conversation_state.expires_at` TTL, refreshed on every recorded exercise by T11's conversation steps.
+
+**Note (2026-08-24):** T11 surfaced two gaps not covered by any task: (1) no task added a route to actually trigger `conversationEngine.start()` for workout-logging — added `WorkoutLoggingRoute.ts` (`/log_workout`) and `END_WORKOUT_COMMAND` (`/end_workout`, handled inside the conversation's own step, not a route, so it can never be treated as a pre-emption trigger); (2) AC-13's "client's local day" has no per-client timezone anywhere in this repo to derive it from (not on `client`, not on the Telegram user, no app-wide default existed) — user chose a fixed app-wide offset (`APP_TIMEZONE_OFFSET_MINUTES`, UTC+3, not DST-aware) over adding a `client` column or dropping the requirement to UTC.
+
+**Feature complete:** all 13 tasks done. Full suite: 106/106 tests, `npm run typecheck` and `npm run lint` clean (only pre-existing warnings unrelated to this feature).
