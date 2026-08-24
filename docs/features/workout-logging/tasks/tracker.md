@@ -12,8 +12,8 @@
 | T5 | Fix exerciseRepository.search to call search_dict_exercises | infra | <TBD lead> | S | — | done |
 | T6 | Add OpenAI structured-output parse for exercise messages | app | <TBD lead> | M | — | done |
 | T7 | Build candidate-match confirmation payload | app | <TBD lead> | M | T5 | done |
-| T8 | Handle initial exercise-description message | app | <TBD lead> | M | T4, T6, T7 | todo |
-| T9 | Handle exercise confirmation response | app | <TBD lead> | M | T8 | todo |
+| T8 | Handle initial exercise-description message | app | <TBD lead> | M | T4, T6, T7 | done |
+| T9 | Handle exercise confirmation response | app | <TBD lead> | M | T8 | done |
 | T10 | Implement session start/end lifecycle | app | <TBD lead> | M | T4 | done |
 | T11 | Wire workoutLoggingConversation into the conversation engine | ports | <TBD lead> | M | T9, T10 | todo |
 | T12 | Wire cross-context pre-emption and lazy auto-expiry | wiring | <TBD lead> | M | T10 | done |
