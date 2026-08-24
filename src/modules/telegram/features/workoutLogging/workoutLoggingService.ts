@@ -21,7 +21,6 @@ export interface PreemptActiveSessionRequest {
 
 export interface CloseExpiredSessionRequest {
     clientId: number;
-    now: Date;
 }
 
 export interface HandleExerciseMessageRequest {
@@ -33,7 +32,7 @@ export interface HandleExerciseMessageRequest {
 export type StartSessionOutcome = 'not-a-client' | 'already-open' | 'started';
 export type EndSessionOutcome = 'no-active-session' | 'ended-empty' | 'ended-recorded';
 export type PreemptActiveSessionOutcome = 'no-active-session' | 'pre-empted';
-export type CloseExpiredSessionOutcome = 'no-active-session' | 'active' | 'auto-closed';
+export type CloseExpiredSessionOutcome = 'no-active-session' | 'auto-closed';
 export type HandleExerciseMessageOutcome = 'confirmation-proposed' | 'unclear';
 
 export interface StartSessionResult {
@@ -87,7 +86,6 @@ export interface SaveUnconfirmedEntryResult {
 const CLIENT_ENDED_REASON = 'client-ended';
 const PRE_EMPTED_REASON = 'pre-empted';
 const AUTO_CLOSED_REASON = 'auto-closed';
-const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 
 export const workoutLoggingService = {
     startSession,
@@ -143,16 +141,16 @@ export async function preemptActiveSession(
     return {outcome: 'pre-empted'};
 }
 
+/**
+ * Closes the client's open workout_log_session as auto-closed. Called as the onExpire hook once
+ * the generic conversation engine has already determined the conversation's TTL lapsed (AC-11) --
+ * the 2h idle window itself is enforced by that TTL (refreshed on every recorded exercise), not
+ * recomputed here.
+ */
 export async function closeExpiredSession(request: CloseExpiredSessionRequest): Promise<CloseExpiredSessionResult> {
     const activeSession = await workoutLogRepository.findActiveByClientId(request.clientId);
     if (!activeSession) {
         return {outcome: 'no-active-session'};
-    }
-
-    const lastEntryAt = await workoutLogRepository.findLastEntryAt(activeSession.id);
-    const idleSince = new Date(lastEntryAt ?? activeSession.startedAt);
-    if (request.now.getTime() - idleSince.getTime() <= SESSION_TTL_MS) {
-        return {outcome: 'active'};
     }
 
     await workoutLogRepository.closeSession(activeSession.id, AUTO_CLOSED_REASON);

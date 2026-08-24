@@ -6,19 +6,20 @@ import {test} from 'node:test';
 import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
-// T12/AC-10: another route (or a cron-enqueued reminder, which reaches routesProcessor as a
-// synthetic message per ADR-0003) must end an open workout-logging session early, discarding
-// any unconfirmed entry, before the other interaction is handled. This is the pre-emption
-// primitive that routesProcessor.ts (per ADR-0003's single call site) is expected to invoke.
+const activeSession = {
+    id: 5,
+    clientId: 777,
+    sessionDay: '2026-08-23',
+    startedAt: '2026-08-23T09:00:00.000Z',
+    endedAt: null,
+    endReason: null,
+};
+
+// AC-10: another route (or a cron-enqueued reminder) must end an open workout-logging session
+// early, discarding any unconfirmed entry, before the other interaction is handled. This is the
+// primitive workoutLoggingConversation's onPreempt hook (wired via the generic conversation
+// engine's preemptActiveConversation, see conversationEngine.lifecycleHooks.test.mjs) calls.
 test('preemptActiveSession() closes an open session as pre-empted (AC-10)', async () => {
-    const activeSession = {
-        id: 5,
-        clientId: 777,
-        sessionDay: '2026-08-23',
-        startedAt: '2026-08-23T09:00:00.000Z',
-        endedAt: null,
-        endReason: null,
-    };
     const harness = await loadWorkoutLoggingService({activeSession});
 
     const result = await harness.module.workoutLoggingService.preemptActiveSession({clientId: 777});
@@ -41,71 +42,31 @@ test('preemptActiveSession() is a no-op when the client has no open session (AC-
     assert.equal(harness.calls.closeSession.length, 0, 'expected no closeSession() call when nothing is open');
 });
 
-// T12/AC-11: a session idle for more than 2h from its start or its most recently recorded
-// exercise (whichever is later) must be lazily closed as auto-closed on the next check, with
-// no client message required.
-test('closeExpiredSession() auto-closes a session idle >2h since its last recorded entry (AC-11)', async () => {
-    const activeSession = {
-        id: 5,
-        clientId: 777,
-        sessionDay: '2026-08-23',
-        startedAt: '2026-08-23T09:00:00.000Z',
-        endedAt: null,
-        endReason: null,
-    };
-    const harness = await loadWorkoutLoggingService({activeSession, lastEntryAt: '2026-08-23T10:00:00.000Z'});
+// AC-11: a session idle for more than 2h (from start or its last recorded entry, whichever is
+// later) auto-closes on the next check. The 2h idle window itself is enforced by the generic
+// conversation engine's TTL (tg_conversation_state.expires_at, refreshed on every recorded
+// exercise) -- by the time this onExpire hook fires, the engine has already decided the
+// conversation expired, so this just closes the matching workout_log_session as auto-closed.
+test('closeExpiredSession() closes the open session as auto-closed (AC-11)', async () => {
+    const harness = await loadWorkoutLoggingService({activeSession});
 
-    // last entry at 10:00, now is 12:01 -> 2h01m idle since last entry, past the 2h threshold.
-    const result = await harness.module.workoutLoggingService.closeExpiredSession({
-        clientId: 777,
-        now: new Date('2026-08-23T12:01:00.000Z'),
-    });
-
-    assert.equal(result.outcome, 'auto-closed', `expected auto-closed outcome, got: ${JSON.stringify(result)}`);
-    assert.equal(harness.calls.closeSession.length, 1, 'expected exactly one closeSession() repository call');
-    assert.deepEqual(harness.calls.closeSession[0], {id: 5, endReason: 'auto-closed'});
-});
-
-test('closeExpiredSession() leaves a session untouched while idle time is under 2h (AC-11)', async () => {
-    const activeSession = {
-        id: 5,
-        clientId: 777,
-        sessionDay: '2026-08-23',
-        startedAt: '2026-08-23T09:00:00.000Z',
-        endedAt: null,
-        endReason: null,
-    };
-    const harness = await loadWorkoutLoggingService({activeSession, lastEntryAt: '2026-08-23T11:00:00.000Z'});
-
-    // last entry at 11:00, now is 12:30 -> only 1h30m idle, under the 2h threshold.
-    const result = await harness.module.workoutLoggingService.closeExpiredSession({
-        clientId: 777,
-        now: new Date('2026-08-23T12:30:00.000Z'),
-    });
-
-    assert.equal(result.outcome, 'active', `expected active outcome, got: ${JSON.stringify(result)}`);
-    assert.equal(harness.calls.closeSession.length, 0, 'expected no closeSession() call while still within the TTL');
-});
-
-test('closeExpiredSession() measures idle time from session start when no entry was ever recorded (AC-11)', async () => {
-    const activeSession = {
-        id: 5,
-        clientId: 777,
-        sessionDay: '2026-08-23',
-        startedAt: '2026-08-23T09:00:00.000Z',
-        endedAt: null,
-        endReason: null,
-    };
-    const harness = await loadWorkoutLoggingService({activeSession, lastEntryAt: null});
-
-    // no recorded entries -> idle measured from session start (09:00); now is 11:31 -> 2h31m idle.
-    const result = await harness.module.workoutLoggingService.closeExpiredSession({
-        clientId: 777,
-        now: new Date('2026-08-23T11:31:00.000Z'),
-    });
+    const result = await harness.module.workoutLoggingService.closeExpiredSession({clientId: 777});
 
     assert.equal(result.outcome, 'auto-closed', `expected auto-closed outcome, got: ${JSON.stringify(result)}`);
     assert.deepEqual(harness.calls.closeSession[0], {id: 5, endReason: 'auto-closed'});
+});
+
+test('closeExpiredSession() is a no-op when the client has no open session (AC-11)', async () => {
+    const harness = await loadWorkoutLoggingService({activeSession: null});
+
+    const result = await harness.module.workoutLoggingService.closeExpiredSession({clientId: 777});
+
+    assert.equal(
+        result.outcome,
+        'no-active-session',
+        `expected no-active-session outcome, got: ${JSON.stringify(result)}`,
+    );
+    assert.equal(harness.calls.closeSession.length, 0, 'expected no closeSession() call when nothing is open');
 });
 
 async function loadWorkoutLoggingService(options) {
@@ -126,9 +87,6 @@ async function loadWorkoutLoggingService(options) {
             },
             async countEntries() {
                 return options.entryCount ?? 0;
-            },
-            async findLastEntryAt() {
-                return options.lastEntryAt ?? null;
             },
         },
     };

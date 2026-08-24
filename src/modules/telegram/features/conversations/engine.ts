@@ -7,7 +7,9 @@ import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {log, logError} from '../../../../shared/logging';
 import {
     CONVERSATION_STEP_CANCELLED,
+    CONVERSATION_STEP_EXPIRED,
     CONVERSATION_STEP_FAILED,
+    CONVERSATION_STEP_PREEMPTED,
     type ConversationCallbackInput,
     type ConversationResponse,
     type ConversationStartInput,
@@ -36,7 +38,7 @@ export async function start(input: ConversationStartInput): Promise<Conversation
 
 export async function handleText(input: ConversationTextInput): Promise<ConversationResponse | null> {
     const chatId = input.user.chatId;
-    const state = await tgConversationStateRepository.findActiveByChatId(chatId);
+    const state = await resolveActiveConversation(chatId);
     if (!state) {
         // Let the normal route processor handle messages outside conversations.
         return null;
@@ -63,7 +65,7 @@ export async function handleText(input: ConversationTextInput): Promise<Conversa
 
 export async function handleCallback(input: ConversationCallbackInput): Promise<ConversationResponse | null> {
     const chatId = input.user.chatId;
-    const state = await tgConversationStateRepository.findActiveByChatId(chatId);
+    const state = await resolveActiveConversation(chatId);
     if (!state) {
         // Callback may belong to an old message after the conversation ended.
         return null;
@@ -96,6 +98,48 @@ export async function cancel(chatId: number): Promise<ConversationResponse | nul
     }
 
     return state ? CANCELLED_RESPONSE : null;
+}
+
+/**
+ * Ends a still-active conversation, of any type, in favor of another interaction for the same
+ * chat (AC-10-style cross-context pre-emption) -- e.g. a recognized route or a cron-enqueued
+ * reminder. A no-op if nothing is active, or if it just lazily expired instead (that already ran
+ * its own onExpire hook via resolveActiveConversation).
+ */
+export async function preemptActiveConversation(chatId: number): Promise<void> {
+    const state = await resolveActiveConversation(chatId);
+    if (!state) {
+        return;
+    }
+
+    await tgConversationStateRepository.deactivateConversation({id: state.id, finalStep: CONVERSATION_STEP_PREEMPTED});
+    log('### CONVERSATION:preempt', {chatId, type: state.type});
+    await invokeLifecycleHook(state, 'onPreempt');
+}
+
+/** Reads the active row, lazily expiring it (and firing the type's onExpire hook) if its TTL lapsed. */
+async function resolveActiveConversation(chatId: number): Promise<TgConversationStateRow | null> {
+    const row = await tgConversationStateRepository.findRawActiveByChatId(chatId);
+    if (!row) {
+        return null;
+    }
+
+    if (!tgConversationStateRepository.isConversationExpired(row)) {
+        return row;
+    }
+
+    await tgConversationStateRepository.deactivateConversation({id: row.id, finalStep: CONVERSATION_STEP_EXPIRED});
+    log('### CONVERSATION:expire', {chatId, type: row.type});
+    await invokeLifecycleHook(row, 'onExpire');
+    return null;
+}
+
+async function invokeLifecycleHook(state: TgConversationStateRow, hook: 'onExpire' | 'onPreempt'): Promise<void> {
+    const definition = getConversationDefinition(state.type);
+    const handler = definition?.[hook];
+    if (handler) {
+        await handler(state);
+    }
 }
 
 async function resolveStepOrFail(state: TgConversationStateRow) {
@@ -136,4 +180,5 @@ export const conversationEngine = {
     handleText,
     handleCallback,
     cancel,
+    preemptActiveConversation,
 };

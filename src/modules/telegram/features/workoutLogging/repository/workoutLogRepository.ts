@@ -32,7 +32,6 @@ export const workoutLogRepository = {
     closeSession,
     addEntry,
     countEntries,
-    findLastEntryAt,
 };
 
 export async function findActiveByClientId(clientId: number): Promise<WorkoutLogSession | null> {
@@ -101,18 +100,4 @@ export async function countEntries(sessionId: number): Promise<number> {
     const [row] = result.rows as unknown as Array<{count: string}>;
 
     return row ? Number(row.count) : 0;
-}
-
-export async function findLastEntryAt(sessionId: number): Promise<string | null> {
-    const query = sql<{created_at: string}>`
-        select created_at from workout_log_entry
-        where session_id = ${sessionId}
-        order by created_at desc
-        limit 1
-    `;
-
-    const result = await getPostgresDb().execute(query);
-    const [row] = result.rows as unknown as Array<{created_at: string}>;
-
-    return row ? row.created_at : null;
 }

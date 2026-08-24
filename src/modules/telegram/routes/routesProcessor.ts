@@ -8,7 +8,6 @@ import {log} from '../../../shared/logging';
 import {conversationEngine} from '../features/conversations/engine.js';
 import type {ConversationResponse} from '../features/conversations/model.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import {workoutLoggingService} from '../features/workoutLogging/workoutLoggingService.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {ProcessorContext} from '../model/context.js';
 import type {TelegramMessage} from '../model/telegram.js';
@@ -22,10 +21,11 @@ export const routesProcessor = {
         try {
             const context = await buildContext(request);
 
-            await preemptOrCloseExpiredWorkoutLogSession(context);
-
             if (await handleCallback(request, context)) return;
             if (await handleCancelCommand(request, context)) return;
+            if (matchesRegisteredRoute(context)) {
+                await conversationEngine.preemptActiveConversation(request.chatId);
+            }
             if (await continueConversation(request, context)) return;
 
             await executeRoute(context);
@@ -76,18 +76,15 @@ async function buildContext(request: ParsedTelegramRequest): Promise<ProcessorCo
     });
 }
 
-async function preemptOrCloseExpiredWorkoutLogSession(context: ProcessorContext): Promise<void> {
-    const clientId = context.user.clientId;
-    if (!clientId) {
-        return;
-    }
-
-    const closeExpiredResult = await workoutLoggingService.closeExpiredSession({clientId, now: new Date()});
-    if (closeExpiredResult.outcome === 'auto-closed') {
-        return;
-    }
-
-    await workoutLoggingService.preemptActiveSession({clientId});
+/**
+ * True when the incoming text is going to be handled as a plain route rather than as a
+ * continuation of whatever conversation is currently active for this chat (a recognized command
+ * like /progress, or a cron-enqueued reminder's synthetic route text) -- the AC-10 trigger for
+ * cross-context pre-emption. A plain continuation message never matches a route, so it's left
+ * alone here and flows to continueConversation as normal.
+ */
+function matchesRegisteredRoute(context: ProcessorContext): boolean {
+    return context.text != null && routeRegistry.some((route) => route.canHandle(context.text, context));
 }
 
 async function handleCallback(request: ParsedTelegramRequest, context: ProcessorContext): Promise<boolean> {

@@ -37,6 +37,7 @@ export interface UpdateConversationInput {
     currentStep?: string;
     data?: unknown;
     lastBotMsgId?: number | null;
+    ttlMinutes?: number;
 }
 
 export interface DeactivateConversationInput {
@@ -45,7 +46,8 @@ export interface DeactivateConversationInput {
 }
 
 export const tgConversationStateRepository = {
-    findActiveByChatId,
+    findRawActiveByChatId,
+    isConversationExpired,
     deactivateActiveByChatId,
     startConversation,
     updateConversation,
@@ -53,23 +55,19 @@ export const tgConversationStateRepository = {
     expireOutdated,
 };
 
-export async function findActiveByChatId(chatId: number): Promise<TgConversationStateRow | null> {
+/** Reads the active row, if any, with no side effect -- does not lazily deactivate an expired row. */
+export async function findRawActiveByChatId(chatId: number): Promise<TgConversationStateRow | null> {
     const [row] = await getPostgresDb()
         .select()
         .from(tgConversationState)
         .where(and(eq(tgConversationState.chat_id, chatId), eq(tgConversationState.is_active, true)))
         .limit(1);
 
-    if (!row) {
-        return null;
-    }
+    return row ?? null;
+}
 
-    if (isExpired(row.expires_at)) {
-        await deactivateConversation({id: row.id, finalStep: EXPIRED_STEP});
-        return null;
-    }
-
-    return row;
+export function isConversationExpired(row: TgConversationStateRow): boolean {
+    return isExpired(row.expires_at);
 }
 
 export async function deactivateActiveByChatId(
@@ -175,6 +173,7 @@ function toUpdateValues(input: UpdateConversationInput) {
         current_step?: string;
         data?: unknown;
         last_bot_msg_id?: number | null;
+        expires_at?: string;
         updated_at: string;
     } = {updated_at: nowIso()};
 
@@ -188,6 +187,10 @@ function toUpdateValues(input: UpdateConversationInput) {
 
     if (input.lastBotMsgId !== undefined) {
         values.last_bot_msg_id = input.lastBotMsgId;
+    }
+
+    if (input.ttlMinutes != null) {
+        values.expires_at = expiresAtIso(input.ttlMinutes);
     }
 
     return values;

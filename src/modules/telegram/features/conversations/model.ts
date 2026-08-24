@@ -6,6 +6,7 @@ export const CONVERSATION_STEP_COMPLETED = 'COMPLETED';
 export const CONVERSATION_STEP_CANCELLED = 'CANCELLED';
 export const CONVERSATION_STEP_EXPIRED = 'EXPIRED';
 export const CONVERSATION_STEP_FAILED = 'FAILED';
+export const CONVERSATION_STEP_PREEMPTED = 'PREEMPTED';
 
 export interface ConversationResponse {
     text: string;
@@ -48,4 +49,8 @@ export interface ConversationDefinition {
     ttlMinutes?: number;
     steps: Record<string, ConversationStep>;
     getInitialMessage: (user: TelegramUserAccount) => ConversationResponse;
+    /** Called by the generic engine when this conversation's TTL lapses before the client's next check (AC-11-style lazy expiry). */
+    onExpire?: (state: TgConversationStateRow) => Promise<void>;
+    /** Called by the generic engine when another interaction pre-empts this still-active conversation (AC-10-style cross-context pre-emption). */
+    onPreempt?: (state: TgConversationStateRow) => Promise<void>;
 }

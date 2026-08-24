@@ -37,6 +37,7 @@ test('active conversation receives next text before normal routes', async () => 
     const processor = await loadRoutesProcessor({
         calls,
         textResponse: {text: 'conversation reply'},
+        routeRegistry: [],
     });
 
     await processor.routesProcessor.execute(messageRequest('next measurements'));
@@ -109,6 +110,7 @@ test('matched route sends processing notice before execution by default', async 
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
+        ['preemptActiveConversation', chatId],
         ['handleText', chatId, '/progress'],
         ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
         ['routeExecute'],
@@ -134,7 +136,12 @@ test('matched route can opt out of processing notice', async () => {
 
     await processor.routesProcessor.execute(messageRequest('/measurements'));
 
-    assert.deepEqual(calls, [['getOrCreateUser', chatId], ['handleText', chatId, '/measurements'], ['routeExecute']]);
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['preemptActiveConversation', chatId],
+        ['handleText', chatId, '/measurements'],
+        ['routeExecute'],
+    ]);
 });
 
 test('unknown route sends localized fallback without processing notice', async () => {
@@ -167,6 +174,9 @@ async function loadRoutesProcessor(options) {
             async cancel(inputChatId) {
                 options.calls.push(['cancel', inputChatId]);
                 return options.cancelResponse ?? null;
+            },
+            async preemptActiveConversation(inputChatId) {
+                options.calls.push(['preemptActiveConversation', inputChatId]);
             },
         },
         userRepository: {
@@ -225,15 +235,6 @@ const routeMocks = {
         ]);
         mockModule(buildContext, /tgUserRepository\.js$/, [
             'export const tgUserRepository = globalThis.__telegramRouteMocks.userRepository;',
-        ]);
-        mockModule(buildContext, /features\/workoutLogging\/workoutLoggingService\.js$/, [
-            'export const workoutLoggingService = globalThis.__telegramRouteMocks.workoutLoggingService ?? {',
-            '    async preemptActiveSession() { return {outcome: "no-active-session"}; },',
-            '    async closeExpiredSession() { return {outcome: "no-active-session"}; },',
-            '};',
-        ]);
-        mockModule(buildContext, /features\/workoutLogging\/repository\/workoutLogRepository\.js$/, [
-            'export const workoutLogRepository = {};',
         ]);
         mockModule(buildContext, /\/registry\.js$/, [
             'export const MEASUREMENTS_ROUTE = "/measurements";',

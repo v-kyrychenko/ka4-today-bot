@@ -115,9 +115,6 @@ async function loadWorkoutLoggingService(options) {
             async countEntries() {
                 return 0;
             },
-            async findLastEntryAt() {
-                return null;
-            },
             async addEntry(input) {
                 calls.addEntry.push(input);
                 return {id: 1, ...input};
