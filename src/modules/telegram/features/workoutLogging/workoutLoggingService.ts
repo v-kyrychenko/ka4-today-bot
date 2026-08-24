@@ -59,6 +59,31 @@ export interface HandleExerciseMessageResult {
     retryRemaining?: boolean;
 }
 
+export type ConfirmationAction = 'confirm-candidate' | 'confirm-own' | 'reject';
+
+export interface HandleConfirmationResponseRequest {
+    sessionId: number;
+    action: ConfirmationAction;
+    rawDescription: string;
+    parsedExercise: ParsedWorkoutExercise;
+    candidateExerciseId?: number | null;
+}
+
+export type HandleConfirmationResponseOutcome = 'saved-linked' | 'saved-unlinked' | 'retry';
+
+export interface HandleConfirmationResponseResult {
+    outcome: HandleConfirmationResponseOutcome;
+}
+
+export interface SaveUnconfirmedEntryRequest {
+    sessionId: number;
+    rawDescription: string;
+}
+
+export interface SaveUnconfirmedEntryResult {
+    outcome: 'saved-unconfirmed';
+}
+
 const CLIENT_ENDED_REASON = 'client-ended';
 const PRE_EMPTED_REASON = 'pre-empted';
 const AUTO_CLOSED_REASON = 'auto-closed';
@@ -70,6 +95,8 @@ export const workoutLoggingService = {
     preemptActiveSession,
     closeExpiredSession,
     handleExerciseMessage,
+    handleConfirmationResponse,
+    saveUnconfirmedEntry,
 };
 
 export async function startSession(request: StartSessionRequest): Promise<StartSessionResult> {
@@ -145,6 +172,40 @@ export async function handleExerciseMessage(
     const candidates = matchResult.outcome === 'matched' ? matchResult.candidates : [];
 
     return {outcome: 'confirmation-proposed', parsedExercise: parseResult.exercise, candidates};
+}
+
+export async function handleConfirmationResponse(
+    request: HandleConfirmationResponseRequest,
+): Promise<HandleConfirmationResponseResult> {
+    if (request.action === 'reject') {
+        return {outcome: 'retry'};
+    }
+
+    const dictExerciseId = request.action === 'confirm-candidate' ? (request.candidateExerciseId ?? null) : null;
+
+    await workoutLogRepository.addEntry({
+        sessionId: request.sessionId,
+        dictExerciseId,
+        rawDescription: request.rawDescription,
+        reps: request.parsedExercise.reps,
+        sets: request.parsedExercise.sets,
+        weight: request.parsedExercise.weight,
+    });
+
+    return {outcome: dictExerciseId != null ? 'saved-linked' : 'saved-unlinked'};
+}
+
+export async function saveUnconfirmedEntry(request: SaveUnconfirmedEntryRequest): Promise<SaveUnconfirmedEntryResult> {
+    await workoutLogRepository.addEntry({
+        sessionId: request.sessionId,
+        dictExerciseId: null,
+        rawDescription: request.rawDescription,
+        reps: null,
+        sets: null,
+        weight: null,
+    });
+
+    return {outcome: 'saved-unconfirmed'};
 }
 
 function toLocalSessionDay(now: Date, timezoneOffsetMinutes: number): string {
