@@ -4,6 +4,7 @@ import {DailyGreetingRoute} from './DailyGreetingRoute.js';
 import {DailyWorkoutRoute} from './DailyWorkoutRoute.js';
 import {ProgressRoute} from './ProgressRoute.js';
 import {MeasurementsRoute} from './MeasurementsRoute.js';
+import {WorkoutLoggingRoute} from './WorkoutLoggingRoute.js';
 import type {BaseRoute} from './BaseRoute.js';
 export {
     CANCEL_COMMANDS,
@@ -13,6 +14,7 @@ export {
     MEASUREMENTS_ROUTE,
     PROGRESS_ROUTE,
     START_ROUTE,
+    WORKOUT_LOGGING_START_ROUTE,
 } from './constants.js';
 
 export const routeRegistry: BaseRoute[] = [
@@ -22,4 +24,5 @@ export const routeRegistry: BaseRoute[] = [
     new DailyWorkoutRoute(),
     new ProgressRoute(),
     new MeasurementsRoute(),
+    new WorkoutLoggingRoute(),
 ];

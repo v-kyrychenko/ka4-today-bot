@@ -58,6 +58,7 @@ test('startSession() derives sessionDay from the client\'s local start time, not
     });
 
     assert.equal(result.outcome, 'started', `expected started outcome, got: ${JSON.stringify(result)}`);
+    assert.equal(result.sessionId, 99, 'expected the created session id to be returned to the caller');
     assert.equal(harness.calls.startSession.length, 1, 'expected exactly one startSession() repository call');
     assert.equal(
         harness.calls.startSession[0].sessionDay,

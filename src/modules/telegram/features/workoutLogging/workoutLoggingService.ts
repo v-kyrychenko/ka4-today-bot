@@ -37,6 +37,7 @@ export type HandleExerciseMessageOutcome = 'confirmation-proposed' | 'unclear';
 
 export interface StartSessionResult {
     outcome: StartSessionOutcome;
+    sessionId?: number;
 }
 
 export interface EndSessionResult {
@@ -107,13 +108,13 @@ export async function startSession(request: StartSessionRequest): Promise<StartS
         return {outcome: 'already-open'};
     }
 
-    await workoutLogRepository.startSession({
+    const session = await workoutLogRepository.startSession({
         clientId: request.clientId,
         sessionDay: toLocalSessionDay(request.now, request.timezoneOffsetMinutes),
         startedAt: request.now.toISOString(),
     });
 
-    return {outcome: 'started'};
+    return {outcome: 'started', sessionId: session.id};
 }
 
 export async function endSession(request: EndSessionRequest): Promise<EndSessionResult> {

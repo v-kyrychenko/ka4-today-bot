@@ -31,6 +31,7 @@ export async function start(input: ConversationStartInput): Promise<Conversation
         type: definition.type,
         currentStep: definition.initialStep,
         ttlMinutes: definition.ttlMinutes,
+        data: input.data,
     });
 
     return definition.getInitialMessage(input.user);

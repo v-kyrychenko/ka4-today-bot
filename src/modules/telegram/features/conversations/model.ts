@@ -29,6 +29,8 @@ export interface ConversationCallbackInput {
 export interface ConversationStartInput {
     type: ConversationType;
     user: TelegramUserAccount;
+    /** Seeds the new conversation's stored data (e.g. a domain record id/ownership key the type's own hooks and steps need). */
+    data?: unknown;
 }
 
 export interface ConversationTextContext extends ConversationTextInput {

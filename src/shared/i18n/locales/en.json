@@ -18,6 +18,20 @@
                 "buttonCancel": "❌ Cancel",
                 "unavailable": "🚧 Body measurements are still getting ready for launch.\n\nFor now, keep tracking your numbers — we’ll connect them here soon."
             },
+            "workoutLogging": {
+                "initialMessage": "🏋️ Workout logging started!\n\nDescribe one exercise at a time — for example: bench press, 4 sets of 10 reps, 60kg.\n\nSend /end_workout when you’re done.",
+                "notAClient": "Workout logging isn’t available for you yet.\n\nOnce you’re set up as a client, you’ll be able to log workouts here.",
+                "alreadyOpen": "You already have a workout-logging session open.\n\nSend /end_workout to finish it before starting a new one.",
+                "unclear": "❓ I couldn’t quite catch that.\n\nTell me the exercise, how many reps, and how many sets (and the weight, if it’s a weighted exercise) — one more try!",
+                "savedAsWritten": "📝 Saved as you wrote it: “{description}” — not linked to the catalog.",
+                "confirmation": "Got it: {exercise}, {reps} reps × {sets} sets{weight}.\n\nWhich one is it?",
+                "savedLinked": "✅ Logged: {exercise}.",
+                "savedUnlinked": "✅ Logged as described.",
+                "sessionEmpty": "👌 Workout ended — nothing was logged this time.",
+                "sessionComplete": "🎉 Workout complete! Great job.",
+                "buttonKeepOwn": "📝 Keep my description",
+                "buttonReject": "❌ That’s not right"
+            },
             "cancelled": "👌 OK, that wasn’t saved.\n\nWe can come back to it when it’s convenient.",
             "safeError": "Something didn’t go as planned.\n\nTry sending your message again.",
             "unsupportedAction": "This action isn’t available right now.",
