@@ -18,10 +18,10 @@
                 "buttonCancel": "❌ Cancel",
                 "unavailable": "🚧 Body measurements are still getting ready for launch.\n\nFor now, keep tracking your numbers — we’ll connect them here soon."
             },
-            "cancelled": "👌 OK, body measurements were not saved.\n\nWe can come back to them when it’s convenient.",
-            "safeError": "Something didn’t go as planned.\n\nTry sending your body measurements again.",
-            "unsupportedAction": "This action is not available for body measurements yet.",
-            "unsupportedInput": "I can’t use this message for body measurements yet."
+            "cancelled": "👌 OK, that wasn’t saved.\n\nWe can come back to it when it’s convenient.",
+            "safeError": "Something didn’t go as planned.\n\nTry sending your message again.",
+            "unsupportedAction": "This action isn’t available right now.",
+            "unsupportedInput": "I can’t use this message right now."
         },
         "progress": {
             "caption": {

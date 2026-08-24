@@ -213,7 +213,7 @@ test('body measurements conversation uses user language for each response path',
         user: ukUser,
         state,
     });
-    assert.equal(unsupportedResponse.text, 'Ця дія поки недоступна для замірів тіла.');
+    assert.equal(unsupportedResponse.text, 'Ця дія зараз недоступна.');
 });
 
 async function loadConversation(options) {
