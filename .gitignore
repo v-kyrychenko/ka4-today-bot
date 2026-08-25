@@ -38,3 +38,4 @@ event-samples/*.json
 # 🟠 SDD plugin (per-developer, not committed)
 .claude/*.local.md
 .worktrees/
+/event-samples/
