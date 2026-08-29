@@ -14,10 +14,6 @@ export interface WorkoutCandidate {
     imageUrl: string | null;
 }
 
-export type MatchCandidatesResult =
-    | {outcome: 'matched'; candidates: WorkoutCandidate[]}
-    | {outcome: 'noMatch'};
-
 export interface MatchCandidatesRequest {
     parsedExercise: ParsedWorkoutExercise;
 }
@@ -26,7 +22,7 @@ const EXERCISE_SEARCH_FIRST_PAGE = 0;
 const EXERCISE_CANDIDATE_LIMIT = 3;
 const HIGH_CONFIDENCE_SCORE_THRESHOLD = 300;
 
-export async function matchCandidates(request: MatchCandidatesRequest): Promise<MatchCandidatesResult> {
+export async function matchCandidates(request: MatchCandidatesRequest): Promise<WorkoutCandidate[] | null> {
     const {parsedExercise} = request;
     const searchResult = await exerciseRepository.search({
         q: parsedExercise.name,
@@ -36,7 +32,7 @@ export async function matchCandidates(request: MatchCandidatesRequest): Promise<
 
     if (!searchResult.items.length) {
         log(`No catalog candidates matched for "${parsedExercise.name}"`);
-        return {outcome: 'noMatch'};
+        return null;
     }
 
     const items = searchResult.items[0].score >= HIGH_CONFIDENCE_SCORE_THRESHOLD ?
@@ -50,7 +46,7 @@ export async function matchCandidates(request: MatchCandidatesRequest): Promise<
             JSON.stringify(candidates.map((candidate) => ({exerciseId: candidate.exerciseId, name: candidate.name}))),
     );
 
-    return {outcome: 'matched', candidates};
+    return candidates;
 }
 
 async function toCandidate(

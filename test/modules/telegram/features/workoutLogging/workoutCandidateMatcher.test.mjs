@@ -22,10 +22,10 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
         parsedExercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
     });
 
-    assert.equal(result.outcome, 'matched', `expected outcome 'matched', got ${JSON.stringify(result)}`);
-    assert.equal(result.candidates.length, 3, `expected 3 candidates, got ${result.candidates.length}`);
+    assert.ok(result, `expected a non-null result, got ${JSON.stringify(result)}`);
+    assert.equal(result.length, 3, `expected 3 candidates, got ${result.length}`);
 
-    assert.deepEqual(result.candidates[0], {
+    assert.deepEqual(result[0], {
         exerciseId: 1,
         name: 'Bench Press',
         reps: 10,
@@ -34,7 +34,7 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
         imageUrl: 'https://signed.example/bench-press.png',
     });
 
-    assert.deepEqual(result.candidates[1], {
+    assert.deepEqual(result[1], {
         exerciseId: 2,
         name: 'Incline Bench Press',
         reps: 10,
@@ -62,9 +62,8 @@ test('matchCandidates narrows to a single candidate when the top result score me
         parsedExercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
     });
 
-    assert.equal(result.outcome, 'matched');
-    assert.equal(result.candidates.length, 1, `expected 1 candidate, got ${result.candidates.length}`);
-    assert.equal(result.candidates[0].exerciseId, 1);
+    assert.equal(result.length, 1, `expected 1 candidate, got ${result.length}`);
+    assert.equal(result[0].exerciseId, 1);
 });
 
 test('matchCandidates keeps all returned candidates when the top result score is below the high-confidence threshold', async () => {
@@ -83,11 +82,10 @@ test('matchCandidates keeps all returned candidates when the top result score is
         parsedExercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
     });
 
-    assert.equal(result.outcome, 'matched');
-    assert.equal(result.candidates.length, 3, `expected 3 candidates, got ${result.candidates.length}`);
+    assert.equal(result.length, 3, `expected 3 candidates, got ${result.length}`);
 });
 
-test('matchCandidates returns a distinct no-match outcome when the catalog search finds zero candidates (AC-05b)', async () => {
+test('matchCandidates returns null when the catalog search finds zero candidates (AC-05b)', async () => {
     const harness = await loadWorkoutCandidateMatcher({
         searchResult: {items: [], total: 0},
     });
@@ -96,7 +94,7 @@ test('matchCandidates returns a distinct no-match outcome when the catalog searc
         parsedExercise: {name: 'Some obscure movement', reps: 10, sets: 4, weight: null},
     });
 
-    assert.deepEqual(result, {outcome: 'noMatch'});
+    assert.equal(result, null);
 });
 
 function exerciseItem({id, name, images, score = 0}) {

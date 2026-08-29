@@ -15,7 +15,7 @@ const candidates = [{exerciseId: 1, name: 'Bench Press', reps: 10, sets: 4, weig
 // processed -- true for confirm-candidate, confirm-own AND reject alike -- with the one named
 // exception being the AC-08 fallback after a second unparseable message in a row.
 test('QG-1: the entry-persist call is never made before a confirmation action, for confirm/keep-own/reject', async () => {
-    const {definition, service} = await loadConversation({parseResult: {outcome: 'parsed', exercise: parsedExercise}, matchResult: {outcome: 'matched', candidates}});
+    const {definition, service} = await loadConversation({parseResult: {outcome: 'parsed', exercise: parsedExercise}, matchResult: candidates});
     const initial = createState({sessionId: 5, clientId: 777});
 
     const proposal = await definition.steps.WAITING_INPUT.onText({
@@ -175,11 +175,11 @@ function createWorkoutLoggingService(options) {
             if (result.outcome === 'unclear') {
                 return {outcome: 'unclear', retryRemaining: true};
             }
-            const matchResult = options.matchResult ?? {outcome: 'noMatch'};
+            const matchResult = options.matchResult ?? null;
             return {
                 outcome: 'confirmation-proposed',
                 parsedExercise: result.exercise,
-                candidates: matchResult.outcome === 'matched' ? matchResult.candidates : [],
+                candidates: matchResult ?? [],
             };
         },
         async handleConfirmationResponse(input) {

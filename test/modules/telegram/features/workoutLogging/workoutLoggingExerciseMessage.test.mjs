@@ -20,7 +20,7 @@ test(
         ];
         const harness = await loadWorkoutLoggingService({
             parseResult: parsedExercise,
-            matchResult: {outcome: 'matched', candidates},
+            matchResult: candidates,
         });
 
         const result = await harness.module.workoutLoggingService.handleExerciseMessage({
@@ -56,7 +56,7 @@ test(
         const parsedExercise = {name: 'Some obscure move', reps: 8, sets: 3, weight: null};
         const harness = await loadWorkoutLoggingService({
             parseResult: parsedExercise,
-            matchResult: {outcome: 'noMatch'},
+            matchResult: null,
         });
 
         const result = await harness.module.workoutLoggingService.handleExerciseMessage({

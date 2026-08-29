@@ -180,7 +180,7 @@ const workoutLoggingServiceMocks = {
         }));
 
         buildContext.onLoad({filter: /^matcher$/, namespace: 'workout-logging-service-mock-matcher'}, () => ({
-            contents: 'export async function matchCandidates() { return {outcome: "noMatch"}; }',
+            contents: 'export async function matchCandidates() { return null; }',
             loader: 'js',
         }));
     },

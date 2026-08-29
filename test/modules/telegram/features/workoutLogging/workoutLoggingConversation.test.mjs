@@ -53,7 +53,7 @@ test('onStart seeds session/client ids and replies in the client stored lang (AC
 test('WAITING_INPUT.onText with a well-formed message proposes confirmation with candidate buttons (AC-03/AC-05)', async () => {
     const {definition, repository, service} = await loadConversation({
         parseResult: {outcome: 'parsed', exercise: parsedExercise},
-        matchResult: {outcome: 'matched', candidates},
+        matchResult: candidates,
     });
     const state = createState({sessionId: 5, clientId: 777});
 
@@ -83,7 +83,7 @@ test('WAITING_INPUT.onText includes a media group with the signed image URLs of 
     ];
     const {definition} = await loadConversation({
         parseResult: {outcome: 'parsed', exercise: parsedExercise},
-        matchResult: {outcome: 'matched', candidates: candidatesWithImages},
+        matchResult: candidatesWithImages,
     });
     const state = createState({sessionId: 5, clientId: 777});
 
@@ -108,7 +108,7 @@ test('WAITING_INPUT.onText includes a media group with the signed image URLs of 
 test('WAITING_INPUT.onText with no catalog match still proposes confirmation with zero candidate buttons (AC-05b)', async () => {
     const {definition} = await loadConversation({
         parseResult: {outcome: 'parsed', exercise: {name: 'Obscure move', reps: 8, sets: 3, weight: null}},
-        matchResult: {outcome: 'noMatch'},
+        matchResult: null,
     });
     const state = createState({sessionId: 5, clientId: 777});
 
@@ -317,11 +317,11 @@ function createWorkoutLoggingService(options) {
                 return {outcome: 'unclear', retryRemaining: true};
             }
 
-            const matchResult = options.matchResult ?? {outcome: 'noMatch'};
+            const matchResult = options.matchResult ?? null;
             return {
                 outcome: 'confirmation-proposed',
                 parsedExercise: result.exercise,
-                candidates: matchResult.outcome === 'matched' ? matchResult.candidates : [],
+                candidates: matchResult ?? [],
             };
         },
         async handleConfirmationResponse(input) {

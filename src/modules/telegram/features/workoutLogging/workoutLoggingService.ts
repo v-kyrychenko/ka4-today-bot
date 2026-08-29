@@ -167,8 +167,7 @@ export async function handleExerciseMessage(
         return {outcome: 'unclear', retryRemaining: true};
     }
 
-    const matchResult = await matchCandidates({parsedExercise});
-    const candidates = matchResult.outcome === 'matched' ? matchResult.candidates : [];
+    const candidates = (await matchCandidates({parsedExercise})) ?? [];
 
     return {outcome: 'confirmation-proposed', parsedExercise, candidates};
 }
