@@ -23,6 +23,7 @@ Deployment is defined in `template.yaml` and `stack/`. Local helper scripts live
 Install dependencies with `npm install`.
 
 - `npm run typecheck` validates the TypeScript codebase with `tsc --noEmit`.
+- `npm run lint` runs ESLint (`eslint.config.mjs`) over the repo; `npm run lint:fix` applies autofixes.
 - `npm test` runs the automated Node.js test suite with `node --test "test/**/*.test.mjs"`.
 - Do not run script interpreters or ad-hoc scripting languages such as `ruby`, `python`, or similar for repository tasks. Prefer standard shell utilities and the documented `npm` commands instead.
 
@@ -51,7 +52,7 @@ When changing progress view-model behavior or template rendering, keep the root 
 ## Testing Guidelines
 There is a small automated test suite using Node.js built-in `node:test`. Run it with `npm test`, which executes every `test/**/*.test.mjs` file. The current automated test lives at `test/modules/telegram/features/conversations/conversationEngine.multiStep.test.mjs` and verifies the Telegram conversation engine multi-step flow with bundled TypeScript source through `esbuild`.
 
-Treat `npm run typecheck` as the minimum gate for code changes, and run `npm test` when changing tested behavior or adding tests. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation plus targeted tests.
+Treat `npm run typecheck` and `npm run lint` as the minimum gate for code changes, and run `npm test` when changing tested behavior or adding tests. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation plus targeted tests.
 
 When adding tests, use Node.js built-in `node:test` unless the repo adopts a broader test framework. Place tests under `test/` using the owning module path, and name them after the target module or use case, for example `listClients.test.mjs`, `searchExercises.test.mjs`, or `conversationEngine.multiStep.test.mjs`.
 

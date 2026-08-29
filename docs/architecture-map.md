@@ -6,7 +6,7 @@ reflects_commit: "1f46d76"
 language: "typescript 5.8.2 (node 22.x, ESM package, CJS build output)"
 build_cmd: "sam build (esbuild, per template.yaml Metadata: Format: cjs, Minify: true)"
 test_cmd: "npm test  # node --test \"test/**/*.test.mjs\""
-lint_cmd: ""
+lint_cmd: "npm run lint  # eslint ."
 migration_tool: ""
 frontend: ""
 ---
@@ -103,8 +103,8 @@ No frontend/UI code exists in this repository. This is a backend-only project: a
 - No migration tooling exists for the Postgres schema (no `drizzle.config.*`, no migrations dir) — schema changes today happen by hand-editing Drizzle schema files with no generated/reversible migration. A feature that changes the schema should flag this gap explicitly rather than assume a migration workflow exists.
 - The coach admin API (`src/modules/coach/*/api/index.ts`) is defined but disabled in `template.yaml` (e.g. line 344) — treat it as not-yet-live; changes there don't affect a running endpoint until it's re-enabled.
 - AGENTS.md reserves `src/infrastructure/persistence/dynamodb/legacy/` for legacy DynamoDB compatibility code and says it should not be expanded; that path does not currently exist in `src/`, so there is nothing to preserve, but new persistence work should still go through Postgres/Drizzle, not DynamoDB.
-- No lint command / ESLint config in the repo; `npm run typecheck` (`tsc --noEmit`) is the only static gate besides tests.
 - `tsconfig.json` targets `commonjs` module output while `package.json` declares `"type": "module"` — build correctness currently depends on esbuild's CJS bundling in `template.yaml`, not on `tsc` output; be careful with any change to build tooling.
+- The "is this Telegram user a client" eligibility check is duplicated per feature instead of centralized: `src/modules/telegram/features/workoutLogging/workoutLoggingConversation.ts` (`onStart`, before starting the conversation) and `src/modules/telegram/features/measurements/bodyMeasurementsConversation.ts` (`saveMeasurements`, at save-time) each re-implement `clientId == null` handling; `src/modules/telegram/handlers/bodyMeasurements.ts` has a third variant for the Mini App HTTP path. `src/modules/telegram/routes/routesProcessor.ts` has no such gate today, and several routes (`StartRoute`, `DefaultRoute`, `DailyGreetingRoute`) intentionally must keep working for non-clients, so a blanket gate in `buildContext` would be wrong. If a third Telegram conversation/feature needs the same client-only gate, consider a per-route opt-in (e.g. a `requiresClient` flag on `BaseRoute`, mirroring the existing `conversationType` flag) checked in `routesProcessor.execute` after route matching, rather than duplicating the check again.
 
 ## Reconciliation with the authored architecture doc
 
