@@ -1,5 +1,6 @@
 import type {ExerciseItem} from '../../../coach/exercise/domain/exercise.js';
 import {exerciseRepository} from '../../../coach/exercise/repository/exerciseRepository.js';
+import {log} from '../../../../shared/logging';
 import {exerciseImageSigning} from '../workouts/exerciseImageSigning.js';
 import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 
@@ -32,11 +33,17 @@ export async function matchCandidates(request: MatchCandidatesRequest): Promise<
     });
 
     if (!searchResult.items.length) {
+        log(`No catalog candidates matched for "${parsedExercise.name}"`);
         return {outcome: 'noMatch'};
     }
 
     const candidates = await Promise.all(
         searchResult.items.map((item) => toCandidate(item, parsedExercise)),
+    );
+
+    log(
+        `Matched ${candidates.length} catalog candidates for "${parsedExercise.name}": ` +
+            JSON.stringify(candidates.map((candidate) => ({exerciseId: candidate.exerciseId, name: candidate.name}))),
     );
 
     return {outcome: 'matched', candidates};

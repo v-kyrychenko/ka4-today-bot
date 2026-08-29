@@ -7,7 +7,7 @@ export const exerciseMapper = {
 
 export function toAppModel(row: DictExerciseRow): ExerciseItem {
     return new ExerciseItem({
-        id: row.id,
+        id: Number(row.id),
         name: toJsonObject(row.name),
         key: row.key,
         level: row.level,
@@ -23,11 +23,23 @@ export function toAppModel(row: DictExerciseRow): ExerciseItem {
 }
 
 function toJsonObject(value: unknown): JsonObject {
+    if (typeof value === 'string') {
+        return toJsonObject(parseJsonSafely(value));
+    }
+
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
         return {};
     }
 
     return value as JsonObject;
+}
+
+function parseJsonSafely(value: string): unknown {
+    try {
+        return JSON.parse(value) as unknown;
+    } catch {
+        return null;
+    }
 }
 
 function toStringArray(value: unknown): string[] {

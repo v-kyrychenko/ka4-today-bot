@@ -35,11 +35,10 @@ export async function parseExerciseMessage(request: ParseExerciseMessageRequest)
     const reply = parseExerciseParseReply(rawReply);
     const exercise = reply ? toParsedExercise(reply) : null;
 
-    if (exercise) {
-        log(`Parsed exercise message: ${JSON.stringify(exercise)}`);
-    } else {
-        log(`Could not parse exercise message, raw reply: ${rawReply}`);
-    }
+    log(exercise ?
+        `Parsed exercise message: ${JSON.stringify(exercise)}` :
+        `Could not parse exercise message, raw reply: ${rawReply}`,
+    );
 
     return exercise;
 }

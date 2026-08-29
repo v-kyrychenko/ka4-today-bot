@@ -45,6 +45,26 @@ test('search() returns zero rows when search_dict_exercises finds no match (AC-0
     assert.equal(result.items.length, 0);
 });
 
+test('search() parses a JSON-encoded name string returned by search_dict_exercises instead of dropping it', async () => {
+    const {repository} = await loadRepository({
+        rows: [{...row(1, 'Bench Press'), name: JSON.stringify({en: 'Bench Press'})}],
+    });
+
+    const result = await repository.search({q: 'bench press', page: 0, limit: 3});
+
+    assert.deepEqual(result.items[0].name, {en: 'Bench Press'});
+});
+
+test('search() falls back to an empty name object when the raw value is not valid JSON', async () => {
+    const {repository} = await loadRepository({
+        rows: [{...row(1, 'Bench Press'), name: 'not json'}],
+    });
+
+    const result = await repository.search({q: 'bench press', page: 0, limit: 3});
+
+    assert.deepEqual(result.items[0].name, {});
+});
+
 function row(id, name) {
     return {
         id,
