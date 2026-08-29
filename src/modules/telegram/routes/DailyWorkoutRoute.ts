@@ -1,17 +1,14 @@
 import {DAILY_WORKOUT_ROUTE} from './constants.js';
 import {BaseRoute} from './BaseRoute.js';
-import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
-import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import type {ProcessorContext} from '../model/context.js';
+import {exerciseImageSigning} from '../features/workouts/exerciseImageSigning.js';
 import {Exercise, ExerciseWithSignedImages} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {parseJsonArrayFromText} from '../../../shared/utils/json.js';
-
-const s3 = new S3Client();
 
 const PROMPT_REF = 'daily_workout';
 const PROMPT_REF_NOT_TODAY = 'no_training_for_today';
@@ -72,15 +69,7 @@ export class DailyWorkoutRoute extends BaseRoute {
 async function generateSignedUrls(exercises: Exercise[]): Promise<ExerciseWithSignedImages[]> {
     return Promise.all(
         exercises.map(async (exercise) => {
-            const signedImages = await Promise.all(
-                exercise.images.map(async (key) => {
-                    const command = new GetObjectCommand({
-                        Bucket: 'ka4-today-exercises',
-                        Key: `exercises/${key}`,
-                    });
-                    return getSignedUrl(s3, command, {expiresIn: 3600});
-                }),
-            );
+            const signedImages = await exerciseImageSigning.signExerciseImageUrls(exercise.images);
 
             return new ExerciseWithSignedImages({
                 ...exercise,

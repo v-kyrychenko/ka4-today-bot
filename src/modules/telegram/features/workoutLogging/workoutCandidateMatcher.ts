@@ -1,7 +1,6 @@
-import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
-import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import type {ExerciseItem} from '../../../coach/exercise/domain/exercise.js';
 import {exerciseRepository} from '../../../coach/exercise/repository/exerciseRepository.js';
+import {exerciseImageSigning} from '../workouts/exerciseImageSigning.js';
 import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 
 export interface WorkoutCandidate {
@@ -21,14 +20,16 @@ export interface MatchCandidatesRequest {
     parsedExercise: ParsedWorkoutExercise;
 }
 
-const EXERCISE_IMAGES_BUCKET = 'ka4-today-exercises';
-const IMAGE_URL_EXPIRES_IN_SECONDS = 3600;
-
-const s3 = new S3Client();
+const EXERCISE_SEARCH_FIRST_PAGE = 0;
+const EXERCISE_CANDIDATE_LIMIT = 3;
 
 export async function matchCandidates(request: MatchCandidatesRequest): Promise<MatchCandidatesResult> {
     const {parsedExercise} = request;
-    const searchResult = await exerciseRepository.search({q: parsedExercise.name, page: 0, limit: 3});
+    const searchResult = await exerciseRepository.search({
+        q: parsedExercise.name,
+        page: EXERCISE_SEARCH_FIRST_PAGE,
+        limit: EXERCISE_CANDIDATE_LIMIT,
+    });
 
     if (!searchResult.items.length) {
         return {outcome: 'noMatch'};
@@ -59,6 +60,5 @@ async function signFirstImageUrl(images: string[]): Promise<string | null> {
         return null;
     }
 
-    const command = new GetObjectCommand({Bucket: EXERCISE_IMAGES_BUCKET, Key: `exercises/${key}`});
-    return getSignedUrl(s3, command, {expiresIn: IMAGE_URL_EXPIRES_IN_SECONDS});
+    return exerciseImageSigning.signExerciseImageUrl(key);
 }
