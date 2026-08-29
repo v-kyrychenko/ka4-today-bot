@@ -5,6 +5,7 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
+import {getTableName} from 'drizzle-orm';
 import {PgDialect} from 'drizzle-orm/pg-core';
 
 const dialect = new PgDialect();
@@ -17,13 +18,16 @@ test('findActiveByClientId() filters by client_id and ended_at IS NULL, and maps
 
     const session = await repository.findActiveByClientId(777);
 
-    assert.equal(db.calls.length, 1, 'expected exactly one db.execute call');
-    const {sql, params} = dialect.sqlToQuery(db.calls[0]);
-    const normalized = sql.replace(/\s+/g, ' ').trim();
+    assert.equal(db.calls.length, 1, 'expected exactly one query call');
+    const [call] = db.calls;
+    assert.equal(call.kind, 'select');
+    assert.equal(getTableName(call.table), 'workout_log_session', `expected a query against workout_log_session, got: ${getTableName(call.table)}`);
+    assert.equal(call.limit, 1);
 
-    assert.match(normalized, /from\s+workout_log_session/i, `expected query against workout_log_session, got: ${sql}`);
-    assert.match(normalized, /ended_at\s+is\s+null/i, `expected an ended_at IS NULL filter, got: ${sql}`);
-    assert.ok(params.includes(777), `expected client_id 777 among params, got: ${JSON.stringify(params)}`);
+    const {sql, params} = dialect.sqlToQuery(call.where);
+    const normalized = sql.replace(/\s+/g, ' ').trim();
+    assert.match(normalized, /ended_at"?\s+is\s+null/i, `expected an ended_at IS NULL filter, got: ${sql}`);
+    assert.ok(params.includes(777), `expected client_id 777 among the filter params, got: ${JSON.stringify(params)}`);
 
     assert.equal(session.id, 1);
     assert.equal(session.clientId, 777);
@@ -59,13 +63,16 @@ test('startSession() inserts a new open session and returns the mapped domain se
         startedAt: '2026-08-23T10:00:00.000Z',
     });
 
-    assert.equal(db.calls.length, 1, 'expected exactly one db.execute call');
-    const {sql, params} = dialect.sqlToQuery(db.calls[0]);
-    const normalized = sql.replace(/\s+/g, ' ').trim();
-
-    assert.match(normalized, /insert\s+into\s+workout_log_session/i, `expected an insert into workout_log_session, got: ${sql}`);
-    assert.ok(params.includes(777), `expected client_id 777 among insert params, got: ${JSON.stringify(params)}`);
-    assert.ok(params.includes('2026-08-23'), `expected session_day among insert params, got: ${JSON.stringify(params)}`);
+    assert.equal(db.calls.length, 1, 'expected exactly one query call');
+    const [call] = db.calls;
+    assert.equal(call.kind, 'insert');
+    assert.equal(getTableName(call.table), 'workout_log_session', `expected an insert into workout_log_session, got: ${getTableName(call.table)}`);
+    assert.equal(call.returning, true);
+    assert.deepEqual(call.values, {
+        client_id: 777,
+        session_day: '2026-08-23',
+        started_at: '2026-08-23T10:00:00.000Z',
+    });
 
     assert.equal(session.id, 2);
     assert.equal(session.clientId, 777);
@@ -87,15 +94,17 @@ test('closeSession() sets ended_at and end_reason, and returns the mapped closed
 
     const session = await repository.closeSession(1, 'client-ended');
 
-    assert.equal(db.calls.length, 1, 'expected exactly one db.execute call');
-    const {sql, params} = dialect.sqlToQuery(db.calls[0]);
-    const normalized = sql.replace(/\s+/g, ' ').trim();
+    assert.equal(db.calls.length, 1, 'expected exactly one query call');
+    const [call] = db.calls;
+    assert.equal(call.kind, 'update');
+    assert.equal(getTableName(call.table), 'workout_log_session', `expected an update of workout_log_session, got: ${getTableName(call.table)}`);
+    assert.equal(call.returning, true);
+    assert.equal(call.set.end_reason, 'client-ended');
+    assert.ok(call.set.ended_at, 'expected ended_at to be set');
 
-    assert.match(normalized, /update\s+workout_log_session/i, `expected an update of workout_log_session, got: ${sql}`);
-    assert.match(normalized, /end_reason/i, `expected end_reason to be set, got: ${sql}`);
-    assert.match(normalized, /ended_at/i, `expected ended_at to be set, got: ${sql}`);
-    assert.ok(params.includes(1), `expected session id 1 among params, got: ${JSON.stringify(params)}`);
-    assert.ok(params.includes('client-ended'), `expected end_reason among params, got: ${JSON.stringify(params)}`);
+    const {sql, params} = dialect.sqlToQuery(call.where);
+    assert.ok(params.includes(1), `expected session id 1 among the filter params, got: ${JSON.stringify(params)}`);
+    assert.match(sql, /\bid\b/i, `expected the update to filter by id, got: ${sql}`);
 
     assert.equal(session.endReason, 'client-ended');
     assert.equal(session.endedAt, '2026-08-23T12:00:00.000Z');
@@ -124,16 +133,14 @@ test('addEntry() inserts a workout_log_entry row and returns the mapped domain e
         weight: null,
     });
 
-    assert.equal(db.calls.length, 1, 'expected exactly one db.execute call');
-    const {sql, params} = dialect.sqlToQuery(db.calls[0]);
-    const normalized = sql.replace(/\s+/g, ' ').trim();
-
-    assert.match(normalized, /insert\s+into\s+workout_log_entry/i, `expected an insert into workout_log_entry, got: ${sql}`);
-    assert.ok(params.includes(1), `expected session_id 1 among insert params, got: ${JSON.stringify(params)}`);
-    assert.ok(
-        params.includes('weird stretch thing'),
-        `expected raw_description among insert params, got: ${JSON.stringify(params)}`,
-    );
+    assert.equal(db.calls.length, 1, 'expected exactly one query call');
+    const [call] = db.calls;
+    assert.equal(call.kind, 'insert');
+    assert.equal(getTableName(call.table), 'workout_log_entry', `expected an insert into workout_log_entry, got: ${getTableName(call.table)}`);
+    assert.equal(call.returning, true);
+    assert.equal(call.values.session_id, 1);
+    assert.equal(call.values.raw_description, 'weird stretch thing');
+    assert.equal(call.values.weight, null);
 
     assert.equal(entry.id, 10);
     assert.equal(entry.sessionId, 1);
@@ -142,25 +149,41 @@ test('addEntry() inserts a workout_log_entry row and returns the mapped domain e
     assert.equal(entry.reps, null);
 });
 
+test('addEntry() stringifies a numeric weight for the numeric(5,1) column', async () => {
+    const {repository, db} = await loadRepository({rows: [entryRow({weight: '60.0'})]});
+
+    await repository.addEntry({
+        sessionId: 1,
+        dictExerciseId: null,
+        rawDescription: 'bench press 4x10 60kg',
+        reps: 10,
+        sets: 4,
+        weight: 60,
+    });
+
+    assert.equal(db.calls[0].values.weight, '60');
+});
+
 // AC-09/AC-09b: closing a session decides "empty vs recorded" by counting its entries.
 test('countEntries() counts workout_log_entry rows filtered by session_id', async () => {
-    const {repository, db} = await loadRepository({rows: [{count: '3'}]});
+    const {repository, db} = await loadRepository({countResult: 3});
 
     const count = await repository.countEntries(1);
 
-    assert.equal(db.calls.length, 1, 'expected exactly one db.execute call');
-    const {sql, params} = dialect.sqlToQuery(db.calls[0]);
-    const normalized = sql.replace(/\s+/g, ' ').trim();
+    assert.equal(db.calls.length, 1, 'expected exactly one query call');
+    const [call] = db.calls;
+    assert.equal(call.kind, 'count');
+    assert.equal(getTableName(call.table), 'workout_log_entry', `expected a count against workout_log_entry, got: ${getTableName(call.table)}`);
 
-    assert.match(normalized, /from\s+workout_log_entry/i, `expected query against workout_log_entry, got: ${sql}`);
-    assert.match(normalized, /count\(/i, `expected a count() aggregate, got: ${sql}`);
-    assert.ok(params.includes(1), `expected session_id 1 among params, got: ${JSON.stringify(params)}`);
+    const {sql, params} = dialect.sqlToQuery(call.where);
+    assert.match(sql, /session_id/i, `expected the count to filter by session_id, got: ${sql}`);
+    assert.ok(params.includes(1), `expected session_id 1 among the filter params, got: ${JSON.stringify(params)}`);
 
     assert.equal(count, 3, `expected countEntries to return the numeric count, got: ${JSON.stringify(count)}`);
 });
 
 test('countEntries() returns 0 for a session with no recorded exercises (AC-09b)', async () => {
-    const {repository} = await loadRepository({rows: [{count: '0'}]});
+    const {repository} = await loadRepository({countResult: 0});
 
     const count = await repository.countEntries(1);
 
@@ -194,17 +217,11 @@ function entryRow(overrides) {
 }
 
 async function loadRepository(options) {
-    const db = {
-        calls: [],
-        async execute(query) {
-            this.calls.push(query);
-            return {rows: options.rows, rowCount: options.rows.length};
-        },
-    };
+    const db = createFakeDb(options);
 
     globalThis.__workoutLogRepositoryMocks = {getPostgresDb: () => db};
 
-    const outfile = path.join(tmpdir(), `workout-log-repository-${process.pid}-${Date.now()}.mjs`);
+    const outfile = path.join(tmpdir(), `workout-log-repository-${process.pid}-${Date.now()}-${Math.random()}.mjs`);
 
     await build({
         bundle: true,
@@ -217,11 +234,81 @@ async function loadRepository(options) {
     });
 
     try {
-        const module = await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}`);
+        const module = await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}-${Math.random()}`);
         return {repository: module.workoutLogRepository, db};
     } finally {
         await rm(outfile, {force: true});
     }
+}
+
+// A purpose-built fluent test double for Drizzle's query builder -- there is no real DB, and no
+// existing pattern in this repo for unit-testing a Drizzle-builder-based repository (every other
+// builder-based repository has zero unit tests). It records each chain's shape (table/where/
+// values/limit) for direct assertions, rather than compiling to raw SQL, since `.values()`/
+// `.set()` take plain objects (not SQL fragments) -- only `where` conditions are real Drizzle
+// `SQL` objects, so those alone are inspected via `PgDialect.sqlToQuery()`.
+function createFakeDb(options) {
+    const calls = [];
+
+    function chain(entry, resolveValue) {
+        const builder = {
+            from(table) {
+                entry.table = table;
+                return builder;
+            },
+            where(condition) {
+                entry.where = condition;
+                return builder;
+            },
+            limit(n) {
+                entry.limit = n;
+                return builder;
+            },
+            values(values) {
+                entry.values = values;
+                return builder;
+            },
+            set(values) {
+                entry.set = values;
+                return builder;
+            },
+            returning() {
+                entry.returning = true;
+                return builder;
+            },
+            then(onFulfilled, onRejected) {
+                return Promise.resolve(resolveValue()).then(onFulfilled, onRejected);
+            },
+            catch(onRejected) {
+                return builder.then(undefined, onRejected);
+            },
+        };
+
+        return builder;
+    }
+
+    return {
+        calls,
+        select() {
+            const entry = {kind: 'select'};
+            calls.push(entry);
+            return chain(entry, () => options.rows ?? []);
+        },
+        insert(table) {
+            const entry = {kind: 'insert', table};
+            calls.push(entry);
+            return chain(entry, () => options.rows ?? []);
+        },
+        update(table) {
+            const entry = {kind: 'update', table};
+            calls.push(entry);
+            return chain(entry, () => options.rows ?? []);
+        },
+        $count(table, where) {
+            calls.push({kind: 'count', table, where});
+            return Promise.resolve(options.countResult ?? 0);
+        },
+    };
 }
 
 const workoutLogRepositoryMocks = {
