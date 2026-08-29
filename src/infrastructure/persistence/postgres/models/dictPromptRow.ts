@@ -6,5 +6,5 @@ export interface DictPromptRow {
     vector_store_ids: string;
     model: string | null;
     temperature: string | null;
-    text_format: unknown;
+    config: unknown;
 }

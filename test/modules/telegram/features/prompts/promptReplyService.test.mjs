@@ -22,11 +22,11 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
             },
             model: 'gpt-4o-mini',
             temperature: 0.4,
-            textFormat: {format: {type: 'json_schema', name: 'coachReply'}},
+            config: {textFormat: {format: {type: 'json_schema', name: 'coachReply'}}, reasoning: null},
         },
         model: 'gpt-4.1-mini',
         temperature: 0.9,
-        textFormat: {format: {type: 'text'}},
+        config: {textFormat: {format: {type: 'text'}}, reasoning: null},
     });
     const harness = await loadPromptReplyService({
         prompt,
@@ -72,7 +72,7 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
         vectorStoreIds: ['vs_1', 'vs_2'],
         model: 'gpt-4.1-mini',
         temperature: 0.9,
-        textFormat: {format: {type: 'text'}},
+        config: {textFormat: {format: {type: 'text'}}, reasoning: null},
         background: false,
     });
 });
@@ -185,13 +185,13 @@ test('fetchOpenAiReply prefers prompt-level OpenAI settings over system prompt s
         prompt: createPrompt({
             model: 'gpt-4.1',
             temperature: 0.2,
-            textFormat: {format: {type: 'json_schema', name: 'promptLevel'}},
+            config: {textFormat: {format: {type: 'json_schema', name: 'promptLevel'}}, reasoning: null},
             systemPrompt: {
                 key: 'system.settings',
                 prompts: {ua: 'System'},
                 model: 'gpt-4o-mini',
                 temperature: 0.7,
-                textFormat: {format: {type: 'text'}},
+                config: {textFormat: {format: {type: 'text'}}, reasoning: null},
             },
         }),
     });
@@ -202,12 +202,12 @@ test('fetchOpenAiReply prefers prompt-level OpenAI settings over system prompt s
         {
             model: harness.calls.createResponseInput.model,
             temperature: harness.calls.createResponseInput.temperature,
-            textFormat: harness.calls.createResponseInput.textFormat,
+            config: harness.calls.createResponseInput.config,
         },
         {
             model: 'gpt-4.1',
             temperature: 0.2,
-            textFormat: {format: {type: 'json_schema', name: 'promptLevel'}},
+            config: {textFormat: {format: {type: 'json_schema', name: 'promptLevel'}}, reasoning: null},
         },
     );
 });
@@ -217,13 +217,13 @@ test('fetchOpenAiReply falls back to system prompt OpenAI settings when prompt-l
         prompt: createPrompt({
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
             systemPrompt: {
                 key: 'system.settings',
                 prompts: {ua: 'System'},
                 model: 'gpt-4.1-mini',
                 temperature: 0.3,
-                textFormat: {format: {type: 'json_schema', name: 'systemLevel'}},
+                config: {textFormat: {format: {type: 'json_schema', name: 'systemLevel'}}, reasoning: null},
             },
         }),
     });
@@ -234,12 +234,12 @@ test('fetchOpenAiReply falls back to system prompt OpenAI settings when prompt-l
         {
             model: harness.calls.createResponseInput.model,
             temperature: harness.calls.createResponseInput.temperature,
-            textFormat: harness.calls.createResponseInput.textFormat,
+            config: harness.calls.createResponseInput.config,
         },
         {
             model: 'gpt-4.1-mini',
             temperature: 0.3,
-            textFormat: {format: {type: 'json_schema', name: 'systemLevel'}},
+            config: {textFormat: {format: {type: 'json_schema', name: 'systemLevel'}}, reasoning: null},
         },
     );
 });
@@ -249,13 +249,13 @@ test('fetchOpenAiReply sends null OpenAI settings when both prompt and system pr
         prompt: createPrompt({
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
             systemPrompt: {
                 key: 'system.settings',
                 prompts: {ua: 'System'},
                 model: null,
                 temperature: null,
-                textFormat: null,
+                config: null,
             },
         }),
     });
@@ -266,12 +266,12 @@ test('fetchOpenAiReply sends null OpenAI settings when both prompt and system pr
         {
             model: harness.calls.createResponseInput.model,
             temperature: harness.calls.createResponseInput.temperature,
-            textFormat: harness.calls.createResponseInput.textFormat,
+            config: harness.calls.createResponseInput.config,
         },
         {
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
         },
     );
 });
@@ -497,11 +497,11 @@ function createPrompt(overrides = {}) {
             prompts: {ua: 'System ${name}'},
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
         },
         model: null,
         temperature: null,
-        textFormat: null,
+        config: null,
     };
 
     const prompt = {
@@ -527,7 +527,7 @@ function normalizeSystemPrompt(systemPrompt) {
         prompts: {ua: 'System ${name}'},
         model: null,
         temperature: null,
-        textFormat: null,
+        config: null,
     };
 
     const normalizedSystemPrompt = {

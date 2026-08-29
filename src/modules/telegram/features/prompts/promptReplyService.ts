@@ -95,7 +95,7 @@ function buildOpenAiCreateResponseInput(
         vectorStoreIds: dictPrompt.vectorStoreIds,
         model: resolvePromptSetting(dictPrompt.model, dictPrompt.systemPrompt?.model ?? null),
         temperature: resolvePromptSetting(dictPrompt.temperature, dictPrompt.systemPrompt?.temperature ?? null),
-        textFormat: resolvePromptSetting(dictPrompt.textFormat, dictPrompt.systemPrompt?.textFormat ?? null),
+        config: resolvePromptSetting(dictPrompt.config, dictPrompt.systemPrompt?.config ?? null),
         background: background ?? false,
     };
 }

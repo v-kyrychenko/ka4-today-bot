@@ -8,5 +8,5 @@ export const dictPrompt = pgTable('dict_prompt', {
     vector_store_ids: text('vector_store_ids').notNull(),
     model: varchar('model', {length: 20}),
     temperature: numeric('temperature', {precision: 2, scale: 1}),
-    text_format: jsonb('text_format'),
+    config: jsonb('config'),
 });

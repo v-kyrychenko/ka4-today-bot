@@ -11,13 +11,24 @@ export interface OpenAiTextFormat {
     format: Record<string, unknown>;
 }
 
+export type OpenAiReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+
+export interface OpenAiReasoningConfig {
+    effort: OpenAiReasoningEffort;
+}
+
+export interface OpenAiConfig {
+    textFormat: OpenAiTextFormat | null;
+    reasoning: OpenAiReasoningConfig | null;
+}
+
 export interface OpenAiCreateResponseInput {
     systemPrompt: string;
     userPrompt: string;
     vectorStoreIds?: string[];
     model: string | null;
     temperature: number | null;
-    textFormat: OpenAiTextFormat | null;
+    config: OpenAiConfig | null;
     background?: boolean;
 }
 

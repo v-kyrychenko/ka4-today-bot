@@ -6,6 +6,8 @@ import {log} from '../../../shared/logging';
 import {
     OpenAiResponseDetails,
     type OpenAiCreateResponseInput,
+    type OpenAiReasoningConfig,
+    type OpenAiTextFormat,
     DEFAULT_MODEL,
     DEFAULT_TEMPERATURE,
 } from '../../../shared/types/openai.js';
@@ -31,7 +33,8 @@ interface OpenAiResponseCreatePayload {
     background: boolean;
     temperature: number;
     input: Array<{role: 'system' | 'user'; content: string}>;
-    text: OpenAiCreateResponseInput['textFormat'] | null;
+    text: OpenAiTextFormat | null;
+    reasoning?: OpenAiReasoningConfig;
     tools?: Array<{type: 'file_search'; vector_store_ids: string[]}>;
 }
 
@@ -48,12 +51,16 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
             {role: 'system', content: request.systemPrompt},
             {role: 'user', content: request.userPrompt},
         ],
-        text: request.textFormat ?? null,
+        text: request.config?.textFormat ?? null,
     };
 
     const vectorStoreIds = request.vectorStoreIds ?? [];
     if (vectorStoreIds.length > 0) {
         body.tools = [{type: 'file_search', vector_store_ids: vectorStoreIds}];
+    }
+
+    if (request.config?.reasoning) {
+        body.reasoning = request.config.reasoning;
     }
 
     const response = await httpRequest<OpenAiResponseDetails, OpenAiResponseCreatePayload>({
