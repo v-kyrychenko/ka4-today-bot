@@ -47,6 +47,12 @@ export enum HandleConfirmationResponseOutcome {
     SavedUnlinked = 'saved-unlinked',
 }
 
+enum SessionEndReason {
+    ClientEnded = 'client-ended',
+    PreEmpted = 'pre-empted',
+    AutoClosed = 'auto-closed',
+}
+
 export interface StartSessionResult {
     outcome: StartSessionOutcome;
     sessionId?: number;
@@ -79,10 +85,6 @@ export interface SaveUnconfirmedEntryRequest {
     sessionId: number;
     rawDescription: string;
 }
-
-const CLIENT_ENDED_REASON = 'client-ended';
-const PRE_EMPTED_REASON = 'pre-empted';
-const AUTO_CLOSED_REASON = 'auto-closed';
 
 export const workoutLoggingService = {
     startSession,
@@ -120,7 +122,7 @@ export async function endSession(request: EndSessionRequest): Promise<EndSession
     }
 
     const entryCount = await workoutLogRepository.countEntries(activeSession.id);
-    await workoutLogRepository.closeSession(activeSession.id, CLIENT_ENDED_REASON);
+    await workoutLogRepository.closeSession(activeSession.id, SessionEndReason.ClientEnded);
 
     return {outcome: entryCount > 0 ? EndSessionOutcome.EndedRecorded : EndSessionOutcome.EndedEmpty};
 }
@@ -131,7 +133,7 @@ export async function preemptActiveSession(request: PreemptActiveSessionRequest)
         return;
     }
 
-    await workoutLogRepository.closeSession(activeSession.id, PRE_EMPTED_REASON);
+    await workoutLogRepository.closeSession(activeSession.id, SessionEndReason.PreEmpted);
 }
 
 /**
@@ -144,7 +146,7 @@ export async function closeExpiredSession(request: CloseExpiredSessionRequest): 
         return;
     }
 
-    await workoutLogRepository.closeSession(activeSession.id, AUTO_CLOSED_REASON);
+    await workoutLogRepository.closeSession(activeSession.id, SessionEndReason.AutoClosed);
 }
 
 export async function handleExerciseMessage(

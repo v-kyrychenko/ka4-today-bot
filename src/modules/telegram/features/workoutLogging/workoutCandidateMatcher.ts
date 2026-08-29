@@ -39,11 +39,14 @@ export async function matchCandidates(request: MatchCandidatesRequest): Promise<
         searchResult.items.slice(0, 1) :
         searchResult.items;
 
-    const candidates = await Promise.all(items.map((item) => toCandidate(item, parsedExercise)));
+    const candidates = await Promise.all(
+        items.map((item) => toCandidate(item, parsedExercise))
+    );
 
-    log(
-        `Matched ${candidates.length} catalog candidates for "${parsedExercise.name}": ` +
-            JSON.stringify(candidates.map((candidate) => ({exerciseId: candidate.exerciseId, name: candidate.name}))),
+    log(`Matched ${candidates.length} catalog candidates for "${parsedExercise.name}": ` +
+        JSON.stringify(candidates
+            .map((candidate) => (
+                {exerciseId: candidate.exerciseId, name: candidate.name}))),
     );
 
     return candidates;
