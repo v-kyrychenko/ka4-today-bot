@@ -19,7 +19,7 @@ test(
             {exerciseId: 1, name: {en: 'Bench press'}, reps: 10, sets: 4, weight: 60, imageUrl: 'https://img/1'},
         ];
         const harness = await loadWorkoutLoggingService({
-            parseResult: {outcome: 'parsed', exercise: parsedExercise},
+            parseResult: parsedExercise,
             matchResult: {outcome: 'matched', candidates},
         });
 
@@ -55,7 +55,7 @@ test(
     async () => {
         const parsedExercise = {name: 'Some obscure move', reps: 8, sets: 3, weight: null};
         const harness = await loadWorkoutLoggingService({
-            parseResult: {outcome: 'parsed', exercise: parsedExercise},
+            parseResult: parsedExercise,
             matchResult: {outcome: 'noMatch'},
         });
 
@@ -82,7 +82,7 @@ test(
     'handleExerciseMessage() flags one retry remaining for an unclear message and writes nothing (AC-07)',
     async () => {
         const harness = await loadWorkoutLoggingService({
-            parseResult: {outcome: 'unclear', exercise: null},
+            parseResult: null,
         });
 
         const result = await harness.module.workoutLoggingService.handleExerciseMessage({

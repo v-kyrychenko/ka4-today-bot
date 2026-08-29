@@ -162,15 +162,15 @@ export async function closeExpiredSession(request: CloseExpiredSessionRequest): 
 export async function handleExerciseMessage(
     request: HandleExerciseMessageRequest,
 ): Promise<HandleExerciseMessageResult> {
-    const parseResult = await parseExerciseMessage({message: request.message, lang: request.lang});
-    if (parseResult.outcome === 'unclear') {
+    const parsedExercise = await parseExerciseMessage({message: request.message, lang: request.lang});
+    if (!parsedExercise) {
         return {outcome: 'unclear', retryRemaining: true};
     }
 
-    const matchResult = await matchCandidates({parsedExercise: parseResult.exercise});
+    const matchResult = await matchCandidates({parsedExercise});
     const candidates = matchResult.outcome === 'matched' ? matchResult.candidates : [];
 
-    return {outcome: 'confirmation-proposed', parsedExercise: parseResult.exercise, candidates};
+    return {outcome: 'confirmation-proposed', parsedExercise, candidates};
 }
 
 export async function handleConfirmationResponse(

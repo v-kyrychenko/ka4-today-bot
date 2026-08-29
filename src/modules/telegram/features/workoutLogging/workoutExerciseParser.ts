@@ -1,3 +1,4 @@
+import {log} from '../../../../shared/logging';
 import {promptReplyService} from '../prompts/promptReplyService.js';
 import {parseJsonFromText} from '../../../../shared/utils/json.js';
 
@@ -7,10 +8,6 @@ export interface ParsedWorkoutExercise {
     sets: number;
     weight: number | null;
 }
-
-export type ParseExerciseMessageResult =
-    | {outcome: 'parsed'; exercise: ParsedWorkoutExercise}
-    | {outcome: 'unclear'; exercise: null};
 
 export interface ParseExerciseMessageRequest {
     message: string;
@@ -26,11 +23,9 @@ interface ExerciseParseReply {
     multipleExercises: unknown;
 }
 
-const UNCLEAR_RESULT: ParseExerciseMessageResult = {outcome: 'unclear', exercise: null};
-
 const WORKOUT_EXERCISE_PARSER_PROMPT_REF = 'workout_exercise_parser';
 
-export async function parseExerciseMessage(request: ParseExerciseMessageRequest): Promise<ParseExerciseMessageResult> {
+export async function parseExerciseMessage(request: ParseExerciseMessageRequest): Promise<ParsedWorkoutExercise | null> {
     const rawReply = await promptReplyService.fetchOpenAiReply({
         lang: request.lang,
         promptRef: WORKOUT_EXERCISE_PARSER_PROMPT_REF,
@@ -38,10 +33,18 @@ export async function parseExerciseMessage(request: ParseExerciseMessageRequest)
     });
 
     const reply = parseExerciseParseReply(rawReply);
-    return reply ? toParseResult(reply) : UNCLEAR_RESULT;
+    const exercise = reply ? toParsedExercise(reply) : null;
+
+    if (exercise) {
+        log(`Parsed exercise message: ${JSON.stringify(exercise)}`);
+    } else {
+        log(`Could not parse exercise message, raw reply: ${rawReply}`);
+    }
+
+    return exercise;
 }
 
-function toParseResult(reply: ExerciseParseReply): ParseExerciseMessageResult {
+function toParsedExercise(reply: ExerciseParseReply): ParsedWorkoutExercise | null {
     const name = typeof reply.exerciseName === 'string' ? reply.exerciseName.trim() : '';
     const reps = typeof reply.reps === 'number' ? reply.reps : null;
     const sets = typeof reply.sets === 'number' ? reply.sets : null;
@@ -50,10 +53,10 @@ function toParseResult(reply: ExerciseParseReply): ParseExerciseMessageResult {
     const multipleExercises = reply.multipleExercises === true;
 
     if (!name || reps == null || sets == null || multipleExercises || (weightRequired && weight == null)) {
-        return UNCLEAR_RESULT;
+        return null;
     }
 
-    return {outcome: 'parsed', exercise: {name, reps, sets, weight}};
+    return {name, reps, sets, weight};
 }
 
 function parseExerciseParseReply(text: string): ExerciseParseReply | null {

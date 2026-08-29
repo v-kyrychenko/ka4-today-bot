@@ -132,7 +132,7 @@ const workoutLoggingServiceMocks = {
         }));
 
         buildContext.onLoad({filter: /^parser$/, namespace: 'workout-logging-service-mock-parser'}, () => ({
-            contents: 'export async function parseExerciseMessage() { return {outcome: "unclear", exercise: null}; }',
+            contents: 'export async function parseExerciseMessage() { return null; }',
             loader: 'js',
         }));
 

@@ -23,10 +23,7 @@ test('parseExerciseMessage extracts name/reps/sets/weight from an English messag
         lang: 'en',
     });
 
-    assert.deepEqual(result, {
-        outcome: 'parsed',
-        exercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
-    });
+    assert.deepEqual(result, {name: 'Bench press', reps: 10, sets: 4, weight: 60});
     assert.equal(harness.calls.fetchOpenAiReplyInput.promptRef, 'workout_exercise_parser');
     assert.equal(harness.calls.fetchOpenAiReplyInput.variables.USER_INPUT, 'Bench press, 4 sets of 10 reps, 60kg');
 });
@@ -48,8 +45,7 @@ test('parseExerciseMessage extracts the same details from a Ukrainian message wi
         lang: 'ua',
     });
 
-    assert.equal(result.outcome, 'parsed');
-    assert.deepEqual(result.exercise, {name: 'Zhym lezhachy', reps: 10, sets: 4, weight: 60});
+    assert.deepEqual(result, {name: 'Zhym lezhachy', reps: 10, sets: 4, weight: 60});
     assert.equal(harness.calls.fetchOpenAiReplyInput.lang, 'ua');
 });
 
@@ -67,7 +63,7 @@ test('parseExerciseMessage returns unclear when reps/sets are missing (AC-07)', 
 
     const result = await harness.module.parseExerciseMessage({message: 'I did some squats today', lang: 'en'});
 
-    assert.deepEqual(result, {outcome: 'unclear', exercise: null});
+    assert.equal(result, null);
 });
 
 test('parseExerciseMessage returns unclear when weight is missing for a weighted exercise (AC-07)', async () => {
@@ -84,7 +80,7 @@ test('parseExerciseMessage returns unclear when weight is missing for a weighted
 
     const result = await harness.module.parseExerciseMessage({message: 'Deadlift 3 sets of 5', lang: 'en'});
 
-    assert.deepEqual(result, {outcome: 'unclear', exercise: null});
+    assert.equal(result, null);
 });
 
 test('parseExerciseMessage returns unclear when more than one exercise is described (AC-07/AC-08 upstream)', async () => {
@@ -104,7 +100,7 @@ test('parseExerciseMessage returns unclear when more than one exercise is descri
         lang: 'en',
     });
 
-    assert.deepEqual(result, {outcome: 'unclear', exercise: null});
+    assert.equal(result, null);
 });
 
 async function loadWorkoutExerciseParser(options = {}) {
