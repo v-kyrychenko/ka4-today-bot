@@ -1,8 +1,10 @@
 import {ExerciseItem} from '../../../../modules/coach/exercise/domain/exercise.js';
-import type {DictExerciseRow} from '../models/exerciseRow.js';
+import type {DictExerciseRow, RankedDictExerciseRow} from '../models/exerciseRow.js';
 
 export const exerciseMapper = {
     toAppModel,
+    toRankedRow,
+    toStringArray,
 };
 
 export function toAppModel(row: DictExerciseRow): ExerciseItem {
@@ -22,7 +24,17 @@ export function toAppModel(row: DictExerciseRow): ExerciseItem {
     });
 }
 
-function toStringArray(value: unknown): string[] {
+export function toRankedRow(row: RankedDictExerciseRow): RankedDictExerciseRow {
+    return {
+        ...row,
+        id: Number(row.id),
+        score: Number(row.score),
+        coreInName: Number(row.coreInName),
+        nameInQuery: Number(row.nameInQuery),
+    };
+}
+
+export function toStringArray(value: unknown): string[] {
     if (!Array.isArray(value)) {
         return [];
     }

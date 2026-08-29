@@ -1,4 +1,5 @@
-import type {ExerciseItem} from '../../../coach/exercise/domain/exercise.js';
+import {exerciseMapper} from '../../../../infrastructure/persistence/postgres/mappers/exerciseMapper.js';
+import type {RankedDictExerciseRow} from '../../../../infrastructure/persistence/postgres/models/exerciseRow.js';
 import {exerciseRepository} from '../../../coach/exercise/repository/exerciseRepository.js';
 import {log} from '../../../../shared/logging';
 import {exerciseImageSigning} from '../workouts/exerciseImageSigning.js';
@@ -23,6 +24,7 @@ export interface MatchCandidatesRequest {
 
 const EXERCISE_SEARCH_FIRST_PAGE = 0;
 const EXERCISE_CANDIDATE_LIMIT = 3;
+const HIGH_CONFIDENCE_SCORE_THRESHOLD = 300;
 
 export async function matchCandidates(request: MatchCandidatesRequest): Promise<MatchCandidatesResult> {
     const {parsedExercise} = request;
@@ -37,9 +39,11 @@ export async function matchCandidates(request: MatchCandidatesRequest): Promise<
         return {outcome: 'noMatch'};
     }
 
-    const candidates = await Promise.all(
-        searchResult.items.map((item) => toCandidate(item, parsedExercise)),
-    );
+    const items = searchResult.items[0].score >= HIGH_CONFIDENCE_SCORE_THRESHOLD ?
+        searchResult.items.slice(0, 1) :
+        searchResult.items;
+
+    const candidates = await Promise.all(items.map((item) => toCandidate(item, parsedExercise)));
 
     log(
         `Matched ${candidates.length} catalog candidates for "${parsedExercise.name}": ` +
@@ -49,14 +53,17 @@ export async function matchCandidates(request: MatchCandidatesRequest): Promise<
     return {outcome: 'matched', candidates};
 }
 
-async function toCandidate(item: ExerciseItem, parsedExercise: ParsedWorkoutExercise): Promise<WorkoutCandidate> {
+async function toCandidate(
+    item: RankedDictExerciseRow,
+    parsedExercise: ParsedWorkoutExercise,
+): Promise<WorkoutCandidate> {
     return {
         exerciseId: item.id,
         name: item.name,
         reps: parsedExercise.reps,
         sets: parsedExercise.sets,
         weight: parsedExercise.weight,
-        imageUrl: await signFirstImageUrl(item.images),
+        imageUrl: await signFirstImageUrl(exerciseMapper.toStringArray(item.images)),
     };
 }
 

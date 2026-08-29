@@ -37,6 +37,18 @@ test('search() passes the caller\'s page/limit through to search_dict_exercises 
     assert.equal(result.items[0].name, 'Bench Press');
 });
 
+test('search() coerces the ranking columns returned by search_dict_exercises to numbers', async () => {
+    const {repository} = await loadRepository({
+        rows: [{...row(1, 'Bench Press'), score: '412.5', coreInName: '1', nameInQuery: '0'}],
+    });
+
+    const result = await repository.search({q: 'bench press', page: 0, limit: 3});
+
+    assert.equal(result.items[0].score, 412.5);
+    assert.equal(result.items[0].coreInName, 1);
+    assert.equal(result.items[0].nameInQuery, 0);
+});
+
 test('search() returns zero rows when search_dict_exercises finds no match (AC-05b)', async () => {
     const {repository} = await loadRepository({rows: []});
 
@@ -45,7 +57,7 @@ test('search() returns zero rows when search_dict_exercises finds no match (AC-0
     assert.equal(result.items.length, 0);
 });
 
-test('search() parses the jsonb instructions array returned by search_dict_exercises', async () => {
+test('search() passes the raw jsonb instructions column through untouched (normalization happens in searchExercises)', async () => {
     const {repository} = await loadRepository({
         rows: [{...row(1, 'Bench Press'), instructions: ['Sit down', 'Push the handles forward']}],
     });
@@ -53,16 +65,6 @@ test('search() parses the jsonb instructions array returned by search_dict_exerc
     const result = await repository.search({q: 'bench press', page: 0, limit: 3});
 
     assert.deepEqual(result.items[0].instructions, ['Sit down', 'Push the handles forward']);
-});
-
-test('search() falls back to an empty instructions array when the raw value is not an array', async () => {
-    const {repository} = await loadRepository({
-        rows: [{...row(1, 'Bench Press'), instructions: null}],
-    });
-
-    const result = await repository.search({q: 'bench press', page: 0, limit: 3});
-
-    assert.deepEqual(result.items[0].instructions, []);
 });
 
 function row(id, name) {
@@ -79,6 +81,9 @@ function row(id, name) {
         secondary_muscles: ['triceps'],
         instructions: [],
         images: [],
+        score: 0,
+        coreInName: 0,
+        nameInQuery: 0,
     };
 }
 

@@ -12,3 +12,9 @@ export interface DictExerciseRow {
     instructions: unknown;
     images: unknown;
 }
+
+export interface RankedDictExerciseRow extends DictExerciseRow {
+    score: number;
+    coreInName: number;
+    nameInQuery: number;
+}

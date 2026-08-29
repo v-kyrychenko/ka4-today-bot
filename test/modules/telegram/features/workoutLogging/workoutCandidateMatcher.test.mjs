@@ -10,9 +10,9 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
     const harness = await loadWorkoutCandidateMatcher({
         searchResult: {
             items: [
-                exerciseItem({id: 1, name: 'Bench Press', images: ['bench-press.png']}),
-                exerciseItem({id: 2, name: 'Incline Bench Press', images: []}),
-                exerciseItem({id: 3, name: 'Close-Grip Bench Press', images: ['close-grip.png']}),
+                exerciseItem({id: 1, name: 'Bench Press', images: ['bench-press.png'], score: 200}),
+                exerciseItem({id: 2, name: 'Incline Bench Press', images: [], score: 150}),
+                exerciseItem({id: 3, name: 'Close-Grip Bench Press', images: ['close-grip.png'], score: 100}),
             ],
             total: 3,
         },
@@ -46,6 +46,47 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
     assert.equal(harness.calls.searchInput.q, 'Bench press');
 });
 
+test('matchCandidates narrows to a single candidate when the top result score meets the high-confidence threshold', async () => {
+    const harness = await loadWorkoutCandidateMatcher({
+        searchResult: {
+            items: [
+                exerciseItem({id: 1, name: 'Bench Press', images: [], score: 300}),
+                exerciseItem({id: 2, name: 'Incline Bench Press', images: [], score: 150}),
+                exerciseItem({id: 3, name: 'Close-Grip Bench Press', images: [], score: 100}),
+            ],
+            total: 3,
+        },
+    });
+
+    const result = await harness.module.matchCandidates({
+        parsedExercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
+    });
+
+    assert.equal(result.outcome, 'matched');
+    assert.equal(result.candidates.length, 1, `expected 1 candidate, got ${result.candidates.length}`);
+    assert.equal(result.candidates[0].exerciseId, 1);
+});
+
+test('matchCandidates keeps all returned candidates when the top result score is below the high-confidence threshold', async () => {
+    const harness = await loadWorkoutCandidateMatcher({
+        searchResult: {
+            items: [
+                exerciseItem({id: 1, name: 'Bench Press', images: [], score: 299}),
+                exerciseItem({id: 2, name: 'Incline Bench Press', images: [], score: 150}),
+                exerciseItem({id: 3, name: 'Close-Grip Bench Press', images: [], score: 100}),
+            ],
+            total: 3,
+        },
+    });
+
+    const result = await harness.module.matchCandidates({
+        parsedExercise: {name: 'Bench press', reps: 10, sets: 4, weight: 60},
+    });
+
+    assert.equal(result.outcome, 'matched');
+    assert.equal(result.candidates.length, 3, `expected 3 candidates, got ${result.candidates.length}`);
+});
+
 test('matchCandidates returns a distinct no-match outcome when the catalog search finds zero candidates (AC-05b)', async () => {
     const harness = await loadWorkoutCandidateMatcher({
         searchResult: {items: [], total: 0},
@@ -58,9 +99,10 @@ test('matchCandidates returns a distinct no-match outcome when the catalog searc
     assert.deepEqual(result, {outcome: 'noMatch'});
 });
 
-function exerciseItem({id, name, images}) {
+function exerciseItem({id, name, images, score = 0}) {
     return {id, name, key: `key-${id}`, level: 'beginner', category: 'strength', force: 'push', mechanic: 'compound',
-        equipment: null, primaryMuscles: [], secondaryMuscles: [], instructions: {}, images};
+        equipment: null, primary_muscles: [], secondary_muscles: [], instructions: {}, images, score,
+        coreInName: 0, nameInQuery: 0};
 }
 
 async function loadWorkoutCandidateMatcher(options = {}) {
