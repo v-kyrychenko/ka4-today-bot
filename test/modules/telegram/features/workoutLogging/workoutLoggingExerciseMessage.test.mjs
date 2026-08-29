@@ -29,11 +29,7 @@ test(
             lang: 'ua',
         });
 
-        assert.equal(
-            result.outcome,
-            'confirmation-proposed',
-            `expected confirmation-proposed outcome, got: ${JSON.stringify(result)}`,
-        );
+        assert.ok(result, `expected a non-null result, got: ${JSON.stringify(result)}`);
         assert.deepEqual(result.parsedExercise, parsedExercise, 'expected the parsed exercise+numbers to be returned');
         assert.deepEqual(result.candidates, candidates, 'expected the matched catalog candidates to be returned');
         assert.equal(
@@ -65,11 +61,7 @@ test(
             lang: 'en',
         });
 
-        assert.equal(
-            result.outcome,
-            'confirmation-proposed',
-            `expected confirmation-proposed outcome even with no catalog match, got: ${JSON.stringify(result)}`,
-        );
+        assert.ok(result, `expected a non-null result even with no catalog match, got: ${JSON.stringify(result)}`);
         assert.deepEqual(result.parsedExercise, parsedExercise);
         assert.deepEqual(result.candidates, [], 'expected an empty candidate list when the catalog has no match');
         assert.equal(harness.calls.addEntry.length, 0, 'expected no workoutLogRepository.addEntry() call before confirmation');
@@ -91,8 +83,7 @@ test(
             lang: 'en',
         });
 
-        assert.equal(result.outcome, 'unclear', `expected unclear outcome, got: ${JSON.stringify(result)}`);
-        assert.equal(result.retryRemaining, true, 'expected exactly one retry to be flagged as remaining (AC-07)');
+        assert.equal(result, null, `expected null for an unclear message, got: ${JSON.stringify(result)}`);
         assert.equal(harness.calls.matchCandidates.length, 0, 'expected the catalog matcher never to run for an unclear message');
         assert.equal(harness.calls.addEntry.length, 0, 'expected no workoutLogRepository.addEntry() call for an unclear message');
     },

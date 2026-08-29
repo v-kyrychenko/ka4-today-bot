@@ -7,6 +7,7 @@ import {tgConversationStateRepository} from '../../repository/tgConversationStat
 import {
     CONVERSATION_STEP_CANCELLED,
     CONVERSATION_STEP_COMPLETED,
+    ConversationStartOutcome,
     type ConversationCallbackContext,
     type ConversationDefinition,
     type ConversationResponse,
@@ -50,7 +51,7 @@ export const bodyMeasurementsConversation: ConversationDefinition = {
         },
     },
     onStart: async (user) => ({
-        outcome: 'started',
+        outcome: ConversationStartOutcome.Started,
         response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.initialMessage),
     }),
 };

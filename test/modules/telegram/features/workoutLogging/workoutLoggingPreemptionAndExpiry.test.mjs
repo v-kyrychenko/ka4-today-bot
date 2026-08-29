@@ -22,9 +22,8 @@ const activeSession = {
 test('preemptActiveSession() closes an open session as pre-empted (AC-10)', async () => {
     const harness = await loadWorkoutLoggingService({activeSession});
 
-    const result = await harness.module.workoutLoggingService.preemptActiveSession({clientId: 777});
+    await harness.module.workoutLoggingService.preemptActiveSession({clientId: 777});
 
-    assert.equal(result.outcome, 'pre-empted', `expected pre-empted outcome, got: ${JSON.stringify(result)}`);
     assert.equal(harness.calls.closeSession.length, 1, 'expected exactly one closeSession() repository call');
     assert.deepEqual(harness.calls.closeSession[0], {id: 5, endReason: 'pre-empted'});
 });
@@ -32,13 +31,8 @@ test('preemptActiveSession() closes an open session as pre-empted (AC-10)', asyn
 test('preemptActiveSession() is a no-op when the client has no open session (AC-10)', async () => {
     const harness = await loadWorkoutLoggingService({activeSession: null});
 
-    const result = await harness.module.workoutLoggingService.preemptActiveSession({clientId: 777});
+    await harness.module.workoutLoggingService.preemptActiveSession({clientId: 777});
 
-    assert.equal(
-        result.outcome,
-        'no-active-session',
-        `expected no-active-session outcome, got: ${JSON.stringify(result)}`,
-    );
     assert.equal(harness.calls.closeSession.length, 0, 'expected no closeSession() call when nothing is open');
 });
 
@@ -50,22 +44,16 @@ test('preemptActiveSession() is a no-op when the client has no open session (AC-
 test('closeExpiredSession() closes the open session as auto-closed (AC-11)', async () => {
     const harness = await loadWorkoutLoggingService({activeSession});
 
-    const result = await harness.module.workoutLoggingService.closeExpiredSession({clientId: 777});
+    await harness.module.workoutLoggingService.closeExpiredSession({clientId: 777});
 
-    assert.equal(result.outcome, 'auto-closed', `expected auto-closed outcome, got: ${JSON.stringify(result)}`);
     assert.deepEqual(harness.calls.closeSession[0], {id: 5, endReason: 'auto-closed'});
 });
 
 test('closeExpiredSession() is a no-op when the client has no open session (AC-11)', async () => {
     const harness = await loadWorkoutLoggingService({activeSession: null});
 
-    const result = await harness.module.workoutLoggingService.closeExpiredSession({clientId: 777});
+    await harness.module.workoutLoggingService.closeExpiredSession({clientId: 777});
 
-    assert.equal(
-        result.outcome,
-        'no-active-session',
-        `expected no-active-session outcome, got: ${JSON.stringify(result)}`,
-    );
     assert.equal(harness.calls.closeSession.length, 0, 'expected no closeSession() call when nothing is open');
 });
 

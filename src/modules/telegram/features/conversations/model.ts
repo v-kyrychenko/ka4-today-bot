@@ -33,14 +33,18 @@ export interface ConversationStartInput {
     user: TelegramUserAccount;
 }
 
+export enum ConversationStartOutcome {
+    Started = 'started',
+    Aborted = 'aborted',
+}
+
 export type ConversationStartResult =
     | {
-    outcome: 'started';
-    /** Seeds the new conversation's stored data (e.g. a domain record id/ownership key the type's own hooks and steps need). */
+    outcome: ConversationStartOutcome.Started;
     data?: unknown;
     response: ConversationResponse;
 }
-    | { outcome: 'aborted'; response: ConversationResponse };
+    | { outcome: ConversationStartOutcome.Aborted; response: ConversationResponse };
 
 export interface ConversationTextContext extends ConversationTextInput {
     state: TgConversationStateRow;

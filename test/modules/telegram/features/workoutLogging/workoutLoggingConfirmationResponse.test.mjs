@@ -92,12 +92,11 @@ test('handleConfirmationResponse() triggers a retry instead of saving when the c
 test('saveUnconfirmedEntry() saves the client\'s original wording raw, unlinked, with null numbers (AC-08)', async () => {
     const harness = await loadWorkoutLoggingService();
 
-    const result = await harness.module.workoutLoggingService.saveUnconfirmedEntry({
+    await harness.module.workoutLoggingService.saveUnconfirmedEntry({
         sessionId: 5,
         rawDescription: 'did some stuff at the gym, still not sure how much',
     });
 
-    assert.equal(result.outcome, 'saved-unconfirmed', `expected saved-unconfirmed, got: ${JSON.stringify(result)}`);
     assert.equal(harness.calls.addEntry.length, 1);
     assert.deepEqual(harness.calls.addEntry[0], {
         sessionId: 5,

@@ -14,7 +14,7 @@ test('startSession() denies a non-client and does not open a session (AC-02)', a
     const result = await harness.module.workoutLoggingService.startSession({
         clientId: null,
         now: new Date('2026-08-23T10:00:00.000Z'),
-        timezoneOffsetMinutes: 0,
+        timezone: 'UTC',
     });
 
     assert.equal(result.outcome, 'not-a-client', `expected not-a-client outcome, got: ${JSON.stringify(result)}`);
@@ -37,7 +37,7 @@ test('startSession() rejects a repeat start while one session is already open, l
     const result = await harness.module.workoutLoggingService.startSession({
         clientId: 777,
         now: new Date('2026-08-23T10:00:00.000Z'),
-        timezoneOffsetMinutes: 0,
+        timezone: 'UTC',
     });
 
     assert.equal(result.outcome, 'already-open', `expected already-open outcome, got: ${JSON.stringify(result)}`);
@@ -54,7 +54,7 @@ test('startSession() derives sessionDay from the client\'s local start time, not
     const result = await harness.module.workoutLoggingService.startSession({
         clientId: 777,
         now: new Date('2026-08-23T23:30:00.000Z'),
-        timezoneOffsetMinutes: 180,
+        timezone: 'Europe/Kyiv',
     });
 
     assert.equal(result.outcome, 'started', `expected started outcome, got: ${JSON.stringify(result)}`);
@@ -65,6 +65,19 @@ test('startSession() derives sessionDay from the client\'s local start time, not
         '2026-08-24',
         `expected sessionDay derived from client-local time (2026-08-24), got: ${harness.calls.startSession[0].sessionDay}`,
     );
+});
+
+test('startSession() observes the configured timezone daylight-saving offset (AC-13)', async () => {
+    const harness = await loadWorkoutLoggingService({activeSession: null});
+
+    // Kyiv is UTC+2 in winter, so 21:30 UTC is still 23:30 on the same local calendar day.
+    await harness.module.workoutLoggingService.startSession({
+        clientId: 777,
+        now: new Date('2026-01-23T21:30:00.000Z'),
+        timezone: 'Europe/Kyiv',
+    });
+
+    assert.equal(harness.calls.startSession[0].sessionDay, '2026-01-23');
 });
 
 // AC-09b: ending a session with no recorded exercises must close it with

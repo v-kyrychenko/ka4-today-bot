@@ -43,6 +43,7 @@ test('onStart seeds session/client ids and replies in the client stored lang (AC
     assert.deepEqual(resultEn.data, {sessionId: 555, clientId: 777});
     assert.match(resultEn.response.text, /Workout logging started/);
     assert.equal(service.calls.startSession[0].clientId, 777);
+    assert.equal(service.calls.startSession[0].timezone, 'Europe/Kyiv');
 
     const resultUk = await definition.onStart({...user, lang: 'uk'});
     assert.match(resultUk.response.text, /Тренування розпочато/);
@@ -314,12 +315,11 @@ function createWorkoutLoggingService(options) {
         async handleExerciseMessage() {
             const result = options.parseResult ?? {outcome: 'unclear', exercise: null};
             if (result.outcome === 'unclear') {
-                return {outcome: 'unclear', retryRemaining: true};
+                return null;
             }
 
             const matchResult = options.matchResult ?? null;
             return {
-                outcome: 'confirmation-proposed',
                 parsedExercise: result.exercise,
                 candidates: matchResult ?? [],
             };
@@ -376,6 +376,12 @@ const workoutLoggingConversationMocks = {
         ]);
         mockModule(buildContext, /workoutLoggingService\.js$/, [
             'export const workoutLoggingService = globalThis.__workoutLoggingConversationMocks.service;',
+            'export const StartSessionOutcome = ' +
+                '{NotAClient: "not-a-client", AlreadyOpen: "already-open", Started: "started"};',
+            'export const EndSessionOutcome = ' +
+                '{NoActiveSession: "no-active-session", EndedEmpty: "ended-empty", EndedRecorded: "ended-recorded"};',
+            'export const HandleConfirmationResponseOutcome = ' +
+                '{Retry: "retry", SavedLinked: "saved-linked", SavedUnlinked: "saved-unlinked"};',
         ]);
     },
 };

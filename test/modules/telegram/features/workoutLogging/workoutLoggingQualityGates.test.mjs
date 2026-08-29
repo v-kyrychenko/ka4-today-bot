@@ -173,11 +173,10 @@ function createWorkoutLoggingService(options) {
         async handleExerciseMessage() {
             const result = options.parseResult ?? {outcome: 'unclear', exercise: null};
             if (result.outcome === 'unclear') {
-                return {outcome: 'unclear', retryRemaining: true};
+                return null;
             }
             const matchResult = options.matchResult ?? null;
             return {
-                outcome: 'confirmation-proposed',
                 parsedExercise: result.exercise,
                 candidates: matchResult ?? [],
             };
@@ -225,6 +224,12 @@ const conversationMocks = {
         ]);
         mockModule(buildContext, /workoutLoggingService\.js$/, [
             'export const workoutLoggingService = globalThis.__workoutLoggingConversationMocks.service;',
+            'export const StartSessionOutcome = ' +
+                '{NotAClient: "not-a-client", AlreadyOpen: "already-open", Started: "started"};',
+            'export const EndSessionOutcome = ' +
+                '{NoActiveSession: "no-active-session", EndedEmpty: "ended-empty", EndedRecorded: "ended-recorded"};',
+            'export const HandleConfirmationResponseOutcome = ' +
+                '{Retry: "retry", SavedLinked: "saved-linked", SavedUnlinked: "saved-unlinked"};',
         ]);
     },
 };

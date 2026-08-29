@@ -10,6 +10,7 @@ import {
     CONVERSATION_STEP_EXPIRED,
     CONVERSATION_STEP_FAILED,
     CONVERSATION_STEP_PREEMPTED,
+    ConversationStartOutcome,
     type ConversationCallbackInput,
     type ConversationResponse,
     type ConversationStartInput,
@@ -26,7 +27,7 @@ export async function start(input: ConversationStartInput): Promise<Conversation
     }
 
     const startResult = await definition.onStart(input.user);
-    if (startResult.outcome === 'aborted') {
+    if (startResult.outcome === ConversationStartOutcome.Aborted) {
         log('### CONVERSATION:start_aborted', {chatId, type: definition.type});
         return startResult.response;
     }
@@ -108,12 +109,7 @@ export async function cancel(chatId: number): Promise<ConversationResponse | nul
 }
 
 /**
- * Ends a still-active conversation, of any type, in favor of another interaction for the same
- * chat (AC-10-style cross-context pre-emption) -- e.g. a recognized route or a cron-enqueued
- * reminder. A no-op if nothing is active, if it just lazily expired instead (that already ran its
- * own onExpire hook via resolveActiveConversation), or if the active conversation is already the
- * SAME type the caller is about to start (exceptType) -- a same-type repeat-start is that
- * conversation's own concern to reject or ignore, not a pre-emption.
+ * Ends a still-active conversation, of any type, in favor of another interaction for the same chat
  */
 export async function preemptActiveConversation(chatId: number, exceptType?: string): Promise<void> {
     const state = await resolveActiveConversation(chatId);

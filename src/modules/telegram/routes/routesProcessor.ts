@@ -80,12 +80,6 @@ async function buildContext(request: ParsedTelegramRequest): Promise<ProcessorCo
     });
 }
 
-/**
- * The route that will handle this message, if any -- a recognized command like /progress, or a
- * cron-enqueued reminder's synthetic route text. A match here (checked before
- * continueConversation) is the AC-10 trigger for cross-context pre-emption; a plain continuation
- * message never matches a route, so it's left alone and flows to continueConversation as normal.
- */
 function findRoute(context: ProcessorContext): BaseRoute | null {
     if (context.text == null) {
         return null;

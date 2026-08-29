@@ -1,4 +1,4 @@
-import {toIsoDate} from '../../../../shared/utils/dateUtils.js';
+import {toIsoDateInTimeZone} from '../../../../shared/utils/dateUtils.js';
 import {workoutLogRepository} from './repository/workoutLogRepository.js';
 import {matchCandidates} from './workoutCandidateMatcher.js';
 import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
@@ -8,7 +8,7 @@ import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 export interface StartSessionRequest {
     clientId: number | null;
     now: Date;
-    timezoneOffsetMinutes: number;
+    timezone: string;
 }
 
 export interface EndSessionRequest {
@@ -29,11 +29,23 @@ export interface HandleExerciseMessageRequest {
     lang: string;
 }
 
-export type StartSessionOutcome = 'not-a-client' | 'already-open' | 'started';
-export type EndSessionOutcome = 'no-active-session' | 'ended-empty' | 'ended-recorded';
-export type PreemptActiveSessionOutcome = 'no-active-session' | 'pre-empted';
-export type CloseExpiredSessionOutcome = 'no-active-session' | 'auto-closed';
-export type HandleExerciseMessageOutcome = 'confirmation-proposed' | 'unclear';
+export enum StartSessionOutcome {
+    NotAClient = 'not-a-client',
+    AlreadyOpen = 'already-open',
+    Started = 'started',
+}
+
+export enum EndSessionOutcome {
+    NoActiveSession = 'no-active-session',
+    EndedEmpty = 'ended-empty',
+    EndedRecorded = 'ended-recorded',
+}
+
+export enum HandleConfirmationResponseOutcome {
+    Retry = 'retry',
+    SavedLinked = 'saved-linked',
+    SavedUnlinked = 'saved-unlinked',
+}
 
 export interface StartSessionResult {
     outcome: StartSessionOutcome;
@@ -44,19 +56,9 @@ export interface EndSessionResult {
     outcome: EndSessionOutcome;
 }
 
-export interface PreemptActiveSessionResult {
-    outcome: PreemptActiveSessionOutcome;
-}
-
-export interface CloseExpiredSessionResult {
-    outcome: CloseExpiredSessionOutcome;
-}
-
 export interface HandleExerciseMessageResult {
-    outcome: HandleExerciseMessageOutcome;
-    parsedExercise?: ParsedWorkoutExercise;
-    candidates?: WorkoutCandidate[];
-    retryRemaining?: boolean;
+    parsedExercise: ParsedWorkoutExercise;
+    candidates: WorkoutCandidate[];
 }
 
 export type ConfirmationAction = 'confirm-candidate' | 'confirm-own' | 'reject';
@@ -69,8 +71,6 @@ export interface HandleConfirmationResponseRequest {
     candidateExerciseId?: number | null;
 }
 
-export type HandleConfirmationResponseOutcome = 'saved-linked' | 'saved-unlinked' | 'retry';
-
 export interface HandleConfirmationResponseResult {
     outcome: HandleConfirmationResponseOutcome;
 }
@@ -78,10 +78,6 @@ export interface HandleConfirmationResponseResult {
 export interface SaveUnconfirmedEntryRequest {
     sessionId: number;
     rawDescription: string;
-}
-
-export interface SaveUnconfirmedEntryResult {
-    outcome: 'saved-unconfirmed';
 }
 
 const CLIENT_ENDED_REASON = 'client-ended';
@@ -100,83 +96,75 @@ export const workoutLoggingService = {
 
 export async function startSession(request: StartSessionRequest): Promise<StartSessionResult> {
     if (!request.clientId) {
-        return {outcome: 'not-a-client'};
+        return {outcome: StartSessionOutcome.NotAClient};
     }
 
     const activeSession = await workoutLogRepository.findActiveByClientId(request.clientId);
     if (activeSession) {
-        return {outcome: 'already-open'};
+        return {outcome: StartSessionOutcome.AlreadyOpen};
     }
 
     const session = await workoutLogRepository.startSession({
         clientId: request.clientId,
-        sessionDay: toLocalSessionDay(request.now, request.timezoneOffsetMinutes),
+        sessionDay: toIsoDateInTimeZone(request.now, request.timezone),
         startedAt: request.now.toISOString(),
     });
 
-    return {outcome: 'started', sessionId: session.id};
+    return {outcome: StartSessionOutcome.Started, sessionId: session.id};
 }
 
 export async function endSession(request: EndSessionRequest): Promise<EndSessionResult> {
     const activeSession = await workoutLogRepository.findActiveByClientId(request.clientId);
     if (!activeSession) {
-        return {outcome: 'no-active-session'};
+        return {outcome: EndSessionOutcome.NoActiveSession};
     }
 
     const entryCount = await workoutLogRepository.countEntries(activeSession.id);
     await workoutLogRepository.closeSession(activeSession.id, CLIENT_ENDED_REASON);
 
-    return {outcome: entryCount > 0 ? 'ended-recorded' : 'ended-empty'};
+    return {outcome: entryCount > 0 ? EndSessionOutcome.EndedRecorded : EndSessionOutcome.EndedEmpty};
 }
 
-export async function preemptActiveSession(
-    request: PreemptActiveSessionRequest,
-): Promise<PreemptActiveSessionResult> {
+export async function preemptActiveSession(request: PreemptActiveSessionRequest): Promise<void> {
     const activeSession = await workoutLogRepository.findActiveByClientId(request.clientId);
     if (!activeSession) {
-        return {outcome: 'no-active-session'};
+        return;
     }
 
     await workoutLogRepository.closeSession(activeSession.id, PRE_EMPTED_REASON);
-
-    return {outcome: 'pre-empted'};
 }
 
 /**
  * Closes the client's open workout_log_session as auto-closed. Called as the onExpire hook once
- * the generic conversation engine has already determined the conversation's TTL lapsed (AC-11) --
- * the 2h idle window itself is enforced by that TTL (refreshed on every recorded exercise), not
- * recomputed here.
+ * the generic conversation engine has already determined the conversation's TTL lapsed
  */
-export async function closeExpiredSession(request: CloseExpiredSessionRequest): Promise<CloseExpiredSessionResult> {
+export async function closeExpiredSession(request: CloseExpiredSessionRequest): Promise<void> {
     const activeSession = await workoutLogRepository.findActiveByClientId(request.clientId);
     if (!activeSession) {
-        return {outcome: 'no-active-session'};
+        return;
     }
 
     await workoutLogRepository.closeSession(activeSession.id, AUTO_CLOSED_REASON);
-
-    return {outcome: 'auto-closed'};
 }
 
 export async function handleExerciseMessage(
     request: HandleExerciseMessageRequest,
-): Promise<HandleExerciseMessageResult> {
+): Promise<HandleExerciseMessageResult | null> {
     const parsedExercise = await parseExerciseMessage({message: request.message, lang: request.lang});
     if (!parsedExercise) {
-        return {outcome: 'unclear', retryRemaining: true};
+        return null;
     }
 
     const candidates = (await matchCandidates({parsedExercise})) ?? [];
 
-    return {outcome: 'confirmation-proposed', parsedExercise, candidates};
+    return {parsedExercise, candidates};
 }
 
 export async function handleConfirmationResponse(
     request: HandleConfirmationResponseRequest,
 ): Promise<HandleConfirmationResponseResult> {
     if (request.action === 'reject') {
-        return {outcome: 'retry'};
+        return {outcome: HandleConfirmationResponseOutcome.Retry};
     }
 
     const dictExerciseId = request.action === 'confirm-candidate' ? (request.candidateExerciseId ?? null) : null;
@@ -190,10 +178,14 @@ export async function handleConfirmationResponse(
         weight: request.parsedExercise.weight,
     });
 
-    return {outcome: dictExerciseId != null ? 'saved-linked' : 'saved-unlinked'};
+    return {
+        outcome: dictExerciseId != null ?
+            HandleConfirmationResponseOutcome.SavedLinked :
+            HandleConfirmationResponseOutcome.SavedUnlinked,
+    };
 }
 
-export async function saveUnconfirmedEntry(request: SaveUnconfirmedEntryRequest): Promise<SaveUnconfirmedEntryResult> {
+export async function saveUnconfirmedEntry(request: SaveUnconfirmedEntryRequest): Promise<void> {
     await workoutLogRepository.addEntry({
         sessionId: request.sessionId,
         dictExerciseId: null,
@@ -202,12 +194,4 @@ export async function saveUnconfirmedEntry(request: SaveUnconfirmedEntryRequest)
         sets: null,
         weight: null,
     });
-
-    return {outcome: 'saved-unconfirmed'};
-}
-
-function toLocalSessionDay(now: Date, timezoneOffsetMinutes: number): string {
-    const localTime = new Date(now.getTime() + timezoneOffsetMinutes * 60_000);
-
-    return toIsoDate(localTime);
 }

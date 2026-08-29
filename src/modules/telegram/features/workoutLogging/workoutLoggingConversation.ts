@@ -1,9 +1,10 @@
-import {APP_TIMEZONE_OFFSET_MINUTES} from '../../../../app/config/constants.js';
+import {APP_TIMEZONE} from '../../../../app/config/constants.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {tgConversationStateRepository, type TgConversationStateRow} from '../../repository/tgConversationStateRepository.js';
 import {
     CONVERSATION_STEP_COMPLETED,
+    ConversationStartOutcome,
     type ConversationCallbackContext,
     type ConversationDefinition,
     type ConversationResponse,
@@ -15,7 +16,12 @@ import type {TelegramUserAccount} from '../../model/telegram.js';
 import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
 import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 import type {ConfirmationAction, HandleConfirmationResponseResult} from './workoutLoggingService.js';
-import {workoutLoggingService} from './workoutLoggingService.js';
+import {
+    EndSessionOutcome,
+    HandleConfirmationResponseOutcome,
+    StartSessionOutcome,
+    workoutLoggingService,
+} from './workoutLoggingService.js';
 
 export const CONVERSATION_TYPE_WORKOUT_LOGGING = 'WORKOUT_LOGGING';
 export const END_WORKOUT_COMMAND = '/end_workout';
@@ -61,25 +67,25 @@ async function startWorkoutLoggingSession(user: TelegramUserAccount): Promise<Co
     const startResult = await workoutLoggingService.startSession({
         clientId: user.clientId ?? null,
         now: new Date(),
-        timezoneOffsetMinutes: APP_TIMEZONE_OFFSET_MINUTES,
+        timezone: APP_TIMEZONE,
     });
 
-    if (startResult.outcome === 'not-a-client') {
+    if (startResult.outcome === StartSessionOutcome.NotAClient) {
         return {
-            outcome: 'aborted',
+            outcome: ConversationStartOutcome.Aborted,
             response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.notAClient),
         };
     }
 
-    if (startResult.outcome === 'already-open') {
+    if (startResult.outcome === StartSessionOutcome.AlreadyOpen) {
         return {
-            outcome: 'aborted',
+            outcome: ConversationStartOutcome.Aborted,
             response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.alreadyOpen),
         };
     }
 
     return {
-        outcome: 'started',
+        outcome: ConversationStartOutcome.Started,
         data: {sessionId: startResult.sessionId, clientId: user.clientId},
         response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.initialMessage),
     };
@@ -105,22 +111,22 @@ async function handleWaitingInputText(context: ConversationTextContext): Promise
         lang: context.user.lang,
     });
 
-    if (parsed.outcome === 'unclear') {
+    if (!parsed) {
         return handleUnclearMessage(context, data);
     }
 
-    const candidates = parsed.candidates ?? [];
+    const {parsedExercise, candidates} = parsed;
     await tgConversationStateRepository.updateConversation({
         id: context.state.id,
         currentStep: CONVERSATION_STEP_WAITING_CONFIRMATION,
         data: {
             ...data,
             retryUsed: false,
-            pending: {rawDescription: context.text, parsedExercise: parsed.parsedExercise!, candidates},
+            pending: {rawDescription: context.text, parsedExercise, candidates},
         },
     });
 
-    return buildConfirmationResponse(context.user.lang, parsed.parsedExercise!, candidates);
+    return buildConfirmationResponse(context.user.lang, parsedExercise, candidates);
 }
 
 async function handleUnclearMessage(
@@ -214,7 +220,7 @@ async function afterEntrySaved(
     result: HandleConfirmationResponseResult,
     pending: PendingConfirmation,
 ): Promise<ConversationResponse> {
-    if (result.outcome === 'retry') {
+    if (result.outcome === HandleConfirmationResponseOutcome.Retry) {
         return rejectPending(context, data);
     }
 
@@ -226,7 +232,7 @@ async function afterEntrySaved(
     });
 
     const key =
-        result.outcome === 'saved-linked'
+        result.outcome === HandleConfirmationResponseOutcome.SavedLinked
             ? I18N_KEYS.telegram.conversations.workoutLogging.savedLinked
             : I18N_KEYS.telegram.conversations.workoutLogging.savedUnlinked;
 
@@ -243,7 +249,7 @@ async function endWorkoutSession(context: ConversationTextContext): Promise<Conv
     });
 
     const key =
-        result.outcome === 'ended-recorded'
+        result.outcome === EndSessionOutcome.EndedRecorded
             ? I18N_KEYS.telegram.conversations.workoutLogging.sessionComplete
             : I18N_KEYS.telegram.conversations.workoutLogging.sessionEmpty;
 
