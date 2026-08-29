@@ -9,7 +9,6 @@ import {
     type OpenAiReasoningConfig,
     type OpenAiTextFormat,
     DEFAULT_MODEL,
-    DEFAULT_TEMPERATURE,
 } from '../../../shared/types/openai.js';
 import {pollUntil} from '../../../shared/utils/poller.js';
 
@@ -31,7 +30,7 @@ interface OpenAiResponseCreatePayload {
     model: string;
     store: boolean;
     background: boolean;
-    temperature: number;
+    temperature?: number;
     input: Array<{role: 'system' | 'user'; content: string}>;
     text: OpenAiTextFormat | null;
     reasoning?: OpenAiReasoningConfig;
@@ -46,7 +45,6 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
         model: request.model ?? DEFAULT_MODEL,
         store,
         background,
-        temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         input: [
             {role: 'system', content: request.systemPrompt},
             {role: 'user', content: request.userPrompt},
@@ -57,6 +55,10 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
     const vectorStoreIds = request.vectorStoreIds ?? [];
     if (vectorStoreIds.length > 0) {
         body.tools = [{type: 'file_search', vector_store_ids: vectorStoreIds}];
+    }
+
+    if (request.temperature) {
+        body.temperature = request.temperature;
     }
 
     if (request.config?.reasoning) {

@@ -1,5 +1,4 @@
 export const DEFAULT_MODEL = 'gpt-4o-mini';
-export const DEFAULT_TEMPERATURE = 0.8;
 
 export type OpenAiResponseStatus = 'queued' | 'in_progress' | 'completed' | 'requires_action' | 'failed' | 'cancelled';
 
