@@ -148,7 +148,8 @@ test('body measurements conversation uses user language for each response path',
     const state = createState({measurements: fullMeasurements}, 'WAITING_CONFIRMATION');
 
     const initial = await loadConversation({});
-    assert.match(initial.definition.getInitialMessage(ukUser).text, /^📏 Надішли заміри/);
+    const initialStart = await initial.definition.onStart(ukUser);
+    assert.match(initialStart.response.text, /^📏 Надішли заміри/);
 
     const invalid = await loadConversation({promptReply: []});
     const invalidResponse = await invalid.definition.steps.WAITING_INPUT.onText({

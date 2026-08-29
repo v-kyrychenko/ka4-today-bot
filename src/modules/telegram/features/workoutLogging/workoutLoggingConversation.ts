@@ -1,3 +1,4 @@
+import {APP_TIMEZONE_OFFSET_MINUTES} from '../../../../app/config/constants.js';
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../../shared/i18n/i18nService.js';
 import {tgConversationStateRepository, type TgConversationStateRow} from '../../repository/tgConversationStateRepository.js';
@@ -6,9 +7,11 @@ import {
     type ConversationCallbackContext,
     type ConversationDefinition,
     type ConversationResponse,
+    type ConversationStartResult,
     type ConversationTextContext,
 } from '../conversations/model.js';
 import {localizedResponse} from '../conversations/conversationResponses.js';
+import type {TelegramUserAccount} from '../../model/telegram.js';
 import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
 import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 import type {ConfirmationAction, HandleConfirmationResponseResult} from './workoutLoggingService.js';
@@ -49,15 +52,46 @@ export const workoutLoggingConversation: ConversationDefinition = {
             onCallback: handleConfirmationCallback,
         },
     },
-    getInitialMessage: (user) =>
-        localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.initialMessage),
-    onPreempt: async (state) => {
-        await workoutLoggingService.preemptActiveSession({clientId: getData(state).clientId});
-    },
-    onExpire: async (state) => {
-        await workoutLoggingService.closeExpiredSession({clientId: getData(state).clientId});
-    },
+    onStart: startWorkoutLoggingSession,
+    onPreempt: preemptWorkoutLoggingSession,
+    onExpire: expireWorkoutLoggingSession,
 };
+
+async function startWorkoutLoggingSession(user: TelegramUserAccount): Promise<ConversationStartResult> {
+    const startResult = await workoutLoggingService.startSession({
+        clientId: user.clientId ?? null,
+        now: new Date(),
+        timezoneOffsetMinutes: APP_TIMEZONE_OFFSET_MINUTES,
+    });
+
+    if (startResult.outcome === 'not-a-client') {
+        return {
+            outcome: 'aborted',
+            response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.notAClient),
+        };
+    }
+
+    if (startResult.outcome === 'already-open') {
+        return {
+            outcome: 'aborted',
+            response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.alreadyOpen),
+        };
+    }
+
+    return {
+        outcome: 'started',
+        data: {sessionId: startResult.sessionId, clientId: user.clientId},
+        response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.workoutLogging.initialMessage),
+    };
+}
+
+async function preemptWorkoutLoggingSession(state: TgConversationStateRow): Promise<void> {
+    await workoutLoggingService.preemptActiveSession({clientId: getData(state).clientId});
+}
+
+async function expireWorkoutLoggingSession(state: TgConversationStateRow): Promise<void> {
+    await workoutLoggingService.closeExpiredSession({clientId: getData(state).clientId});
+}
 
 async function handleWaitingInputText(context: ConversationTextContext): Promise<ConversationResponse> {
     if (context.text === END_WORKOUT_COMMAND) {

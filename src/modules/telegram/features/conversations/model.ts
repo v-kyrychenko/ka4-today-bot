@@ -29,9 +29,16 @@ export interface ConversationCallbackInput {
 export interface ConversationStartInput {
     type: ConversationType;
     user: TelegramUserAccount;
+}
+
+export type ConversationStartResult =
+    | {
+    outcome: 'started';
     /** Seeds the new conversation's stored data (e.g. a domain record id/ownership key the type's own hooks and steps need). */
     data?: unknown;
+    response: ConversationResponse;
 }
+    | { outcome: 'aborted'; response: ConversationResponse };
 
 export interface ConversationTextContext extends ConversationTextInput {
     state: TgConversationStateRow;
@@ -51,9 +58,17 @@ export interface ConversationDefinition {
     initialStep: string;
     ttlMinutes?: number;
     steps: Record<string, ConversationStep>;
-    getInitialMessage: (user: TelegramUserAccount) => ConversationResponse;
-    /** Called by the generic engine when this conversation's TTL lapses before the client's next check (AC-11-style lazy expiry). */
+    /**
+     * Called by the generic engine to seed or veto a new conversation
+     * (e.g. eligibility/duplicate checks) before any state is persisted.
+     */
+    onStart: (user: TelegramUserAccount) => Promise<ConversationStartResult>;
+    /**
+     * Called by the generic engine when this conversation's TTL lapses before the client's next check
+     */
     onExpire?: (state: TgConversationStateRow) => Promise<void>;
-    /** Called by the generic engine when another interaction pre-empts this still-active conversation (AC-10-style cross-context pre-emption). */
+    /**
+     * Called by the generic engine when another interaction pre-empts this still-active conversation
+     */
     onPreempt?: (state: TgConversationStateRow) => Promise<void>;
 }

@@ -129,7 +129,7 @@ function createConversationDefinitions(repository) {
                     },
                 },
             },
-            getInitialMessage: () => ({text: 'What is your name?'}),
+            onStart: async () => ({outcome: 'started', response: {text: 'What is your name?'}}),
         },
     };
 }

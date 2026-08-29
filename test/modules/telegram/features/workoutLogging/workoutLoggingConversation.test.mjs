@@ -14,11 +14,38 @@ const candidates = [
     {exerciseId: 2, name: {en: 'Incline Bench Press'}, reps: 10, sets: 4, weight: 60, imageUrl: null},
 ];
 
-test('AC-01/AC-14: getInitialMessage replies in the client stored lang', async () => {
-    const {definition} = await loadConversation({});
+// AC-02: an unregistered client is denied without ever starting the conversation.
+test('onStart denies a non-client without starting the conversation (AC-02)', async () => {
+    const {definition} = await loadConversation({startSessionResult: {outcome: 'not-a-client'}});
 
-    assert.match(definition.getInitialMessage({...user, lang: 'en'}).text, /Workout logging started/);
-    assert.match(definition.getInitialMessage({...user, lang: 'uk'}).text, /Тренування розпочато/);
+    const result = await definition.onStart({...user, clientId: null});
+
+    assert.equal(result.outcome, 'aborted');
+    assert.match(result.response.text, /isn.t available for you yet/);
+});
+
+// AC-12: a repeat start while already open is rejected, no new session/conversation data seeded.
+test('onStart rejects a repeat start while a session is already open (AC-12)', async () => {
+    const {definition} = await loadConversation({startSessionResult: {outcome: 'already-open'}});
+
+    const result = await definition.onStart(user);
+
+    assert.equal(result.outcome, 'aborted');
+    assert.match(result.response.text, /already have a workout-logging session open/);
+});
+
+// AC-01/AC-14: a started session seeds session/client ids and replies in the client stored lang.
+test('onStart seeds session/client ids and replies in the client stored lang (AC-01/AC-14)', async () => {
+    const {definition, service} = await loadConversation({startSessionResult: {outcome: 'started', sessionId: 555}});
+
+    const resultEn = await definition.onStart({...user, lang: 'en'});
+    assert.equal(resultEn.outcome, 'started');
+    assert.deepEqual(resultEn.data, {sessionId: 555, clientId: 777});
+    assert.match(resultEn.response.text, /Workout logging started/);
+    assert.equal(service.calls.startSession[0].clientId, 777);
+
+    const resultUk = await definition.onStart({...user, lang: 'uk'});
+    assert.match(resultUk.response.text, /Тренування розпочато/);
 });
 
 // T8/AC-03/AC-05: a well-formed message moves to WAITING_CONFIRMATION with a combined
@@ -244,10 +271,14 @@ async function loadConversation(options) {
 }
 
 function createWorkoutLoggingService(options) {
-    const calls = {addEntry: [], endSession: [], preemptActiveSession: [], closeExpiredSession: []};
+    const calls = {addEntry: [], startSession: [], endSession: [], preemptActiveSession: [], closeExpiredSession: []};
 
     return {
         calls,
+        async startSession(input) {
+            calls.startSession.push(input);
+            return options.startSessionResult ?? {outcome: 'started', sessionId: 5};
+        },
         async handleExerciseMessage() {
             const result = options.parseResult ?? {outcome: 'unclear', exercise: null};
             if (result.outcome === 'unclear') {

@@ -60,7 +60,7 @@ test('QG-3: pre-emption always leaves at most one active conversation for the ch
     const engine = await loadEngine();
     const repository = engine.repository;
 
-    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user, data: {sessionId: 5, clientId: 777}});
+    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user});
     assert.equal(activeCount(repository, chatId), 1, 'expected exactly one active conversation after start');
 
     await engine.conversationEngine.preemptActiveConversation(chatId);
@@ -71,7 +71,7 @@ test('QG-3: lazy expiry always leaves at most one active conversation for the ch
     const engine = await loadEngine();
     const repository = engine.repository;
 
-    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user, data: {sessionId: 5, clientId: 777}});
+    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user});
     repository.expireActiveState(chatId);
 
     await engine.conversationEngine.handleText({text: 'anything', user});
@@ -88,8 +88,8 @@ test('QG-3: the generic engine never allows two simultaneously active conversati
     const engine = await loadEngine();
     const repository = engine.repository;
 
-    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user, data: {sessionId: 5, clientId: 777}});
-    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user, data: {sessionId: 6, clientId: 777}});
+    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user});
+    await engine.conversationEngine.start({type: 'WORKOUT_LOGGING', user});
 
     assert.equal(activeCount(repository, chatId), 1, 'expected the second start to replace, never add to, the active set');
 });
@@ -132,7 +132,7 @@ async function loadEngine() {
             initialStep: 'WAITING_INPUT',
             ttlMinutes: 120,
             steps: {},
-            getInitialMessage: () => ({text: 'start'}),
+            onStart: async () => ({outcome: 'started', response: {text: 'start'}}),
             async onPreempt(state) {
                 hookCalls.onPreempt.push(state);
             },

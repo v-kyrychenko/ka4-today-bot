@@ -9,7 +9,7 @@ import {build} from 'esbuild';
 const chatId = 42;
 
 test('WorkoutLoggingRoute.canHandle only matches /log_workout', async () => {
-    const {route} = await loadRoute({});
+    const {route} = await loadRoute();
 
     assert.equal(route.canHandle('/log_workout'), true);
     assert.equal(route.canHandle('/log_workout extra'), false);
@@ -17,52 +17,27 @@ test('WorkoutLoggingRoute.canHandle only matches /log_workout', async () => {
 });
 
 test('WorkoutLoggingRoute declares its conversationType for cross-context pre-emption', async () => {
-    const {route} = await loadRoute({});
+    const {route} = await loadRoute();
 
     assert.equal(route.conversationType, 'WORKOUT_LOGGING');
 });
 
-// AC-02: an unregistered client is denied without ever starting the conversation.
-test('execute() denies a non-client without starting the conversation (AC-02)', async () => {
-    const {route, calls} = await loadRoute({startOutcome: 'not-a-client'});
-
-    await route.execute(context({clientId: null}));
-
-    assert.equal(calls.conversationStart.length, 0);
-    assert.match(calls.sent[0].text, /isn.t available for you yet/);
-});
-
-// AC-12: a repeat start while already open is rejected, no new conversation/session starts.
-test('execute() rejects a repeat start while a session is already open (AC-12)', async () => {
-    const {route, calls} = await loadRoute({startOutcome: 'already-open'});
+// The route is a thin pass-through: eligibility/duplicate checks and session creation now live in
+// workoutLoggingConversation's onStart, exercised in workoutLoggingConversation.test.mjs.
+test('execute() delegates to the conversation engine and sends its response', async () => {
+    const {route, calls} = await loadRoute();
 
     await route.execute(context({clientId: 777}));
 
-    assert.equal(calls.conversationStart.length, 0);
-    assert.match(calls.sent[0].text, /already have a workout-logging session open/);
-});
-
-test('execute() starts the session and the conversation, seeding session/client ids (AC-01)', async () => {
-    const {route, calls} = await loadRoute({startOutcome: 'started', sessionId: 555});
-
-    await route.execute(context({clientId: 777}));
-
-    assert.equal(calls.startSession[0].clientId, 777);
     assert.equal(calls.conversationStart.length, 1);
-    assert.deepEqual(calls.conversationStart[0].data, {sessionId: 555, clientId: 777});
+    assert.equal(calls.conversationStart[0].type, 'WORKOUT_LOGGING');
     assert.equal(calls.sent[0].text, 'started');
 });
 
-async function loadRoute(options) {
-    const calls = {startSession: [], conversationStart: [], sent: []};
+async function loadRoute() {
+    const calls = {conversationStart: [], sent: []};
 
     globalThis.__workoutLoggingRouteMocks = {
-        workoutLoggingService: {
-            async startSession(input) {
-                calls.startSession.push(input);
-                return {outcome: options.startOutcome ?? 'started', sessionId: options.sessionId};
-            },
-        },
         conversationEngine: {
             async start(input) {
                 calls.conversationStart.push(input);
@@ -100,9 +75,6 @@ async function loadRoute(options) {
 const workoutLoggingRouteMocks = {
     name: 'workout-logging-route-mocks',
     setup(buildContext) {
-        mockModule(buildContext, /workoutLogging\/workoutLoggingService\.js$/, [
-            'export const workoutLoggingService = globalThis.__workoutLoggingRouteMocks.workoutLoggingService;',
-        ]);
         mockModule(buildContext, /workoutLogging\/workoutLoggingConversation\.js$/, [
             "export const CONVERSATION_TYPE_WORKOUT_LOGGING = 'WORKOUT_LOGGING';",
         ]);

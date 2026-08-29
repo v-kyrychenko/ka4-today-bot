@@ -74,7 +74,7 @@ async function setup({expired = false, noActiveState = false} = {}) {
             type: 'WORKOUT_LOGGING',
             initialStep: 'WAITING_INPUT',
             steps: {},
-            getInitialMessage: () => ({text: 'start'}),
+            onStart: async () => ({outcome: 'started', response: {text: 'start'}}),
             async onPreempt(state) {
                 hookCalls.onPreempt.push(state);
             },

@@ -49,8 +49,10 @@ export const bodyMeasurementsConversation: ConversationDefinition = {
             onCallback: handleConfirmationCallback,
         },
     },
-    getInitialMessage: (user) =>
-        localizedResponse(user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.initialMessage),
+    onStart: async (user) => ({
+        outcome: 'started',
+        response: localizedResponse(user.lang, I18N_KEYS.telegram.conversations.bodyMeasurements.initialMessage),
+    }),
 };
 
 async function handleMeasurementInput(

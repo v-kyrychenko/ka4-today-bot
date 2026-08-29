@@ -25,16 +25,22 @@ export async function start(input: ConversationStartInput): Promise<Conversation
         return SAFE_ERROR_RESPONSE;
     }
 
+    const startResult = await definition.onStart(input.user);
+    if (startResult.outcome === 'aborted') {
+        log('### CONVERSATION:start_aborted', {chatId, type: definition.type});
+        return startResult.response;
+    }
+
     log('### CONVERSATION:start', {chatId, type: definition.type, initialStep: definition.initialStep});
     await tgConversationStateRepository.startConversation({
         chatId,
         type: definition.type,
         currentStep: definition.initialStep,
         ttlMinutes: definition.ttlMinutes,
-        data: input.data,
+        data: startResult.data,
     });
 
-    return definition.getInitialMessage(input.user);
+    return startResult.response;
 }
 
 export async function handleText(input: ConversationTextInput): Promise<ConversationResponse | null> {
