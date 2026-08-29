@@ -10,8 +10,8 @@ const chatId = 42;
 const user = {chatId, clientId: 777, lang: 'en'};
 const parsedExercise = {name: 'Bench press', reps: 10, sets: 4, weight: 60};
 const candidates = [
-    {exerciseId: 1, name: {en: 'Bench Press'}, reps: 10, sets: 4, weight: 60, imageUrl: null},
-    {exerciseId: 2, name: {en: 'Incline Bench Press'}, reps: 10, sets: 4, weight: 60, imageUrl: null},
+    {exerciseId: 1, name: 'Bench Press', reps: 10, sets: 4, weight: 60, imageUrl: null},
+    {exerciseId: 2, name: 'Incline Bench Press', reps: 10, sets: 4, weight: 60, imageUrl: null},
 ];
 
 // AC-02: an unregistered client is denied without ever starting the conversation.
@@ -65,11 +65,43 @@ test('WAITING_INPUT.onText with a well-formed message proposes confirmation with
 
     assert.match(response.text, /Bench press/);
     assert.equal(response.replyMarkup.inline_keyboard.length, 3, 'expected 2 candidate rows + 1 keep-own/reject row');
-    assert.equal(response.replyMarkup.inline_keyboard[0][0].text, 'Bench Press');
+    assert.equal(response.replyMarkup.inline_keyboard[0][0].text, '1. Bench Press');
     assert.equal(response.replyMarkup.inline_keyboard[0][0].callback_data, 'WORKOUT:PICK:1');
+    assert.equal(response.media, undefined, 'expected no media group when no candidate has a catalog image');
     assert.equal(repository.updated.currentStep, 'WAITING_CONFIRMATION');
     assert.deepEqual(repository.updated.data.pending.parsedExercise, parsedExercise);
     assert.equal(service.calls.addEntry.length, 0, 'expected no entry saved before confirmation (QG-1)');
+});
+
+// AC-05: candidates with a signed catalog image are sent as a media group ahead of the
+// confirmation text/buttons; a candidate with no image just contributes no photo.
+test('WAITING_INPUT.onText includes a media group with the signed image URLs of candidates that have one (AC-05)', async () => {
+    const candidatesWithImages = [
+        {exerciseId: 1, name: 'Bench Press', reps: 10, sets: 4, weight: 60, imageUrl: 'https://img/1'},
+        {exerciseId: 2, name: 'Incline Bench Press', reps: 10, sets: 4, weight: 60, imageUrl: null},
+        {exerciseId: 3, name: 'Close-Grip Bench Press', reps: 10, sets: 4, weight: 60, imageUrl: 'https://img/3'},
+    ];
+    const {definition} = await loadConversation({
+        parseResult: {outcome: 'parsed', exercise: parsedExercise},
+        matchResult: {outcome: 'matched', candidates: candidatesWithImages},
+    });
+    const state = createState({sessionId: 5, clientId: 777});
+
+    const response = await definition.steps.WAITING_INPUT.onText({
+        text: 'Bench press, 4 sets of 10 reps, 60kg',
+        user,
+        state,
+    });
+
+    assert.deepEqual(response.media, [
+        {url: 'https://img/1', caption: '1. Bench Press'},
+        {url: 'https://img/3', caption: '3. Close-Grip Bench Press'},
+    ]);
+    assert.equal(
+        response.replyMarkup.inline_keyboard[1][0].text,
+        '2. Incline Bench Press',
+        'expected the imageless middle candidate to keep its own number',
+    );
 });
 
 // T8/AC-05b: zero catalog candidates still proposes a confirmation (of the description itself).

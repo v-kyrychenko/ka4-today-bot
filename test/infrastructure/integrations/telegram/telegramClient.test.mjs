@@ -54,6 +54,39 @@ test('telegram client routes all methods through httpRequest with masked logUrl'
     assert.deepEqual(calls[1].body, {chat_id: 7, message_id: 1001, reply_markup: {inline_keyboard: []}});
     assert.equal(calls[4].body instanceof FormData, true);
     assert.equal(calls[4].headers, undefined);
+    assert.deepEqual(calls[5].body, {
+        chat_id: 7,
+        media: [
+            {type: 'photo', media: 'https://example.com/1.jpg', caption: 'group'},
+            {type: 'photo', media: 'https://example.com/2.jpg'},
+        ],
+    });
+});
+
+test('sendMediaGroup gives each item its own caption when provided', async () => {
+    const module = await loadTelegramClientWithHttpMock();
+    const calls = [];
+
+    globalThis.__telegramClientHttpMock = {
+        calls,
+        async httpRequest(params) {
+            calls.push(params);
+            return {ok: true};
+        },
+    };
+
+    await module.sendMediaGroup(7, [
+        {url: 'https://example.com/1.jpg', caption: '1. Bench Press'},
+        {url: 'https://example.com/2.jpg', caption: '2. Incline Bench Press'},
+    ]);
+
+    assert.deepEqual(calls[0].body, {
+        chat_id: 7,
+        media: [
+            {type: 'photo', media: 'https://example.com/1.jpg', caption: '1. Bench Press'},
+            {type: 'photo', media: 'https://example.com/2.jpg', caption: '2. Incline Bench Press'},
+        ],
+    });
 });
 
 test('telegram client logs and errors never expose the real bot token', async () => {

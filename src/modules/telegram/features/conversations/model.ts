@@ -1,5 +1,6 @@
 import type {TgConversationStateRow} from '../../repository/tgConversationStateRepository.js';
 import type {TelegramUserAccount} from '../../model/telegram.js';
+import type {MediaEntry} from '../messaging/telegramMessagingService.js';
 
 export type ConversationType = string;
 
@@ -13,6 +14,7 @@ export interface ConversationResponse {
     text: string;
     replyMarkup?: unknown;
     removeReplyMarkup?: boolean;
+    media?: MediaEntry[];
 }
 
 export interface ConversationTextInput {

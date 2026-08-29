@@ -1,8 +1,6 @@
-export type JsonObject = Record<string, unknown>;
-
 export class ExerciseItem {
     id = 0;
-    name: JsonObject = {};
+    name = '';
     key = '';
     level = '';
     category = '';
@@ -11,15 +9,14 @@ export class ExerciseItem {
     equipment?: string | null;
     primaryMuscles: string[] = [];
     secondaryMuscles: string[] = [];
-    instructions: JsonObject = {};
+    instructions: string[] = [];
     images: string[] = [];
 
     constructor(init?: Partial<ExerciseItem>) {
         Object.assign(this, init);
-        this.name = init?.name ?? {};
         this.primaryMuscles = init?.primaryMuscles ?? [];
         this.secondaryMuscles = init?.secondaryMuscles ?? [];
-        this.instructions = init?.instructions ?? {};
+        this.instructions = init?.instructions ?? [];
         this.images = init?.images ?? [];
     }
 }

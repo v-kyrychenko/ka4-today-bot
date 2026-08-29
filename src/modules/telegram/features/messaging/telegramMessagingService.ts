@@ -69,9 +69,11 @@ export async function sendMessage(context: TelegramContext, message: string, rep
     }
 }
 
+export type MediaEntry = string | {url: string; caption?: string};
+
 export async function sendWithMedia(
     context: Pick<ProcessorContext, 'chatId'>,
-    media: string[] | {buffer: Buffer; filename?: string},
+    media: MediaEntry[] | {buffer: Buffer; filename?: string},
     caption = '',
 ): Promise<void> {
     const chatId = context.chatId;
@@ -86,7 +88,10 @@ export async function sendWithMedia(
             }
 
             if (media.length === 1) {
-                await telegramClient.sendPhoto(chatId, media[0], caption);
+                const [entry] = media;
+                const url = typeof entry === 'string' ? entry : entry.url;
+                const entryCaption = typeof entry === 'string' ? caption : (entry.caption ?? caption);
+                await telegramClient.sendPhoto(chatId, url, entryCaption);
                 return;
             }
 

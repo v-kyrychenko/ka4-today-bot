@@ -9,7 +9,7 @@ import {build} from 'esbuild';
 const chatId = 42;
 const user = {chatId, clientId: 777, lang: 'en'};
 const parsedExercise = {name: 'Bench press', reps: 10, sets: 4, weight: 60};
-const candidates = [{exerciseId: 1, name: {en: 'Bench Press'}, reps: 10, sets: 4, weight: 60, imageUrl: null}];
+const candidates = [{exerciseId: 1, name: 'Bench Press', reps: 10, sets: 4, weight: 60, imageUrl: null}];
 
 // sad.md §10 QG-1: nothing is written to workout_log_entry until a confirmation action is
 // processed -- true for confirm-candidate, confirm-own AND reject alike -- with the one named

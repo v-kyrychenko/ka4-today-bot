@@ -34,7 +34,7 @@ test('search() passes the caller\'s page/limit through to search_dict_exercises 
 
     assert.equal(result.items.length, 2);
     assert.equal(result.items[0].id, 1);
-    assert.deepEqual(result.items[0].name, {en: 'Bench Press'});
+    assert.equal(result.items[0].name, 'Bench Press');
 });
 
 test('search() returns zero rows when search_dict_exercises finds no match (AC-05b)', async () => {
@@ -45,30 +45,30 @@ test('search() returns zero rows when search_dict_exercises finds no match (AC-0
     assert.equal(result.items.length, 0);
 });
 
-test('search() parses a JSON-encoded name string returned by search_dict_exercises instead of dropping it', async () => {
+test('search() parses the jsonb instructions array returned by search_dict_exercises', async () => {
     const {repository} = await loadRepository({
-        rows: [{...row(1, 'Bench Press'), name: JSON.stringify({en: 'Bench Press'})}],
+        rows: [{...row(1, 'Bench Press'), instructions: ['Sit down', 'Push the handles forward']}],
     });
 
     const result = await repository.search({q: 'bench press', page: 0, limit: 3});
 
-    assert.deepEqual(result.items[0].name, {en: 'Bench Press'});
+    assert.deepEqual(result.items[0].instructions, ['Sit down', 'Push the handles forward']);
 });
 
-test('search() falls back to an empty name object when the raw value is not valid JSON', async () => {
+test('search() falls back to an empty instructions array when the raw value is not an array', async () => {
     const {repository} = await loadRepository({
-        rows: [{...row(1, 'Bench Press'), name: 'not json'}],
+        rows: [{...row(1, 'Bench Press'), instructions: null}],
     });
 
     const result = await repository.search({q: 'bench press', page: 0, limit: 3});
 
-    assert.deepEqual(result.items[0].name, {});
+    assert.deepEqual(result.items[0].instructions, []);
 });
 
 function row(id, name) {
     return {
         id,
-        name: {en: name},
+        name,
         key: `key-${id}`,
         level: 'beginner',
         category: 'strength',
@@ -77,7 +77,7 @@ function row(id, name) {
         equipment: 'barbell',
         primary_muscles: ['chest'],
         secondary_muscles: ['triceps'],
-        instructions: {},
+        instructions: [],
         images: [],
     };
 }

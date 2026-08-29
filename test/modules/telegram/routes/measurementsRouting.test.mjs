@@ -49,6 +49,37 @@ test('active conversation receives next text before normal routes', async () => 
     ]);
 });
 
+test('a conversation response with media sends the media group before the text message', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        textResponse: {text: 'confirm', media: ['https://img/1', 'https://img/2']},
+        routeRegistry: [],
+    });
+
+    await processor.routesProcessor.execute(messageRequest('next measurements'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, 'next measurements'],
+        ['sendWithMedia', chatId, ['https://img/1', 'https://img/2']],
+        ['send', chatId, 'confirm', undefined],
+    ]);
+});
+
+test('a conversation response without media never calls sendWithMedia', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        textResponse: {text: 'conversation reply'},
+        routeRegistry: [],
+    });
+
+    await processor.routesProcessor.execute(messageRequest('next measurements'));
+
+    assert.ok(!calls.some((call) => call[0] === 'sendWithMedia'), 'expected sendWithMedia never to be called');
+});
+
 test('/cancel and /stop cancel active conversations', async () => {
     for (const command of ['/cancel', '/stop']) {
         const calls = [];
@@ -288,6 +319,9 @@ function createMessagingService(calls) {
         },
         async sendMessage(context, text, replyMarkup) {
             calls.push(['send', context.chatId, text, replyMarkup]);
+        },
+        async sendWithMedia(context, media) {
+            calls.push(['sendWithMedia', context.chatId, media]);
         },
         async sendErrorMessage(chatId, text) {
             calls.push(['error', chatId, text]);

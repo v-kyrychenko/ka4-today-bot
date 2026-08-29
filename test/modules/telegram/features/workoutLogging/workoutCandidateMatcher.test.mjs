@@ -10,9 +10,9 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
     const harness = await loadWorkoutCandidateMatcher({
         searchResult: {
             items: [
-                exerciseItem({id: 1, name: {en: 'Bench Press'}, images: ['bench-press.png']}),
-                exerciseItem({id: 2, name: {en: 'Incline Bench Press'}, images: []}),
-                exerciseItem({id: 3, name: {en: 'Close-Grip Bench Press'}, images: ['close-grip.png']}),
+                exerciseItem({id: 1, name: 'Bench Press', images: ['bench-press.png']}),
+                exerciseItem({id: 2, name: 'Incline Bench Press', images: []}),
+                exerciseItem({id: 3, name: 'Close-Grip Bench Press', images: ['close-grip.png']}),
             ],
             total: 3,
         },
@@ -27,7 +27,7 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
 
     assert.deepEqual(result.candidates[0], {
         exerciseId: 1,
-        name: {en: 'Bench Press'},
+        name: 'Bench Press',
         reps: 10,
         sets: 4,
         weight: 60,
@@ -36,7 +36,7 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
 
     assert.deepEqual(result.candidates[1], {
         exerciseId: 2,
-        name: {en: 'Incline Bench Press'},
+        name: 'Incline Bench Press',
         reps: 10,
         sets: 4,
         weight: 60,

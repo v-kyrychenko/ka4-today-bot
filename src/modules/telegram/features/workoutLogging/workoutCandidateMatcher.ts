@@ -6,7 +6,7 @@ import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 
 export interface WorkoutCandidate {
     exerciseId: number;
-    name: Record<string, unknown>;
+    name: string;
     reps: number;
     sets: number;
     weight: number | null;

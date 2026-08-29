@@ -167,9 +167,15 @@ async function sendConversationResponse(
     context: ProcessorContext,
     response: ConversationResponse | null,
 ): Promise<void> {
-    if (response) {
-        await telegramMessagingService.sendMessage(context, response.text, response.replyMarkup);
+    if (!response) {
+        return;
     }
+
+    if (response.media?.length) {
+        await telegramMessagingService.sendWithMedia(context, response.media);
+    }
+
+    await telegramMessagingService.sendMessage(context, response.text, response.replyMarkup);
 }
 
 async function sendRouteError(chatId: number, error: unknown): Promise<void> {

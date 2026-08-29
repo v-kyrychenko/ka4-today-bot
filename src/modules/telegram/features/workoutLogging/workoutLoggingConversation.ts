@@ -263,12 +263,23 @@ function buildConfirmationResponse(
         weight: weightText,
     });
 
-    const candidateButtons = candidates.map((candidate) => [
-        {text: exerciseDisplayName(candidate.name, lang), callback_data: `${CONFIRM_CANDIDATE_PREFIX}${candidate.exerciseId}`},
+    const candidateButtons = candidates.map((candidate, index) => [
+        {
+            text: buildCandidateLabel(candidate, index, candidates.length),
+            callback_data: `${CONFIRM_CANDIDATE_PREFIX}${candidate.exerciseId}`,
+        },
     ]);
+    const media = candidates
+        .map((candidate, index) =>
+            candidate.imageUrl
+                ? {url: candidate.imageUrl, caption: buildCandidateLabel(candidate, index, candidates.length)}
+                : null,
+        )
+        .filter((entry): entry is {url: string; caption: string} => entry != null);
 
     return {
         text,
+        media: media.length ? media : undefined,
         replyMarkup: {
             inline_keyboard: [
                 ...candidateButtons,
@@ -287,16 +298,8 @@ function buildConfirmationResponse(
     };
 }
 
-function exerciseDisplayName(name: Record<string, unknown>, lang: string | null | undefined): string {
-    const candidates = [lang, 'en', ...Object.keys(name)].filter((key): key is string => typeof key === 'string');
-    for (const key of candidates) {
-        const value = name[key];
-        if (typeof value === 'string' && value) {
-            return value;
-        }
-    }
-
-    return '';
+function buildCandidateLabel(candidate: WorkoutCandidate, index: number, total: number): string {
+    return total > 1 ? `${index + 1}. ${candidate.name}` : candidate.name;
 }
 
 function getData(state: TgConversationStateRow): WorkoutLoggingData {

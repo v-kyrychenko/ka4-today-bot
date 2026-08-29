@@ -1,6 +1,6 @@
 export interface DictExerciseRow {
     id: number;
-    name: unknown;
+    name: string;
     key: string;
     level: string;
     category: string;

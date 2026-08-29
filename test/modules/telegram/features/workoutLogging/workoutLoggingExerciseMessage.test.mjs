@@ -16,7 +16,7 @@ test(
     async () => {
         const parsedExercise = {name: 'Bench press', reps: 10, sets: 4, weight: 60};
         const candidates = [
-            {exerciseId: 1, name: {en: 'Bench press'}, reps: 10, sets: 4, weight: 60, imageUrl: 'https://img/1'},
+            {exerciseId: 1, name: 'Bench press', reps: 10, sets: 4, weight: 60, imageUrl: 'https://img/1'},
         ];
         const harness = await loadWorkoutLoggingService({
             parseResult: parsedExercise,

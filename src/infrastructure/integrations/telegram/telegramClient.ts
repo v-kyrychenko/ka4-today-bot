@@ -134,13 +134,22 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
     });
 }
 
-export async function sendMediaGroup(chatId: number, imageUrls: string[], caption = ''): Promise<void> {
+export async function sendMediaGroup(
+    chatId: number,
+    items: Array<string | {url: string; caption?: string}>,
+    caption = '',
+): Promise<void> {
     const telegramRequest = buildTelegramRequest('sendMediaGroup');
-    const media: TelegramMediaItem[] = imageUrls.map((url, index) => ({
-        type: 'photo',
-        media: url,
-        ...(index === 0 && caption ? {caption} : {}),
-    }));
+    const media: TelegramMediaItem[] = items.map((item, index) => {
+        const url = typeof item === 'string' ? item : item.url;
+        const itemCaption = typeof item === 'string' ? undefined : item.caption;
+
+        return {
+            type: 'photo',
+            media: url,
+            ...(itemCaption ? {caption: itemCaption} : index === 0 && caption ? {caption} : {}),
+        };
+    });
 
     await httpRequest<TelegramApiResponse, {chat_id: number; media: TelegramMediaItem[]}>({
         method: 'POST',
