@@ -9,14 +9,14 @@ import {PgDialect} from 'drizzle-orm/pg-core';
 
 const dialect = new PgDialect();
 
-test('search() issues search_dict_exercises(query, 0, 3) and returns up to 3 ranked rows', async () => {
+test('search() passes the caller\'s page/limit through to search_dict_exercises and returns the ranked rows', async () => {
     const rows = [
         row(1, 'Bench Press'),
         row(2, 'Incline Bench Press'),
     ];
     const {repository, db} = await loadRepository({rows});
 
-    const result = await repository.search({q: 'bench press', page: 1, limit: 3});
+    const result = await repository.search({q: 'bench press', page: 2, limit: 5});
 
     assert.equal(db.calls.length, 1, 'expected exactly one db.execute call');
     const {sql, params} = dialect.sqlToQuery(db.calls[0]);
@@ -26,7 +26,11 @@ test('search() issues search_dict_exercises(query, 0, 3) and returns up to 3 ran
         /from\s+search_dict_exercises\s*\(/i,
         `expected query to call search_dict_exercises, got: ${sql}`,
     );
-    assert.deepEqual(params, ['bench press', 0, 3], `expected params (query, 0, 3), got: ${JSON.stringify(params)}`);
+    assert.deepEqual(
+        params,
+        ['bench press', 2, 5],
+        `expected params (query, page, limit) to pass the request through untouched, got: ${JSON.stringify(params)}`,
+    );
 
     assert.equal(result.items.length, 2);
     assert.equal(result.items[0].id, 1);

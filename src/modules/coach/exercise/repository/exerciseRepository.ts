@@ -9,7 +9,7 @@ export const exerciseRepository = {
 };
 
 export async function search(input: ExerciseSearchRequest) {
-    const query = sql<DictExerciseRow>`select * from search_dict_exercises(${input.q}, ${0}, ${3})`;
+    const query = sql<DictExerciseRow>`select * from search_dict_exercises(${input.q}, ${input.page}, ${input.limit})`;
 
     const result = await getPostgresDb().execute(query);
     const rows = result.rows as unknown as DictExerciseRow[];
