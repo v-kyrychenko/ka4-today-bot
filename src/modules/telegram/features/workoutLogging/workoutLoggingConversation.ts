@@ -13,7 +13,9 @@ import {
 } from '../conversations/model.js';
 import {localizedResponse} from '../conversations/conversationResponses.js';
 import type {TelegramUserAccount} from '../../model/telegram.js';
+import {WORKOUT_LOGGING_END_ROUTE} from '../../routes/constants.js';
 import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
+import {workoutCommandMenuService} from './workoutCommandMenuService.js';
 import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
 import type {ConfirmationAction, HandleConfirmationResponseResult} from './workoutLoggingService.js';
 import {
@@ -24,7 +26,6 @@ import {
 } from './workoutLoggingService.js';
 
 export const CONVERSATION_TYPE_WORKOUT_LOGGING = 'WORKOUT_LOGGING';
-export const END_WORKOUT_COMMAND = '/end_workout';
 
 const CONVERSATION_STEP_WAITING_INPUT = 'WAITING_INPUT';
 const CONVERSATION_STEP_WAITING_CONFIRMATION = 'WAITING_CONFIRMATION';
@@ -56,9 +57,11 @@ export const workoutLoggingConversation: ConversationDefinition = {
         },
         [CONVERSATION_STEP_WAITING_CONFIRMATION]: {
             onCallback: handleConfirmationCallback,
+            onText: handleWaitingConfirmationText,
         },
     },
     onStart: startWorkoutLoggingSession,
+    onCancel: cancelWorkoutLoggingSession,
     onPreempt: preemptWorkoutLoggingSession,
     onExpire: expireWorkoutLoggingSession,
 };
@@ -84,6 +87,8 @@ async function startWorkoutLoggingSession(user: TelegramUserAccount): Promise<Co
         };
     }
 
+    await workoutCommandMenuService.showWorkoutActiveMenu(user);
+
     return {
         outcome: ConversationStartOutcome.Started,
         data: {sessionId: startResult.sessionId, clientId: user.clientId},
@@ -91,16 +96,32 @@ async function startWorkoutLoggingSession(user: TelegramUserAccount): Promise<Co
     };
 }
 
+async function cancelWorkoutLoggingSession(state: TgConversationStateRow): Promise<void> {
+    await closePreemptedWorkoutSession(state);
+}
+
 async function preemptWorkoutLoggingSession(state: TgConversationStateRow): Promise<void> {
-    await workoutLoggingService.preemptActiveSession({clientId: getData(state).clientId});
+    await closePreemptedWorkoutSession(state);
 }
 
 async function expireWorkoutLoggingSession(state: TgConversationStateRow): Promise<void> {
-    await workoutLoggingService.closeExpiredSession({clientId: getData(state).clientId});
+    try {
+        await workoutLoggingService.closeExpiredSession({clientId: getData(state).clientId});
+    } finally {
+        await workoutCommandMenuService.restoreDefaultMenu(state.chat_id);
+    }
+}
+
+async function closePreemptedWorkoutSession(state: TgConversationStateRow): Promise<void> {
+    try {
+        await workoutLoggingService.preemptActiveSession({clientId: getData(state).clientId});
+    } finally {
+        await workoutCommandMenuService.restoreDefaultMenu(state.chat_id);
+    }
 }
 
 async function handleWaitingInputText(context: ConversationTextContext): Promise<ConversationResponse> {
-    if (context.text === END_WORKOUT_COMMAND) {
+    if (context.text === WORKOUT_LOGGING_END_ROUTE) {
         return endWorkoutSession(context);
     }
 
@@ -127,6 +148,14 @@ async function handleWaitingInputText(context: ConversationTextContext): Promise
     });
 
     return buildConfirmationResponse(context.user.lang, parsedExercise, candidates);
+}
+
+async function handleWaitingConfirmationText(context: ConversationTextContext): Promise<ConversationResponse> {
+    if (context.text === WORKOUT_LOGGING_END_ROUTE) {
+        return endWorkoutSession(context);
+    }
+
+    return localizedResponse(context.user.lang, I18N_KEYS.telegram.conversations.unsupportedInput);
 }
 
 async function handleUnclearMessage(
@@ -247,6 +276,7 @@ async function endWorkoutSession(context: ConversationTextContext): Promise<Conv
         id: context.state.id,
         finalStep: CONVERSATION_STEP_COMPLETED,
     });
+    await workoutCommandMenuService.restoreDefaultMenu(context.user.chatId);
 
     const key =
         result.outcome === EndSessionOutcome.EndedRecorded

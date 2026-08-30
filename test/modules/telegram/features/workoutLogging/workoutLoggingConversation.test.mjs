@@ -16,12 +16,13 @@ const candidates = [
 
 // AC-02: an unregistered client is denied without ever starting the conversation.
 test('onStart denies a non-client without starting the conversation (AC-02)', async () => {
-    const {definition} = await loadConversation({startSessionResult: {outcome: 'not-a-client'}});
+    const {definition, menu} = await loadConversation({startSessionResult: {outcome: 'not-a-client'}});
 
     const result = await definition.onStart({...user, clientId: null});
 
     assert.equal(result.outcome, 'aborted');
     assert.match(result.response.text, /isn.t available for you yet/);
+    assert.equal(menu.calls.showWorkoutActiveMenu.length, 0);
 });
 
 // Defensive fallback when onStart is invoked without the normal matched-route pre-emption.
@@ -36,7 +37,7 @@ test('onStart rejects a start while a workout session row is already open', asyn
 
 // AC-01/AC-14: a started session seeds session/client ids and replies in the client stored lang.
 test('onStart seeds session/client ids and replies in the client stored lang (AC-01/AC-14)', async () => {
-    const {definition, service} = await loadConversation({startSessionResult: {outcome: 'started', sessionId: 555}});
+    const {definition, menu, service} = await loadConversation({startSessionResult: {outcome: 'started', sessionId: 555}});
 
     const resultEn = await definition.onStart({...user, lang: 'en'});
     assert.equal(resultEn.outcome, 'started');
@@ -44,9 +45,11 @@ test('onStart seeds session/client ids and replies in the client stored lang (AC
     assert.match(resultEn.response.text, /Workout logging started/);
     assert.equal(service.calls.startSession[0].clientId, 777);
     assert.equal(service.calls.startSession[0].timezone, 'Europe/Kyiv');
+    assert.deepEqual(menu.calls.showWorkoutActiveMenu[0], {...user, lang: 'en'});
 
     const resultUk = await definition.onStart({...user, lang: 'uk'});
     assert.match(resultUk.response.text, /Тренування розпочато/);
+    assert.deepEqual(menu.calls.showWorkoutActiveMenu[1], {...user, lang: 'uk'});
 });
 
 // T8/AC-03/AC-05: a well-formed message moves to WAITING_CONFIRMATION with a combined
@@ -234,7 +237,7 @@ test('WAITING_CONFIRMATION.onCallback rejecting the proposal triggers a retry, n
 // AC-09/AC-09b: explicit /end_workout closes the session, confirming completion when at least
 // one exercise was recorded, or a distinct "nothing logged" reply for an empty session.
 test('WAITING_INPUT.onText with /end_workout ends a recorded session with a completion reply (AC-09)', async () => {
-    const {definition, repository, service} = await loadConversation({endSessionOutcome: 'ended-recorded'});
+    const {definition, menu, repository, service} = await loadConversation({endSessionOutcome: 'ended-recorded'});
     const state = createState({sessionId: 5, clientId: 777});
 
     const response = await definition.steps.WAITING_INPUT.onText({text: '/end_workout', user, state});
@@ -242,6 +245,19 @@ test('WAITING_INPUT.onText with /end_workout ends a recorded session with a comp
     assert.match(response.text, /Workout complete/);
     assert.equal(service.calls.endSession[0].clientId, 777);
     assert.equal(repository.deactivated.finalStep, 'COMPLETED');
+    assert.deepEqual(menu.calls.restoreDefaultMenu, [chatId]);
+});
+
+test('WAITING_CONFIRMATION.onText with /end_workout ends the session and restores the menu', async () => {
+    const {definition, menu, repository, service} = await loadConversation({endSessionOutcome: 'ended-recorded'});
+    const state = createState({sessionId: 5, clientId: 777, pending: {rawDescription: 'bench', parsedExercise, candidates}});
+
+    const response = await definition.steps.WAITING_CONFIRMATION.onText({text: '/end_workout', user, state});
+
+    assert.match(response.text, /Workout complete/);
+    assert.equal(service.calls.endSession[0].clientId, 777);
+    assert.equal(repository.deactivated.finalStep, 'COMPLETED');
+    assert.deepEqual(menu.calls.restoreDefaultMenu, [chatId]);
 });
 
 test('WAITING_INPUT.onText with /end_workout on an empty session replies with a distinct nothing-logged message (AC-09b)', async () => {
@@ -256,28 +272,41 @@ test('WAITING_INPUT.onText with /end_workout on an empty session replies with a 
 
 // AC-10/AC-11: the generic engine calls these hooks; they must close the matching domain session.
 test('onPreempt closes the client\'s active workout_log_session as pre-empted (AC-10)', async () => {
-    const {definition, service} = await loadConversation({});
+    const {definition, menu, service} = await loadConversation({});
     const state = createState({sessionId: 5, clientId: 777});
 
     await definition.onPreempt(state);
 
     assert.equal(service.calls.preemptActiveSession[0].clientId, 777);
+    assert.deepEqual(menu.calls.restoreDefaultMenu, [chatId]);
+});
+
+test('onCancel closes the client\'s active workout_log_session as pre-empted and restores the menu', async () => {
+    const {definition, menu, service} = await loadConversation({});
+    const state = createState({sessionId: 5, clientId: 777});
+
+    await definition.onCancel(state);
+
+    assert.equal(service.calls.preemptActiveSession[0].clientId, 777);
+    assert.deepEqual(menu.calls.restoreDefaultMenu, [chatId]);
 });
 
 test('onExpire closes the client\'s active workout_log_session as auto-closed (AC-11)', async () => {
-    const {definition, service} = await loadConversation({});
+    const {definition, menu, service} = await loadConversation({});
     const state = createState({sessionId: 5, clientId: 777});
 
     await definition.onExpire(state);
 
     assert.equal(service.calls.closeExpiredSession[0].clientId, 777);
+    assert.deepEqual(menu.calls.restoreDefaultMenu, [chatId]);
 });
 
 async function loadConversation(options) {
     const repository = createConversationRepository();
     const service = createWorkoutLoggingService(options);
+    const menu = createCommandMenuService();
 
-    globalThis.__workoutLoggingConversationMocks = {repository, service};
+    globalThis.__workoutLoggingConversationMocks = {menu, repository, service};
 
     const outfile = path.join(
         tmpdir(),
@@ -296,7 +325,7 @@ async function loadConversation(options) {
 
     try {
         const module = await import(`${pathToFileURL(outfile).href}?cache=${Date.now()}-${Math.random()}`);
-        return {definition: module.workoutLoggingConversation, repository, service};
+        return {definition: module.workoutLoggingConversation, menu, repository, service};
     } finally {
         delete globalThis.__workoutLoggingConversationMocks;
         await rm(outfile, {force: true});
@@ -374,6 +403,9 @@ const workoutLoggingConversationMocks = {
         mockModule(buildContext, /repository\/tgConversationStateRepository\.js$/, [
             'export const tgConversationStateRepository = globalThis.__workoutLoggingConversationMocks.repository;',
         ]);
+        mockModule(buildContext, /workoutCommandMenuService\.js$/, [
+            'export const workoutCommandMenuService = globalThis.__workoutLoggingConversationMocks.menu;',
+        ]);
         mockModule(buildContext, /workoutLoggingService\.js$/, [
             'export const workoutLoggingService = globalThis.__workoutLoggingConversationMocks.service;',
             'export const StartSessionOutcome = ' +
@@ -385,6 +417,20 @@ const workoutLoggingConversationMocks = {
         ]);
     },
 };
+
+function createCommandMenuService() {
+    const calls = {restoreDefaultMenu: [], showWorkoutActiveMenu: []};
+
+    return {
+        calls,
+        async restoreDefaultMenu(inputChatId) {
+            calls.restoreDefaultMenu.push(inputChatId);
+        },
+        async showWorkoutActiveMenu(inputUser) {
+            calls.showWorkoutActiveMenu.push(inputUser);
+        },
+    };
+}
 
 function mockModule(buildContext, filter, contents) {
     const namespace = `mock-${String(filter)}`;

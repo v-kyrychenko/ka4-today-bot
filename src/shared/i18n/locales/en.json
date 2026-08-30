@@ -1,5 +1,10 @@
 {
     "telegram": {
+        "commands": {
+            "workoutLogging": {
+                "end": "✅ End workout"
+            }
+        },
         "routes": {
             "processing": "⏳ Got your message, I’ll be back with an answer.",
             "unknownCommand": "This command isn’t available yet. Try the menu or /start."

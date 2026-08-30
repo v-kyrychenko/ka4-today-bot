@@ -10,6 +10,7 @@ import {
     CONVERSATION_STEP_EXPIRED,
     CONVERSATION_STEP_FAILED,
     CONVERSATION_STEP_PREEMPTED,
+    ConversationLifecycleHook,
     ConversationStartOutcome,
     type ConversationCallbackInput,
     type ConversationResponse,
@@ -103,6 +104,7 @@ export async function cancel(chatId: number): Promise<ConversationResponse | nul
 
     if (state) {
         log('### CONVERSATION:cancel', {chatId, type: state.type});
+        await invokeLifecycleHook(state, ConversationLifecycleHook.Cancel);
     }
 
     return state ? CANCELLED_RESPONSE : null;
@@ -119,7 +121,7 @@ export async function preemptActiveConversation(chatId: number): Promise<void> {
 
     await tgConversationStateRepository.deactivateConversation({id: state.id, finalStep: CONVERSATION_STEP_PREEMPTED});
     log('### CONVERSATION:preempt', {chatId, type: state.type});
-    await invokeLifecycleHook(state, 'onPreempt');
+    await invokeLifecycleHook(state, ConversationLifecycleHook.Preempt);
 }
 
 /** Reads the active row, lazily expiring it (and firing the type's onExpire hook) if its TTL lapsed. */
@@ -135,11 +137,11 @@ async function resolveActiveConversation(chatId: number): Promise<TgConversation
 
     await tgConversationStateRepository.deactivateConversation({id: row.id, finalStep: CONVERSATION_STEP_EXPIRED});
     log('### CONVERSATION:expire', {chatId, type: row.type});
-    await invokeLifecycleHook(row, 'onExpire');
+    await invokeLifecycleHook(row, ConversationLifecycleHook.Expire);
     return null;
 }
 
-async function invokeLifecycleHook(state: TgConversationStateRow, hook: 'onExpire' | 'onPreempt'): Promise<void> {
+async function invokeLifecycleHook(state: TgConversationStateRow, hook: ConversationLifecycleHook): Promise<void> {
     const definition = getConversationDefinition(state.type);
     const handler = definition?.[hook];
     if (handler) {

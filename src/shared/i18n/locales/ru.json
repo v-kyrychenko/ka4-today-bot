@@ -1,5 +1,10 @@
 {
     "telegram": {
+        "commands": {
+            "workoutLogging": {
+                "end": "✅ Завершить тренировку"
+            }
+        },
         "routes": {
             "processing": "⏳ Сообщение увидел, сейчас вернусь с ответом.",
             "unknownCommand": "Эта команда пока недоступна. Попробуй меню или /start."

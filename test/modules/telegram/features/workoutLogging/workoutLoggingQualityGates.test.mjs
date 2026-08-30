@@ -219,6 +219,12 @@ const conversationMocks = {
         mockModule(buildContext, /repository\/tgConversationStateRepository\.js$/, [
             'export const tgConversationStateRepository = globalThis.__workoutLoggingConversationMocks.repository;',
         ]);
+        mockModule(buildContext, /workoutCommandMenuService\.js$/, [
+            'export const workoutCommandMenuService = {',
+            '    async restoreDefaultMenu() {},',
+            '    async showWorkoutActiveMenu() {},',
+            '};',
+        ]);
         mockModule(buildContext, /workoutLoggingService\.js$/, [
             'export const workoutLoggingService = globalThis.__workoutLoggingConversationMocks.service;',
             'export const StartSessionOutcome = ' +

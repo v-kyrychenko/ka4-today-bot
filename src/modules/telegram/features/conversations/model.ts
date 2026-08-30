@@ -10,6 +10,12 @@ export const CONVERSATION_STEP_EXPIRED = 'EXPIRED';
 export const CONVERSATION_STEP_FAILED = 'FAILED';
 export const CONVERSATION_STEP_PREEMPTED = 'PREEMPTED';
 
+export enum ConversationLifecycleHook {
+    Cancel = 'onCancel',
+    Expire = 'onExpire',
+    Preempt = 'onPreempt',
+}
+
 export interface ConversationResponse {
     text: string;
     replyMarkup?: unknown;
@@ -64,17 +70,12 @@ export interface ConversationDefinition {
     initialStep: string;
     ttlMinutes?: number;
     steps: Record<string, ConversationStep>;
-    /**
-     * Called by the generic engine to seed or veto a new conversation
-     * (e.g. eligibility/duplicate checks) before any state is persisted.
-     */
+    /** Called by the generic engine to seed or veto a new conversation. */
     onStart: (user: TelegramUserAccount) => Promise<ConversationStartResult>;
-    /**
-     * Called by the generic engine when this conversation's TTL lapses before the client's next check
-     */
+    /** Called by the generic engine when this conversation's TTL lapses before the client's next check. */
     onExpire?: (state: TgConversationStateRow) => Promise<void>;
-    /**
-     * Called by the generic engine when another interaction pre-empts this still-active conversation
-     */
+    /** Called by the generic engine when the client cancels this active conversation. */
+    onCancel?: (state: TgConversationStateRow) => Promise<void>;
+    /** Called by the generic engine when another interaction pre-empts this still-active conversation. */
     onPreempt?: (state: TgConversationStateRow) => Promise<void>;
 }

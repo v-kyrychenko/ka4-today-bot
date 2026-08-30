@@ -11,19 +11,30 @@ const REDACTED_TELEGRAM_TOKEN = '****';
 
 export const telegramClient = {
     answerCallbackQuery,
+    deleteMyCommands,
     editMessageReplyMarkup,
+    getMyCommands,
     sendMessage,
     sendPhoto,
     sendMediaGroup,
+    setMyCommands,
 };
+
+export interface TelegramBotCommand {
+    command: string;
+    description: string;
+}
+
+export type TelegramBotCommandScope = {type: 'default'} | {type: 'chat'; chat_id: number | string};
 
 interface TelegramPhotoInput {
     data: Buffer;
     filename: string;
 }
 
-interface TelegramApiResponse {
+interface TelegramApiResponse<TResult = unknown> {
     ok: boolean;
+    result?: TResult;
 }
 
 interface TelegramMediaItem {
@@ -61,6 +72,62 @@ export async function editMessageReplyMarkup(
         message_id: messageId,
         reply_markup: replyMarkup,
     };
+
+    await httpRequest<TelegramApiResponse, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+}
+
+export async function getMyCommands(
+    scope: TelegramBotCommandScope,
+    languageCode?: string,
+): Promise<TelegramBotCommand[]> {
+    const telegramRequest = buildTelegramRequest('getMyCommands');
+    const body = withLanguageCode({scope}, languageCode);
+    const response = await httpRequest<TelegramApiResponse<TelegramBotCommand[]>, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+
+    return response.result ?? [];
+}
+
+export async function setMyCommands(
+    commands: TelegramBotCommand[],
+    scope: TelegramBotCommandScope,
+    languageCode?: string,
+): Promise<void> {
+    const telegramRequest = buildTelegramRequest('setMyCommands');
+    const body = withLanguageCode({commands, scope}, languageCode);
+
+    await httpRequest<TelegramApiResponse, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+}
+
+export async function deleteMyCommands(scope: TelegramBotCommandScope, languageCode?: string): Promise<void> {
+    const telegramRequest = buildTelegramRequest('deleteMyCommands');
+    const body = withLanguageCode({scope}, languageCode);
 
     await httpRequest<TelegramApiResponse, typeof body>({
         method: 'POST',
@@ -171,4 +238,8 @@ function buildTelegramRequest(methodName: string): {path: string; logUrl: string
         path: `/${TELEGRAM_BOT_TOKEN}/${methodName}`,
         logUrl: `${TELEGRAM_BASE_URL}/${REDACTED_TELEGRAM_TOKEN}/${methodName}`,
     };
+}
+
+function withLanguageCode<T extends object>(body: T, languageCode?: string): T & {language_code?: string} {
+    return languageCode ? {...body, language_code: languageCode} : body;
 }

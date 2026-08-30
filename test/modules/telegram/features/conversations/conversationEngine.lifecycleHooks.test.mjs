@@ -54,8 +54,20 @@ test('handleText() lazily expires an idle-past-TTL conversation and calls its on
     assert.equal(hookCalls.onExpire.length, 1);
 });
 
+test('cancel() deactivates an active conversation and calls its onCancel hook', async () => {
+    const {repository, hookCalls, engine} = await setup();
+
+    const response = await engine.cancel(chatId);
+
+    assert.equal(repository.activeState(), null);
+    assert.equal(repository.lastState()?.current_step, 'CANCELLED');
+    assert.equal(hookCalls.onCancel.length, 1);
+    assert.equal(typeof response.text, 'string');
+    assert.ok(response.text.length > 0);
+});
+
 async function setup({expired = false, noActiveState = false} = {}) {
-    const hookCalls = {onPreempt: [], onExpire: []};
+    const hookCalls = {onCancel: [], onPreempt: [], onExpire: []};
     const repository = createConversationRepository({expired, noActiveState});
     const definitions = {
         WORKOUT_LOGGING: {
@@ -63,6 +75,9 @@ async function setup({expired = false, noActiveState = false} = {}) {
             initialStep: 'WAITING_INPUT',
             steps: {},
             onStart: async () => ({outcome: 'started', response: {text: 'start'}}),
+            async onCancel(state) {
+                hookCalls.onCancel.push(state);
+            },
             async onPreempt(state) {
                 hookCalls.onPreempt.push(state);
             },
@@ -165,6 +180,17 @@ function createConversationRepository({expired, noActiveState}) {
             row.current_step = input.finalStep;
             row.updated_at = new Date().toISOString();
 
+            return row;
+        },
+        async deactivateActiveByChatId(inputChatId, finalStep) {
+            const row = states.find((item) => item.chat_id === inputChatId && item.is_active);
+            if (!row) {
+                return null;
+            }
+
+            row.is_active = false;
+            row.current_step = finalStep;
+            row.updated_at = new Date().toISOString();
             return row;
         },
     };

@@ -16,6 +16,11 @@ export const I18N_KEYS = {
         ],
     },
     telegram: {
+        commands: {
+            workoutLogging: {
+                end: 'telegram.commands.workoutLogging.end',
+            },
+        },
         routes: {
             processing: 'telegram.routes.processing',
             unknownCommand: 'telegram.routes.unknownCommand',
