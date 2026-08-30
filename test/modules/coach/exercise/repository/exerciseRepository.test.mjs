@@ -9,7 +9,7 @@ import {PgDialect} from 'drizzle-orm/pg-core';
 
 const dialect = new PgDialect();
 
-test('search() passes the caller\'s page/limit through to search_dict_exercises and returns the ranked rows', async () => {
+test('search() converts the caller\'s one-based page to the stored function\'s zero-based page', async () => {
     const rows = [
         row(1, 'Bench Press'),
         row(2, 'Incline Bench Press'),
@@ -28,8 +28,8 @@ test('search() passes the caller\'s page/limit through to search_dict_exercises 
     );
     assert.deepEqual(
         params,
-        ['bench press', 2, 5],
-        `expected params (query, page, limit) to pass the request through untouched, got: ${JSON.stringify(params)}`,
+        ['bench press', 1, 5],
+        `expected params (query, zero-based page, limit), got: ${JSON.stringify(params)}`,
     );
 
     assert.equal(result.items.length, 2);
@@ -37,12 +37,21 @@ test('search() passes the caller\'s page/limit through to search_dict_exercises 
     assert.equal(result.items[0].name, 'Bench Press');
 });
 
+test('search() requests stored-function page zero for API page one', async () => {
+    const {repository, db} = await loadRepository({rows: []});
+
+    await repository.search({q: 'bench press', page: 1, limit: 5});
+
+    const {params} = dialect.sqlToQuery(db.calls[0]);
+    assert.deepEqual(params, ['bench press', 0, 5]);
+});
+
 test('search() coerces the ranking columns returned by search_dict_exercises to numbers', async () => {
     const {repository} = await loadRepository({
         rows: [{...row(1, 'Bench Press'), score: '412.5', coreInName: '1', nameInQuery: '0'}],
     });
 
-    const result = await repository.search({q: 'bench press', page: 0, limit: 3});
+    const result = await repository.search({q: 'bench press', page: 1, limit: 3});
 
     assert.equal(result.items[0].score, 412.5);
     assert.equal(result.items[0].coreInName, 1);
@@ -62,7 +71,7 @@ test('search() passes the raw jsonb instructions column through untouched (norma
         rows: [{...row(1, 'Bench Press'), instructions: ['Sit down', 'Push the handles forward']}],
     });
 
-    const result = await repository.search({q: 'bench press', page: 0, limit: 3});
+    const result = await repository.search({q: 'bench press', page: 1, limit: 3});
 
     assert.deepEqual(result.items[0].instructions, ['Sit down', 'Push the handles forward']);
 });

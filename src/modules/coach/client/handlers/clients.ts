@@ -33,7 +33,7 @@ export async function handleClientsGet(event: ApiGatewayHttpEvent): Promise<Lamb
 async function handleList(event: ApiGatewayHttpEvent): Promise<LambdaResponse> {
     const coachId = parseRequiredPositiveIntegerPathParam(event, 'id');
     const page = parseOptionalInteger(getQueryParam(event, 'page'), {
-        defaultValue: PAGINATION_DEFAULT_PAGE || 1,
+        defaultValue: PAGINATION_DEFAULT_PAGE,
         min: 1,
         max: Number.MAX_SAFE_INTEGER,
         name: 'page',

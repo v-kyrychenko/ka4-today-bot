@@ -44,6 +44,7 @@ test('matchCandidates pairs up to 3 catalog candidates with the parsed numbers a
     });
 
     assert.equal(harness.calls.searchInput.q, 'Bench press');
+    assert.equal(harness.calls.searchInput.page, 1);
 });
 
 test('matchCandidates narrows to a single candidate when the top result score meets the high-confidence threshold', async () => {

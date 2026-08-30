@@ -9,8 +9,9 @@ export const exerciseRepository = {
 };
 
 export async function search(input: ExerciseSearchRequest) {
+    const databasePage = input.page - 1;
     const query =
-        sql<RankedDictExerciseRow>`select * from search_dict_exercises(${input.q}, ${input.page}, ${input.limit})`;
+        sql<RankedDictExerciseRow>`select * from search_dict_exercises(${input.q}, ${databasePage}, ${input.limit})`;
 
     const result = await getPostgresDb().execute(query);
     const rows = result.rows as unknown as RankedDictExerciseRow[];

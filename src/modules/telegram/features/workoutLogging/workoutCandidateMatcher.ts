@@ -18,7 +18,7 @@ export interface MatchCandidatesRequest {
     parsedExercise: ParsedWorkoutExercise;
 }
 
-const EXERCISE_SEARCH_FIRST_PAGE = 0;
+const EXERCISE_SEARCH_FIRST_PAGE = 1;
 const EXERCISE_CANDIDATE_LIMIT = 3;
 const HIGH_CONFIDENCE_SCORE_THRESHOLD = 300;
 

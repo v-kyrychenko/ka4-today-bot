@@ -14,7 +14,7 @@ test('searchExercises maps repository rows to ExerciseItem and normalizes the js
         },
     });
 
-    const result = await searchExercises({q: 'bench press', page: 0, limit: 3});
+    const result = await searchExercises({q: 'bench press', page: 1, limit: 3});
 
     assert.equal(result.items[0].id, 1);
     assert.equal(result.items[0].name, 'Bench Press');
@@ -26,7 +26,7 @@ test('searchExercises falls back to an empty instructions array when the raw val
         searchResult: {items: [rankedRow(1, 'Bench Press', {instructions: null})], total: 1},
     });
 
-    const result = await searchExercises({q: 'bench press', page: 0, limit: 3});
+    const result = await searchExercises({q: 'bench press', page: 1, limit: 3});
 
     assert.deepEqual(result.items[0].instructions, []);
 });
@@ -36,7 +36,7 @@ test('searchExercises does not leak the ranking columns onto the returned items'
         searchResult: {items: [rankedRow(1, 'Bench Press', {score: 412, coreInName: 1, nameInQuery: 1})], total: 1},
     });
 
-    const result = await searchExercises({q: 'bench press', page: 0, limit: 3});
+    const result = await searchExercises({q: 'bench press', page: 1, limit: 3});
 
     assert.equal('score' in result.items[0], false);
     assert.equal('coreInName' in result.items[0], false);
