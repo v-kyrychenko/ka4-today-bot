@@ -66,5 +66,7 @@ For local TypeScript preview scripts, do not assume Node.js can execute repo sou
 ## Commit & Pull Request Guidelines
 Recent history uses short, imperative commit subjects such as `typescript migration`. Keep commits focused and small. For pull requests, include a concise summary, affected modules or handlers, required config changes, and verification steps. Add request/response examples for API changes and screenshots only when UI or rendered output is affected.
 
+Agents must never create Git commits. Leave all changes uncommitted for the user to review and commit.
+
 ## Security & Configuration Tips
 Never run deploy. Do not commit `.env` files, AWS credentials, or Telegram/OpenAI secrets. Use `.env` for local development and SAM parameter overrides for deployment. When changing event shapes or resource names, update both code and `template.yaml` together.
