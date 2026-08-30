@@ -1,13 +1,6 @@
 export const DEFAULT_MODEL = 'gpt-4o-mini';
-export const DEFAULT_TEMPERATURE =  0.8;
 
-export type OpenAiResponseStatus =
-    | 'queued'
-    | 'in_progress'
-    | 'completed'
-    | 'requires_action'
-    | 'failed'
-    | 'cancelled';
+export type OpenAiResponseStatus = 'queued' | 'in_progress' | 'completed' | 'requires_action' | 'failed' | 'cancelled';
 
 export interface OpenAiRequiredAction {
     type: string;
@@ -17,13 +10,24 @@ export interface OpenAiTextFormat {
     format: Record<string, unknown>;
 }
 
+export type OpenAiReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+
+export interface OpenAiReasoningConfig {
+    effort: OpenAiReasoningEffort;
+}
+
+export interface OpenAiConfig {
+    textFormat: OpenAiTextFormat | null;
+    reasoning: OpenAiReasoningConfig | null;
+}
+
 export interface OpenAiCreateResponseInput {
     systemPrompt: string;
     userPrompt: string;
     vectorStoreIds?: string[];
     model: string | null;
     temperature: number | null;
-    textFormat: OpenAiTextFormat | null;
+    config: OpenAiConfig | null;
     background?: boolean;
 }
 
@@ -54,7 +58,7 @@ export class OpenAiResponseDetails {
     background = false;
     output: OpenAiOutputMessage[] = [];
     required_action?: OpenAiRequiredAction;
-    incomplete_details?: Object;
+    incomplete_details?: object;
 
     constructor(init?: Partial<OpenAiResponseDetails>) {
         Object.assign(this, init);

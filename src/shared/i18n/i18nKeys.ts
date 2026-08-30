@@ -16,6 +16,11 @@ export const I18N_KEYS = {
         ],
     },
     telegram: {
+        commands: {
+            workoutLogging: {
+                end: 'telegram.commands.workoutLogging.end',
+            },
+        },
         routes: {
             processing: 'telegram.routes.processing',
             unknownCommand: 'telegram.routes.unknownCommand',
@@ -33,6 +38,20 @@ export const I18N_KEYS = {
                 saveSuccess: 'telegram.conversations.bodyMeasurements.saveSuccess',
                 tooSoon: 'telegram.conversations.bodyMeasurements.tooSoon',
                 unavailable: 'telegram.conversations.bodyMeasurements.unavailable',
+            },
+            workoutLogging: {
+                initialMessage: 'telegram.conversations.workoutLogging.initialMessage',
+                notAClient: 'telegram.conversations.workoutLogging.notAClient',
+                alreadyOpen: 'telegram.conversations.workoutLogging.alreadyOpen',
+                unclear: 'telegram.conversations.workoutLogging.unclear',
+                savedAsWritten: 'telegram.conversations.workoutLogging.savedAsWritten',
+                confirmation: 'telegram.conversations.workoutLogging.confirmation',
+                savedLinked: 'telegram.conversations.workoutLogging.savedLinked',
+                savedUnlinked: 'telegram.conversations.workoutLogging.savedUnlinked',
+                sessionEmpty: 'telegram.conversations.workoutLogging.sessionEmpty',
+                sessionComplete: 'telegram.conversations.workoutLogging.sessionComplete',
+                buttonKeepOwn: 'telegram.conversations.workoutLogging.buttonKeepOwn',
+                buttonReject: 'telegram.conversations.workoutLogging.buttonReject',
             },
             cancelled: 'telegram.conversations.cancelled',
             safeError: 'telegram.conversations.safeError',

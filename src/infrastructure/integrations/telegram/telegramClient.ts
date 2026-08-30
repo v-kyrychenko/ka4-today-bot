@@ -11,19 +11,30 @@ const REDACTED_TELEGRAM_TOKEN = '****';
 
 export const telegramClient = {
     answerCallbackQuery,
+    deleteMyCommands,
     editMessageReplyMarkup,
+    getMyCommands,
     sendMessage,
     sendPhoto,
     sendMediaGroup,
+    setMyCommands,
 };
+
+export interface TelegramBotCommand {
+    command: string;
+    description: string;
+}
+
+export type TelegramBotCommandScope = {type: 'default'} | {type: 'chat'; chat_id: number | string};
 
 interface TelegramPhotoInput {
     data: Buffer;
     filename: string;
 }
 
-interface TelegramApiResponse {
+interface TelegramApiResponse<TResult = unknown> {
     ok: boolean;
+    result?: TResult;
 }
 
 interface TelegramMediaItem {
@@ -50,7 +61,11 @@ export async function answerCallbackQuery(callbackQueryId: string): Promise<void
     });
 }
 
-export async function editMessageReplyMarkup(chatId: number, messageId: number, replyMarkup: unknown = {inline_keyboard: []}): Promise<void> {
+export async function editMessageReplyMarkup(
+    chatId: number,
+    messageId: number,
+    replyMarkup: unknown = {inline_keyboard: []},
+): Promise<void> {
     const telegramRequest = buildTelegramRequest('editMessageReplyMarkup');
     const body = {
         chat_id: chatId,
@@ -70,9 +85,65 @@ export async function editMessageReplyMarkup(chatId: number, messageId: number, 
     });
 }
 
+export async function getMyCommands(
+    scope: TelegramBotCommandScope,
+    languageCode?: string,
+): Promise<TelegramBotCommand[]> {
+    const telegramRequest = buildTelegramRequest('getMyCommands');
+    const body = withLanguageCode({scope}, languageCode);
+    const response = await httpRequest<TelegramApiResponse<TelegramBotCommand[]>, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+
+    return response.result ?? [];
+}
+
+export async function setMyCommands(
+    commands: TelegramBotCommand[],
+    scope: TelegramBotCommandScope,
+    languageCode?: string,
+): Promise<void> {
+    const telegramRequest = buildTelegramRequest('setMyCommands');
+    const body = withLanguageCode({commands, scope}, languageCode);
+
+    await httpRequest<TelegramApiResponse, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+}
+
+export async function deleteMyCommands(scope: TelegramBotCommandScope, languageCode?: string): Promise<void> {
+    const telegramRequest = buildTelegramRequest('deleteMyCommands');
+    const body = withLanguageCode({scope}, languageCode);
+
+    await httpRequest<TelegramApiResponse, typeof body>({
+        method: 'POST',
+        path: telegramRequest.path,
+        endpointUrl: TELEGRAM_BASE_URL,
+        logUrl: telegramRequest.logUrl,
+        headers: TELEGRAM_HEADERS,
+        body,
+        label: TELEGRAM_API_LABEL,
+        errorClass: TelegramError,
+    });
+}
+
 export async function sendMessage(chatId: number, message: string, replyMarkup?: unknown): Promise<void> {
     const telegramRequest = buildTelegramRequest('sendMessage');
-    const body: { chat_id: number; text: string; reply_markup?: unknown } = {
+    const body: {chat_id: number; text: string; reply_markup?: unknown} = {
         chat_id: chatId,
         text: message,
     };
@@ -97,7 +168,7 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
     const telegramRequest = buildTelegramRequest('sendPhoto');
 
     if (typeof photo === 'string') {
-        await httpRequest<TelegramApiResponse, { chat_id: number; photo: string; caption: string }>({
+        await httpRequest<TelegramApiResponse, {chat_id: number; photo: string; caption: string}>({
             method: 'POST',
             path: telegramRequest.path,
             endpointUrl: TELEGRAM_BASE_URL,
@@ -130,15 +201,24 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
     });
 }
 
-export async function sendMediaGroup(chatId: number, imageUrls: string[], caption = ''): Promise<void> {
+export async function sendMediaGroup(
+    chatId: number,
+    items: Array<string | {url: string; caption?: string}>,
+    caption = '',
+): Promise<void> {
     const telegramRequest = buildTelegramRequest('sendMediaGroup');
-    const media: TelegramMediaItem[] = imageUrls.map((url, index) => ({
-        type: 'photo',
-        media: url,
-        ...(index === 0 && caption ? {caption} : {}),
-    }));
+    const media: TelegramMediaItem[] = items.map((item, index) => {
+        const url = typeof item === 'string' ? item : item.url;
+        const itemCaption = typeof item === 'string' ? undefined : item.caption;
 
-    await httpRequest<TelegramApiResponse, { chat_id: number; media: TelegramMediaItem[] }>({
+        return {
+            type: 'photo',
+            media: url,
+            ...(itemCaption ? {caption: itemCaption} : index === 0 && caption ? {caption} : {}),
+        };
+    });
+
+    await httpRequest<TelegramApiResponse, {chat_id: number; media: TelegramMediaItem[]}>({
         method: 'POST',
         path: telegramRequest.path,
         endpointUrl: TELEGRAM_BASE_URL,
@@ -158,4 +238,8 @@ function buildTelegramRequest(methodName: string): {path: string; logUrl: string
         path: `/${TELEGRAM_BOT_TOKEN}/${methodName}`,
         logUrl: `${TELEGRAM_BASE_URL}/${REDACTED_TELEGRAM_TOKEN}/${methodName}`,
     };
+}
+
+function withLanguageCode<T extends object>(body: T, languageCode?: string): T & {language_code?: string} {
+    return languageCode ? {...body, language_code: languageCode} : body;
 }

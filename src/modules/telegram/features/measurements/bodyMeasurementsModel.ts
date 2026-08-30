@@ -1,7 +1,6 @@
 import {I18N_KEYS} from '../../../../shared/i18n/i18nKeys.js';
 
 export const CONVERSATION_TYPE_BODY_MEASUREMENTS = 'BODY_MEASUREMENTS';
-export type ConversationType = typeof CONVERSATION_TYPE_BODY_MEASUREMENTS;
 
 export interface BodyMeasurement {
     id: number;

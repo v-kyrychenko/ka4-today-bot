@@ -41,10 +41,10 @@ test('measurements reminder cron does not queue messages when no users are due',
 
     assert.equal(mocks.repositoryCalls.length, 1);
     assert.deepEqual(mocks.queued, []);
-    assert.deepEqual(mocks.logs.find(([message]) => message === 'Measurements reminder cron found users'), [
-        'Measurements reminder cron found users',
-        {count: 0},
-    ]);
+    assert.deepEqual(
+        mocks.logs.find(([message]) => message === 'Measurements reminder cron found users'),
+        ['Measurements reminder cron found users', {count: 0}],
+    );
 });
 
 async function loadHandler(mocks) {
@@ -80,9 +80,7 @@ const cronMeasurementsReminderMocks = {
         mockModule(buildContext, /withAppInitialization\.js$/, [
             'export function withAppInitialization(handler) { return handler; }',
         ]);
-        mockModule(buildContext, /app\/config\/env\.js$/, [
-            'export const MAIN_MESSAGE_QUEUE_URL = "queue-url";',
-        ]);
+        mockModule(buildContext, /app\/config\/env\.js$/, ['export const MAIN_MESSAGE_QUEUE_URL = "queue-url";']);
         mockModule(buildContext, /shared\/logging$/, [
             'export function log(...args) { globalThis.__cronMeasurementsReminderMocks.logs.push(args); }',
             'export function logError(...args) { globalThis.__cronMeasurementsReminderMocks.logs.push(args); }',
@@ -99,9 +97,7 @@ const cronMeasurementsReminderMocks = {
             '    },',
             '};',
         ]);
-        mockModule(buildContext, /routes\/constants\.js$/, [
-            'export const MEASUREMENTS_ROUTE = "/measurements";',
-        ]);
+        mockModule(buildContext, /routes\/constants\.js$/, ['export const MEASUREMENTS_ROUTE = "/measurements";']);
     },
 };
 
@@ -109,7 +105,7 @@ function assertQueuedReminder(message, chatId) {
     assert.equal(message.metadata.MessageGroupId, String(chatId));
     assert.match(
         message.metadata.MessageDeduplicationId,
-        new RegExp(`^measurements-reminder-${chatId}-\\d{4}-\\d{2}-\\d{2}$`)
+        new RegExp(`^measurements-reminder-${chatId}-\\d{4}-\\d{2}-\\d{2}$`),
     );
 
     assert.equal(message.payload.request.message.text, '/measurements');

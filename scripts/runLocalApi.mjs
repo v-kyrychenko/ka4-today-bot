@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { spawnSync, spawn } from 'node:child_process';
+import {spawnSync, spawn} from 'node:child_process';
 
 const [, , functionName] = process.argv;
 
@@ -9,17 +9,11 @@ if (!functionName) {
 }
 
 try {
-    runCommand(
-        'node',
-        ['scripts/genEnvJson.mjs', functionName],
-        `Generating env for ${functionName}...`
-    );
+    runCommand('node', ['scripts/genEnvJson.mjs', functionName], `Generating env for ${functionName}...`);
 
-    const child = spawn(
-        'sam',
-        ['local', 'start-api', '--skip-pull-image', '--env-vars', 'env.tmp.json'],
-        { stdio: 'inherit' }
-    );
+    const child = spawn('sam', ['local', 'start-api', '--skip-pull-image', '--env-vars', 'env.tmp.json'], {
+        stdio: 'inherit',
+    });
 
     child.on('exit', (code) => {
         cleanup();
@@ -44,7 +38,7 @@ try {
 function runCommand(command, args, message) {
     console.log(message);
 
-    const result = spawnSync(command, args, { stdio: 'inherit' });
+    const result = spawnSync(command, args, {stdio: 'inherit'});
 
     if (result.error) {
         throw result.error;

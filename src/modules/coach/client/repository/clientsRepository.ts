@@ -3,11 +3,7 @@ import {clientMapper} from '../../../../infrastructure/persistence/postgres/mapp
 import {getPostgresDb} from '../../../../infrastructure/persistence/postgres/postgresDb.js';
 import {client} from '../../../../infrastructure/persistence/postgres/schema/client.js';
 import {NotFoundError} from '../../../../shared/errors';
-import type {
-    ClientCreateInput,
-    ClientListRequest,
-    ClientUpdateInput,
-} from '../domain/client.js';
+import type {ClientCreateInput, ClientListRequest, ClientUpdateInput} from '../domain/client.js';
 
 export const clientsRepository = {
     findAll,
@@ -37,10 +33,7 @@ export async function findById(coachId: number, clientId: number) {
     const [row] = await getPostgresDb()
         .select()
         .from(client)
-        .where(and(
-            eq(client.coach_id, coachId),
-            eq(client.id, clientId),
-        ))
+        .where(and(eq(client.coach_id, coachId), eq(client.id, clientId)))
         .limit(1);
 
     if (!row) {
@@ -63,10 +56,7 @@ export async function update(coachId: number, clientId: number, input: ClientUpd
     const [row] = await getPostgresDb()
         .update(client)
         .set(clientMapper.toUpdateRow(input))
-        .where(and(
-            eq(client.coach_id, coachId),
-            eq(client.id, clientId),
-        ))
+        .where(and(eq(client.coach_id, coachId), eq(client.id, clientId)))
         .returning();
 
     if (!row) {

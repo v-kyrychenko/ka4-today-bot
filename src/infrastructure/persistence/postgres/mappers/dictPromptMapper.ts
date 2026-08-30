@@ -1,5 +1,5 @@
 import {PromptDict, PromptDictSystem} from '../../../../modules/telegram/features/prompts/prompt.js';
-import type {OpenAiTextFormat} from '../../../../shared/types/openai.js';
+import type {OpenAiConfig, OpenAiReasoningEffort, OpenAiTextFormat} from '../../../../shared/types/openai.js';
 import type {DictPromptRow} from '../models/dictPromptRow.js';
 
 export const dictPromptMapper = {
@@ -15,7 +15,7 @@ export function toAppModel(row: DictPromptRow, systemPrompt: PromptDictSystem | 
         vectorStoreIds: toVectorStoreIds(row.vector_store_ids),
         model: row.model,
         temperature: toTemperature(row.temperature),
-        textFormat: toTextFormat(row.text_format),
+        config: toConfig(row.config),
         systemPrompt,
     });
 }
@@ -27,7 +27,7 @@ export function toSystemPromptModel(row: DictPromptRow): PromptDictSystem {
         prompts: toPromptsRecord(row.prompt),
         model: row.model,
         temperature: toTemperature(row.temperature),
-        textFormat: toTextFormat(row.text_format),
+        config: toConfig(row.config),
     });
 }
 
@@ -37,7 +37,7 @@ function toPromptsRecord(value: unknown): Record<string, string> {
     }
 
     return Object.fromEntries(
-        Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+        Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
     );
 }
 
@@ -63,10 +63,33 @@ function toTemperature(value: string | null): number | null {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
-function toTextFormat(value: unknown): OpenAiTextFormat | null {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+function toConfig(value: unknown): OpenAiConfig | null {
+    if (!isPlainObject(value)) {
         return null;
     }
 
-    return {format: value as Record<string, unknown>};
+    return {
+        textFormat: toTextFormat(value.text),
+        reasoning: toReasoning(value.reasoning),
+    };
+}
+
+function toTextFormat(value: unknown): OpenAiTextFormat | null {
+    if (!isPlainObject(value) || !isPlainObject(value.format)) {
+        return null;
+    }
+
+    return {format: value.format};
+}
+
+function toReasoning(value: unknown): OpenAiConfig['reasoning'] {
+    if (!isPlainObject(value) || typeof value.effort !== 'string') {
+        return null;
+    }
+
+    return {effort: value.effort as OpenAiReasoningEffort};
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

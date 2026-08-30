@@ -20,15 +20,15 @@ test('telegram queue sender serializes payload and sends FIFO metadata to the ma
 
     await sendTelegramQueueRequest(payload, metadata);
 
-    assert.deepEqual(mocks.sent, [{
-        QueueUrl: 'queue-url',
-        MessageBody: JSON.stringify(payload),
-        MessageGroupId: '101',
-        MessageDeduplicationId: 'measurements-reminder-101-2026-05-06',
-    }]);
-    assert.deepEqual(mocks.logs, [[
-        `Sending to queue:queue-url payload:${JSON.stringify(payload)}`,
-    ]]);
+    assert.deepEqual(mocks.sent, [
+        {
+            QueueUrl: 'queue-url',
+            MessageBody: JSON.stringify(payload),
+            MessageGroupId: '101',
+            MessageDeduplicationId: 'measurements-reminder-101-2026-05-06',
+        },
+    ]);
+    assert.deepEqual(mocks.logs, [[`Sending to queue:queue-url payload:${JSON.stringify(payload)}`]]);
 });
 
 async function loadModule(mocks) {
@@ -63,9 +63,7 @@ const telegramQueueSenderMocks = {
             '    async send(command) { globalThis.__telegramQueueSenderMocks.sent.push(command.input); }',
             '}',
         ]);
-        mockModule(buildContext, /app\/config\/env\.js$/, [
-            'export const MAIN_MESSAGE_QUEUE_URL = "queue-url";',
-        ]);
+        mockModule(buildContext, /app\/config\/env\.js$/, ['export const MAIN_MESSAGE_QUEUE_URL = "queue-url";']);
         mockModule(buildContext, /shared\/logging$/, [
             'export function log(...args) { globalThis.__telegramQueueSenderMocks.logs.push(args); }',
         ]);

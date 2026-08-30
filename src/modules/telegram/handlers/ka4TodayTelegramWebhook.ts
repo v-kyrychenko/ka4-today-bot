@@ -29,9 +29,7 @@ export const handler = async (event: ApiGatewayHttpEvent): Promise<LambdaRespons
 };
 
 function isAuthorized(headers: Record<string, string | undefined> = {}): boolean {
-    const token =
-        headers['x-telegram-bot-api-secret-token'] ??
-        headers['X-Telegram-Bot-Api-Secret-Token'];
+    const token = headers['x-telegram-bot-api-secret-token'] ?? headers['X-Telegram-Bot-Api-Secret-Token'];
     return token === TELEGRAM_SECURITY_TOKEN;
 }
 

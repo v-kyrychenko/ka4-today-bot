@@ -22,38 +22,103 @@ test('telegram client routes all methods through httpRequest with masked logUrl'
 
     await module.answerCallbackQuery('callback-id');
     await module.editMessageReplyMarkup(7, 1001);
+    await module.getMyCommands({type: 'default'}, 'uk');
+    await module.setMyCommands(
+        [{command: 'end_workout', description: '✅ Завершити тренування'}],
+        {type: 'chat', chat_id: 7},
+    );
+    await module.deleteMyCommands({type: 'chat', chat_id: 7});
     await module.sendMessage(7, 'hello');
     await module.sendPhoto(7, 'https://example.com/photo.jpg', 'caption');
     await module.sendPhoto(7, {data: Buffer.from('image-bytes'), filename: 'photo.png'}, 'caption');
     await module.sendMediaGroup(7, ['https://example.com/1.jpg', 'https://example.com/2.jpg'], 'group');
 
-    assert.equal(calls.length, 6);
+    assert.equal(calls.length, 9);
     assert.deepEqual(
         calls.map((call) => call.path),
         [
             `/${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`,
             `/${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`,
+            `/${TELEGRAM_BOT_TOKEN}/getMyCommands`,
+            `/${TELEGRAM_BOT_TOKEN}/setMyCommands`,
+            `/${TELEGRAM_BOT_TOKEN}/deleteMyCommands`,
             `/${TELEGRAM_BOT_TOKEN}/sendMessage`,
             `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
             `/${TELEGRAM_BOT_TOKEN}/sendPhoto`,
             `/${TELEGRAM_BOT_TOKEN}/sendMediaGroup`,
-        ]
+        ],
     );
     assert.deepEqual(
         calls.map((call) => call.logUrl),
         [
             'https://api.telegram.org/****/answerCallbackQuery',
             'https://api.telegram.org/****/editMessageReplyMarkup',
+            'https://api.telegram.org/****/getMyCommands',
+            'https://api.telegram.org/****/setMyCommands',
+            'https://api.telegram.org/****/deleteMyCommands',
             'https://api.telegram.org/****/sendMessage',
             'https://api.telegram.org/****/sendPhoto',
             'https://api.telegram.org/****/sendPhoto',
             'https://api.telegram.org/****/sendMediaGroup',
-        ]
+        ],
     );
     assert.deepEqual(calls[0].body, {callback_query_id: 'callback-id'});
     assert.deepEqual(calls[1].body, {chat_id: 7, message_id: 1001, reply_markup: {inline_keyboard: []}});
-    assert.equal(calls[4].body instanceof FormData, true);
-    assert.equal(calls[4].headers, undefined);
+    assert.deepEqual(calls[2].body, {scope: {type: 'default'}, language_code: 'uk'});
+    assert.deepEqual(calls[3].body, {
+        commands: [{command: 'end_workout', description: '✅ Завершити тренування'}],
+        scope: {type: 'chat', chat_id: 7},
+    });
+    assert.deepEqual(calls[4].body, {scope: {type: 'chat', chat_id: 7}});
+    assert.equal(calls[7].body instanceof FormData, true);
+    assert.equal(calls[7].headers, undefined);
+    assert.deepEqual(calls[8].body, {
+        chat_id: 7,
+        media: [
+            {type: 'photo', media: 'https://example.com/1.jpg', caption: 'group'},
+            {type: 'photo', media: 'https://example.com/2.jpg'},
+        ],
+    });
+});
+
+test('getMyCommands returns Telegram command results', async () => {
+    const module = await loadTelegramClientWithHttpMock();
+
+    globalThis.__telegramClientHttpMock = {
+        async httpRequest() {
+            return {ok: true, result: [{command: 'log_workout', description: 'Start workout'}]};
+        },
+    };
+
+    const commands = await module.getMyCommands({type: 'default'});
+
+    assert.deepEqual(commands, [{command: 'log_workout', description: 'Start workout'}]);
+});
+
+test('sendMediaGroup gives each item its own caption when provided', async () => {
+    const module = await loadTelegramClientWithHttpMock();
+    const calls = [];
+
+    globalThis.__telegramClientHttpMock = {
+        calls,
+        async httpRequest(params) {
+            calls.push(params);
+            return {ok: true};
+        },
+    };
+
+    await module.sendMediaGroup(7, [
+        {url: 'https://example.com/1.jpg', caption: '1. Bench Press'},
+        {url: 'https://example.com/2.jpg', caption: '2. Incline Bench Press'},
+    ]);
+
+    assert.deepEqual(calls[0].body, {
+        chat_id: 7,
+        media: [
+            {type: 'photo', media: 'https://example.com/1.jpg', caption: '1. Bench Press'},
+            {type: 'photo', media: 'https://example.com/2.jpg', caption: '2. Incline Bench Press'},
+        ],
+    });
 });
 
 test('telegram client logs and errors never expose the real bot token', async () => {
@@ -78,7 +143,7 @@ test('telegram client logs and errors never expose the real bot token', async ()
             assert.doesNotMatch(error.message, new RegExp(TELEGRAM_BOT_TOKEN, 'g'));
             assert.match(error.message, /https:\/\/api\.telegram\.org\/\*\*\*\*\/sendPhoto/);
             return true;
-        }
+        },
     );
 
     assert.equal(logs.length, 1);

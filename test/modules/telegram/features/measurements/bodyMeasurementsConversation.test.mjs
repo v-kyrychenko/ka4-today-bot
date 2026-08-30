@@ -105,7 +105,7 @@ test('save deactivates conversation when measurements are too soon', async () =>
     assert.equal(response.removeReplyMarkup, true);
     assert.equal(
         response.text,
-        '⏳ Body measurements can be saved once every 30 days.\n\nYour previous measurements are still too recent, so I didn’t save this update.'
+        '⏳ Body measurements can be saved once every 30 days.\n\nYour previous measurements are still too recent, so I didn’t save this update.',
     );
 });
 
@@ -148,7 +148,8 @@ test('body measurements conversation uses user language for each response path',
     const state = createState({measurements: fullMeasurements}, 'WAITING_CONFIRMATION');
 
     const initial = await loadConversation({});
-    assert.match(initial.definition.getInitialMessage(ukUser).text, /^📏 Надішли заміри/);
+    const initialStart = await initial.definition.onStart(ukUser);
+    assert.match(initialStart.response.text, /^📏 Надішли заміри/);
 
     const invalid = await loadConversation({promptReply: []});
     const invalidResponse = await invalid.definition.steps.WAITING_INPUT.onText({
@@ -158,7 +159,7 @@ test('body measurements conversation uses user language for each response path',
     });
     assert.equal(
         invalidResponse.text,
-        '❌ Не вдалося розпізнати заміри тіла.\n\nНадішли їх ще раз одним повідомленням у вільному форматі — я розберу.'
+        '❌ Не вдалося розпізнати заміри тіла.\n\nНадішли їх ще раз одним повідомленням у вільному форматі — я розберу.',
     );
 
     const partial = await loadConversation({promptReply: fullMeasurements.slice(0, 2)});
@@ -213,7 +214,7 @@ test('body measurements conversation uses user language for each response path',
         user: ukUser,
         state,
     });
-    assert.equal(unsupportedResponse.text, 'Ця дія поки недоступна для замірів тіла.');
+    assert.equal(unsupportedResponse.text, 'Ця дія поки недоступна.');
 });
 
 async function loadConversation(options) {
@@ -306,7 +307,11 @@ function createTooSoonBodyMeasurementService() {
         storeAttempts: 0,
         async store() {
             this.storeAttempts += 1;
-            throw new TestHttpApiError(409, 'BODY_MEASUREMENT_TOO_SOON', 'Body measurements can be submitted once every 30 days');
+            throw new TestHttpApiError(
+                409,
+                'BODY_MEASUREMENT_TOO_SOON',
+                'Body measurements can be submitted once every 30 days',
+            );
         },
     };
 }

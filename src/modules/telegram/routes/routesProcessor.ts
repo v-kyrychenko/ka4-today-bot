@@ -1,6 +1,7 @@
 import {TG_ERROR_POSTGRES_UNAVAILABLE, TG_ERROR_DEFAULT} from '../../../app/config/constants.js';
 import {isPostgresUnavailableError} from '../../../infrastructure/persistence/postgres/postgresErrors.js';
-import {BadRequestError, OpenAIError} from '../../../shared/errors';
+import type { OpenAIError} from '../../../shared/errors';
+import {BadRequestError} from '../../../shared/errors';
 import {I18N_KEYS} from '../../../shared/i18n/i18nKeys.js';
 import {i18nService} from '../../../shared/i18n/i18nService.js';
 import {log} from '../../../shared/logging';
@@ -9,7 +10,9 @@ import type {ConversationResponse} from '../features/conversations/model.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {ProcessorContext} from '../model/context.js';
-import {TelegramMessage, TelegramWebhookUpdate} from '../model/telegram.js';
+import type {TelegramMessage} from '../model/telegram.js';
+import { TelegramWebhookUpdate} from '../model/telegram.js';
+import {ActiveConversationPolicy, type BaseRoute} from './BaseRoute.js';
 import {CANCEL_COMMANDS, routeRegistry} from './registry.js';
 
 export const routesProcessor = {
@@ -21,9 +24,19 @@ export const routesProcessor = {
 
             if (await handleCallback(request, context)) return;
             if (await handleCancelCommand(request, context)) return;
+
+            const matchedRoute = findRoute(context);
+            if (matchedRoute) {
+                if (matchedRoute.activeConversationPolicy === ActiveConversationPolicy.Preempt) {
+                    await conversationEngine.preemptActiveConversation(request.chatId);
+                }
+                await executeRoute(context, matchedRoute);
+                return;
+            }
+
             if (await continueConversation(request, context)) return;
 
-            await executeRoute(context);
+            await executeRoute(context, null);
         } catch (error) {
             await sendRouteError(request.chatId, error);
             throw error as BadRequestError | OpenAIError;
@@ -69,6 +82,14 @@ async function buildContext(request: ParsedTelegramRequest): Promise<ProcessorCo
         user,
         message: request.message,
     });
+}
+
+function findRoute(context: ProcessorContext): BaseRoute | null {
+    if (context.text == null) {
+        return null;
+    }
+
+    return routeRegistry.find((route) => route.canHandle(context.text, context)) ?? null;
 }
 
 async function handleCallback(request: ParsedTelegramRequest, context: ProcessorContext): Promise<boolean> {
@@ -119,14 +140,12 @@ async function continueConversation(request: ParsedTelegramRequest, context: Pro
     return true;
 }
 
-async function executeRoute(context: ProcessorContext): Promise<void> {
-    const route = routeRegistry.find((item) => item.canHandle(context.text, context));
-
+async function executeRoute(context: ProcessorContext, route: BaseRoute | null): Promise<void> {
     if (!route) {
         log('[telegram.routes] No route found', {chatId: context.chatId, text: context.text});
         await telegramMessagingService.sendMessage(
             context,
-            i18nService.tr(context.user.lang, I18N_KEYS.telegram.routes.unknownCommand)
+            i18nService.tr(context.user.lang, I18N_KEYS.telegram.routes.unknownCommand),
         );
         return;
     }
@@ -136,22 +155,29 @@ async function executeRoute(context: ProcessorContext): Promise<void> {
     if (route.shouldSendProcessingNotice()) {
         await telegramMessagingService.sendMessage(
             context,
-            i18nService.tr(context.user.lang, I18N_KEYS.telegram.routes.processing)
+            i18nService.tr(context.user.lang, I18N_KEYS.telegram.routes.processing),
         );
     }
     await route.execute(context);
 }
 
-async function sendConversationResponse(context: ProcessorContext, response: ConversationResponse | null): Promise<void> {
-    if (response) {
-        await telegramMessagingService.sendMessage(context, response.text, response.replyMarkup);
+async function sendConversationResponse(
+    context: ProcessorContext,
+    response: ConversationResponse | null,
+): Promise<void> {
+    if (!response) {
+        return;
     }
+
+    if (response.media?.length) {
+        await telegramMessagingService.sendWithMedia(context, response.media);
+    }
+
+    await telegramMessagingService.sendMessage(context, response.text, response.replyMarkup);
 }
 
 async function sendRouteError(chatId: number, error: unknown): Promise<void> {
-    const message = isPostgresUnavailableError(error)
-        ? TG_ERROR_POSTGRES_UNAVAILABLE
-        : TG_ERROR_DEFAULT;
+    const message = isPostgresUnavailableError(error) ? TG_ERROR_POSTGRES_UNAVAILABLE : TG_ERROR_DEFAULT;
 
     await telegramMessagingService.sendErrorMessage(chatId, message);
 }

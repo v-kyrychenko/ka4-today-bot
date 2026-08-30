@@ -22,11 +22,11 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
             },
             model: 'gpt-4o-mini',
             temperature: 0.4,
-            textFormat: {format: {type: 'json_schema', name: 'coachReply'}},
+            config: {textFormat: {format: {type: 'json_schema', name: 'coachReply'}}, reasoning: null},
         },
         model: 'gpt-4.1-mini',
         temperature: 0.9,
-        textFormat: {format: {type: 'text'}},
+        config: {textFormat: {format: {type: 'text'}}, reasoning: null},
     });
     const harness = await loadPromptReplyService({
         prompt,
@@ -64,16 +64,15 @@ test('fetchOpenAiReply renders translated prompts and returns the latest assista
 
     assert.equal(reply, 'Latest reply');
     assert.equal(harness.calls.promptRef, 'coach.reply');
-    assert.deepEqual(harness.calls.sequence, [
-        ['createResponse', 'response_123'],
-    ]);
+    assert.deepEqual(harness.calls.sequence, [['createResponse', 'response_123']]);
     assert.deepEqual(harness.calls.createResponseInput, {
-        systemPrompt: 'Ty trener dlia Oksana. Tegi: legs, , strength. Profil: level: advanced, goals: {"primary":"power"}. Optional: ${missing}.',
+        systemPrompt:
+            'Ty trener dlia Oksana. Tegi: legs, , strength. Profil: level: advanced, goals: {"primary":"power"}. Optional: ${missing}.',
         userPrompt: 'Pytannia vid Oksana: How many reps?',
         vectorStoreIds: ['vs_1', 'vs_2'],
         model: 'gpt-4.1-mini',
         temperature: 0.9,
-        textFormat: {format: {type: 'text'}},
+        config: {textFormat: {format: {type: 'text'}}, reasoning: null},
         background: false,
     });
 });
@@ -135,7 +134,7 @@ test('fetchOpenAiReply throws when prompt has no system prompt configuration', a
             assert.equal(error.name, 'BadRequestError');
             assert.equal(error.message, "Prompt 'coach.reply' has no systemPromptRef configuration");
             return true;
-        }
+        },
     );
 });
 
@@ -156,7 +155,7 @@ test('fetchOpenAiReply throws when system prompt translation is missing for the 
             assert.equal(error.name, 'BadRequestError');
             assert.equal(error.message, "Prompt 'system.missing.ua' has no translation for language 'ua'.");
             return true;
-        }
+        },
     );
 });
 
@@ -177,7 +176,7 @@ test('fetchOpenAiReply throws when user prompt translation is missing for the re
             assert.equal(error.name, 'BadRequestError');
             assert.equal(error.message, "Prompt 'coach.reply' has no translation for language 'ua'.");
             return true;
-        }
+        },
     );
 });
 
@@ -186,13 +185,13 @@ test('fetchOpenAiReply prefers prompt-level OpenAI settings over system prompt s
         prompt: createPrompt({
             model: 'gpt-4.1',
             temperature: 0.2,
-            textFormat: {format: {type: 'json_schema', name: 'promptLevel'}},
+            config: {textFormat: {format: {type: 'json_schema', name: 'promptLevel'}}, reasoning: null},
             systemPrompt: {
                 key: 'system.settings',
                 prompts: {ua: 'System'},
                 model: 'gpt-4o-mini',
                 temperature: 0.7,
-                textFormat: {format: {type: 'text'}},
+                config: {textFormat: {format: {type: 'text'}}, reasoning: null},
             },
         }),
     });
@@ -203,13 +202,13 @@ test('fetchOpenAiReply prefers prompt-level OpenAI settings over system prompt s
         {
             model: harness.calls.createResponseInput.model,
             temperature: harness.calls.createResponseInput.temperature,
-            textFormat: harness.calls.createResponseInput.textFormat,
+            config: harness.calls.createResponseInput.config,
         },
         {
             model: 'gpt-4.1',
             temperature: 0.2,
-            textFormat: {format: {type: 'json_schema', name: 'promptLevel'}},
-        }
+            config: {textFormat: {format: {type: 'json_schema', name: 'promptLevel'}}, reasoning: null},
+        },
     );
 });
 
@@ -218,13 +217,13 @@ test('fetchOpenAiReply falls back to system prompt OpenAI settings when prompt-l
         prompt: createPrompt({
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
             systemPrompt: {
                 key: 'system.settings',
                 prompts: {ua: 'System'},
                 model: 'gpt-4.1-mini',
                 temperature: 0.3,
-                textFormat: {format: {type: 'json_schema', name: 'systemLevel'}},
+                config: {textFormat: {format: {type: 'json_schema', name: 'systemLevel'}}, reasoning: null},
             },
         }),
     });
@@ -235,13 +234,13 @@ test('fetchOpenAiReply falls back to system prompt OpenAI settings when prompt-l
         {
             model: harness.calls.createResponseInput.model,
             temperature: harness.calls.createResponseInput.temperature,
-            textFormat: harness.calls.createResponseInput.textFormat,
+            config: harness.calls.createResponseInput.config,
         },
         {
             model: 'gpt-4.1-mini',
             temperature: 0.3,
-            textFormat: {format: {type: 'json_schema', name: 'systemLevel'}},
-        }
+            config: {textFormat: {format: {type: 'json_schema', name: 'systemLevel'}}, reasoning: null},
+        },
     );
 });
 
@@ -250,13 +249,13 @@ test('fetchOpenAiReply sends null OpenAI settings when both prompt and system pr
         prompt: createPrompt({
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
             systemPrompt: {
                 key: 'system.settings',
                 prompts: {ua: 'System'},
                 model: null,
                 temperature: null,
-                textFormat: null,
+                config: null,
             },
         }),
     });
@@ -267,13 +266,13 @@ test('fetchOpenAiReply sends null OpenAI settings when both prompt and system pr
         {
             model: harness.calls.createResponseInput.model,
             temperature: harness.calls.createResponseInput.temperature,
-            textFormat: harness.calls.createResponseInput.textFormat,
+            config: harness.calls.createResponseInput.config,
         },
         {
             model: null,
             temperature: null,
-            textFormat: null,
-        }
+            config: null,
+        },
     );
 });
 
@@ -293,7 +292,7 @@ test('fetchOpenAiReply throws when the OpenAI run does not complete', async () =
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Run response_123 did not complete successfully');
             return true;
-        }
+        },
     );
 });
 
@@ -311,7 +310,7 @@ test('fetchOpenAiReply throws when synchronous OpenAI response is not completed'
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Run response_123 finished with status failed');
             return true;
-        }
+        },
     );
 });
 
@@ -326,7 +325,7 @@ test('fetchOpenAiReply throws when OpenAI response output is not an array', asyn
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Invalid messages format: expected output[] array');
             return true;
-        }
+        },
     );
 });
 
@@ -343,7 +342,7 @@ test('fetchOpenAiReply throws when OpenAI response has no assistant messages', a
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'No assistant messages found in thread');
             return true;
-        }
+        },
     );
 });
 
@@ -366,7 +365,7 @@ test('fetchOpenAiReply throws when the newest assistant message has no valid out
             assert.equal(error.name, 'OpenAIError');
             assert.equal(error.message, 'Assistant message does not contain valid text content');
             return true;
-        }
+        },
     );
 });
 
@@ -400,7 +399,7 @@ test('fetchOpenAiReply keeps empty templates empty while replacing nullish and s
 
     assert.equal(
         harness.calls.createResponseInput.systemPrompt,
-        'A:|B:|C:one, two|D:city: Kyiv, metrics: {"prs":4}|E:${unused}'
+        'A:|B:|C:one, two|D:city: Kyiv, metrics: {"prs":4}|E:${unused}',
     );
     assert.equal(harness.calls.createResponseInput.userPrompt, '');
 });
@@ -498,11 +497,11 @@ function createPrompt(overrides = {}) {
             prompts: {ua: 'System ${name}'},
             model: null,
             temperature: null,
-            textFormat: null,
+            config: null,
         },
         model: null,
         temperature: null,
-        textFormat: null,
+        config: null,
     };
 
     const prompt = {
@@ -528,7 +527,7 @@ function normalizeSystemPrompt(systemPrompt) {
         prompts: {ua: 'System ${name}'},
         model: null,
         temperature: null,
-        textFormat: null,
+        config: null,
     };
 
     const normalizedSystemPrompt = {

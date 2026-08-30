@@ -4,17 +4,10 @@ type PostgresError = Error & {
 };
 
 export const POSTGRES_UNIQUE_VIOLATION = '23505';
-const POSTGRES_UNAVAILABLE_CODES = new Set([
-    'ETIMEDOUT',
-    'ECONNREFUSED',
-    'ENETUNREACH',
-    'EHOSTUNREACH',
-]);
+const POSTGRES_UNAVAILABLE_CODES = new Set(['ETIMEDOUT', 'ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH']);
 
 export function isPostgresUniqueViolation(error: unknown): error is PostgresError {
-    return error instanceof Error
-        && 'code' in error
-        && error.code === POSTGRES_UNIQUE_VIOLATION;
+    return error instanceof Error && 'code' in error && error.code === POSTGRES_UNIQUE_VIOLATION;
 }
 
 export function isPostgresUnavailableError(error: unknown): error is PostgresError {
@@ -30,9 +23,7 @@ export function isPostgresUnavailableError(error: unknown): error is PostgresErr
 }
 
 export function isPostgresError(error: unknown): error is PostgresError {
-    return isPostgresUnavailableError(error)
-        || isPostgresUniqueViolation(error)
-        || isDrizzleQueryError(error);
+    return isPostgresUnavailableError(error) || isPostgresUniqueViolation(error) || isDrizzleQueryError(error);
 }
 
 function isDirectPostgresUnavailableError(error: unknown): error is PostgresError {
@@ -46,9 +37,11 @@ function isDirectPostgresUnavailableError(error: unknown): error is PostgresErro
     }
 
     const message = error instanceof Error ? error.message : '';
-    return message.includes('connect ETIMEDOUT')
-        || message.includes('connect ECONNREFUSED')
-        || message.includes('Connection terminated unexpectedly');
+    return (
+        message.includes('connect ETIMEDOUT') ||
+        message.includes('connect ECONNREFUSED') ||
+        message.includes('Connection terminated unexpectedly')
+    );
 }
 
 function isDrizzleQueryError(error: unknown): error is PostgresError {

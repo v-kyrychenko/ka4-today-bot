@@ -6,4 +6,3 @@ export interface BodyMeasurementLogRow {
     type: string;
     unit_key: string;
 }
-

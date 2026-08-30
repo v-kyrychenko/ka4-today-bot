@@ -1,6 +1,6 @@
 export interface DictExerciseRow {
     id: number;
-    name: unknown;
+    name: string;
     key: string;
     level: string;
     category: string;
@@ -11,4 +11,10 @@ export interface DictExerciseRow {
     secondary_muscles: unknown;
     instructions: unknown;
     images: unknown;
+}
+
+export interface RankedDictExerciseRow extends DictExerciseRow {
+    score: number;
+    coreInName: number;
+    nameInQuery: number;
 }

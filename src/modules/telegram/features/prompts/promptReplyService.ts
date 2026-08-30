@@ -1,7 +1,7 @@
 import {DEFAULT_LANG} from '../../../../app/config/constants.js';
 import {openAiClient} from '../../../../infrastructure/integrations/openai/openAiClient.js';
 import {BadRequestError, OpenAIError} from '../../../../shared/errors';
-import {OpenAiCreateResponseInput, OpenAiResponseDetails} from '../../../../shared/types/openai.js';
+import type {OpenAiCreateResponseInput, OpenAiResponseDetails} from '../../../../shared/types/openai.js';
 import {dictPromptRepository} from '../../repository/dictPromptRepository.js';
 import {log} from '../../../../shared/logging';
 import type {PromptDict} from './prompt.js';
@@ -56,10 +56,11 @@ async function runOpenAiReply(
     systemPrompt: string,
     userPrompt: string,
     dictPrompt: PromptDict,
-    background?: boolean
+    background?: boolean,
 ): Promise<string> {
     const response = await openAiClient.createResponse(
-        buildOpenAiCreateResponseInput(systemPrompt, userPrompt, dictPrompt, background));
+        buildOpenAiCreateResponseInput(systemPrompt, userPrompt, dictPrompt, background),
+    );
 
     if (response.status === 'completed') {
         return extractAssistantReply(response);
@@ -86,7 +87,7 @@ function buildOpenAiCreateResponseInput(
     systemPrompt: string,
     userPrompt: string,
     dictPrompt: PromptDict,
-    background?: boolean
+    background?: boolean,
 ): OpenAiCreateResponseInput {
     return {
         systemPrompt,
@@ -94,7 +95,7 @@ function buildOpenAiCreateResponseInput(
         vectorStoreIds: dictPrompt.vectorStoreIds,
         model: resolvePromptSetting(dictPrompt.model, dictPrompt.systemPrompt?.model ?? null),
         temperature: resolvePromptSetting(dictPrompt.temperature, dictPrompt.systemPrompt?.temperature ?? null),
-        textFormat: resolvePromptSetting(dictPrompt.textFormat, dictPrompt.systemPrompt?.textFormat ?? null),
+        config: resolvePromptSetting(dictPrompt.config, dictPrompt.systemPrompt?.config ?? null),
         background: background ?? false,
     };
 }
@@ -122,10 +123,12 @@ function extractAssistantReply(messages: OpenAiResponseDetails): string {
 
     const last = assistantMessages[0];
     const textPart = last.content.find(
-        (part): part is {
+        (
+            part,
+        ): part is {
             type: 'output_text';
-            text: string
-        } => part.type === 'output_text' && typeof part.text === 'string'
+            text: string;
+        } => part.type === 'output_text' && typeof part.text === 'string',
     );
 
     if (!textPart) {
@@ -152,6 +155,9 @@ function formatValue(value: TemplateVariableValue): string {
             .map(([key, nested]) => `${key}: ${formatNested(nested)}`)
             .join(', ');
     }
+    if (typeof value === 'object') return JSON.stringify(value);
+    // Only string/number/boolean/bigint/symbol/function remain here, all with safe custom toString.
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     return String(value);
 }
 
@@ -159,6 +165,9 @@ function formatNested(value: unknown): string {
     if (value == null) return '';
     if (Array.isArray(value)) return value.map((item) => String(item ?? '')).join(', ');
     if (isPlainObject(value)) return JSON.stringify(value);
+    if (typeof value === 'object') return JSON.stringify(value);
+    // Only string/number/boolean/bigint/symbol/function remain here, all with safe custom toString.
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     return String(value);
 }
 
@@ -173,7 +182,7 @@ function normalizeLang(lang: string | null | undefined): string {
     if (normalized === 'uk') {
         return 'ua';
     } else {
-        return normalized
+        return normalized;
     }
 }
 

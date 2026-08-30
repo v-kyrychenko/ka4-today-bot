@@ -1,14 +1,16 @@
-import {ExerciseItem, type JsonObject} from '../../../../modules/coach/exercise/domain/exercise.js';
-import type {DictExerciseRow} from '../models/exerciseRow.js';
+import {ExerciseItem} from '../../../../modules/coach/exercise/domain/exercise.js';
+import type {DictExerciseRow, RankedDictExerciseRow} from '../models/exerciseRow.js';
 
 export const exerciseMapper = {
     toAppModel,
+    toRankedRow,
+    toStringArray,
 };
 
 export function toAppModel(row: DictExerciseRow): ExerciseItem {
     return new ExerciseItem({
-        id: row.id,
-        name: toJsonObject(row.name),
+        id: Number(row.id),
+        name: row.name,
         key: row.key,
         level: row.level,
         category: row.category,
@@ -17,20 +19,22 @@ export function toAppModel(row: DictExerciseRow): ExerciseItem {
         equipment: row.equipment,
         primaryMuscles: toStringArray(row.primary_muscles),
         secondaryMuscles: toStringArray(row.secondary_muscles),
-        instructions: toJsonObject(row.instructions),
+        instructions: toStringArray(row.instructions),
         images: toStringArray(row.images),
     });
 }
 
-function toJsonObject(value: unknown): JsonObject {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        return {};
-    }
-
-    return value as JsonObject;
+export function toRankedRow(row: RankedDictExerciseRow): RankedDictExerciseRow {
+    return {
+        ...row,
+        id: Number(row.id),
+        score: Number(row.score),
+        coreInName: Number(row.coreInName),
+        nameInQuery: Number(row.nameInQuery),
+    };
 }
 
-function toStringArray(value: unknown): string[] {
+export function toStringArray(value: unknown): string[] {
     if (!Array.isArray(value)) {
         return [];
     }

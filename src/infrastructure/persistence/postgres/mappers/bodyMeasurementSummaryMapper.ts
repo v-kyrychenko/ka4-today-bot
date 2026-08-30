@@ -34,7 +34,7 @@ export function toAppModel(row: BodyMeasurementSummaryRow): BodyMeasurementSumma
 
 export function toCreateRow(
     input: BodyMeasurementSummaryCreateInput,
-    createdAt: string
+    createdAt: string,
 ): BodyMeasurementSummaryCreateRow {
     return {
         client_id: input.clientId,

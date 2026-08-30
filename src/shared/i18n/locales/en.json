@@ -1,79 +1,98 @@
 {
-  "telegram": {
-    "routes": {
-      "processing": "⏳ Got your message, I’ll be back with an answer.",
-      "unknownCommand": "This command isn’t available yet. Try the menu or /start."
+    "telegram": {
+        "commands": {
+            "workoutLogging": {
+                "end": "✅ End workout"
+            }
+        },
+        "routes": {
+            "processing": "⏳ Got your message, I’ll be back with an answer.",
+            "unknownCommand": "This command isn’t available yet. Try the menu or /start."
+        },
+        "conversations": {
+            "bodyMeasurements": {
+                "initialMessage": "📏 Send your body measurements.\n\nYou can write everything in one message in any format — I’ll figure it out.\n\nFor example:\nweight 78.4, waist 84, chest 101, hips 97, thigh 56",
+                "confirmation": "✅ Here’s what I understood from your message.\n\nPlease check if everything looks right:\n\n{measurements}",
+                "editPrompt": "✏️ Send the corrected body measurements in one message — I’ll parse them.",
+                "saveSuccess": "✅ Done, body measurements saved.",
+                "tooSoon": "⏳ Body measurements can be saved once every 30 days.\n\nYour previous measurements are still too recent, so I didn’t save this update.",
+                "invalidInput": "❌ I couldn’t recognize the body measurements.\n\nSend them again in one message in any format — I’ll figure it out.",
+                "cancel": "👌 Body measurement entry cancelled.",
+                "buttonSave": "✅ Save",
+                "buttonEdit": "✏️ Edit",
+                "buttonCancel": "❌ Cancel",
+                "unavailable": "🚧 Body measurements are still getting ready for launch.\n\nFor now, keep tracking your numbers — we’ll connect them here soon."
+            },
+            "workoutLogging": {
+                "initialMessage": "🏋️ Workout logging started!\n\nDescribe one exercise at a time — for example: bench press, 4 sets of 10 reps, 60kg.\n\nSend /end_workout when you’re done.",
+                "notAClient": "Workout logging isn’t available for you yet.\n\nOnce you’re set up as a client, you’ll be able to log workouts here.",
+                "alreadyOpen": "You already have a workout-logging session open.\n\nSend /end_workout to finish it before starting a new one.",
+                "unclear": "❓ I couldn’t quite catch that.\n\nTell me the exercise, how many reps, and how many sets (and the weight, if it’s a weighted exercise) — one more try!",
+                "savedAsWritten": "📝 Saved as you wrote it: “{description}” — not linked to the catalog.",
+                "confirmation": "Got it: {exercise}, {reps} reps × {sets} sets{weight}.\n\nWhich one is it?",
+                "savedLinked": "✅ Logged: {exercise}.",
+                "savedUnlinked": "✅ Logged as described.",
+                "sessionEmpty": "👌 Workout ended — nothing was logged this time.",
+                "sessionComplete": "🎉 Workout complete! Great job.",
+                "buttonKeepOwn": "📝 Keep my description",
+                "buttonReject": "❌ That’s not right"
+            },
+            "cancelled": "👌 OK, that wasn’t saved.\n\nWe can come back to it when it’s convenient.",
+            "safeError": "Something didn’t go as planned.\n\nTry sending your message again.",
+            "unsupportedAction": "This action isn’t available right now.",
+            "unsupportedInput": "I can’t use this message right now."
+        },
+        "progress": {
+            "caption": {
+                "title": "📊 Metrics dynamics"
+            },
+            "header": {
+                "label": "KA4 TODAY · Body progress",
+                "title": "Last {days} days",
+                "emptyTitle": "Last year"
+            },
+            "dateRange": {
+                "empty": "No measurements yet"
+            },
+            "delta": {
+                "down": "↓ {amount}",
+                "up": "↑ {amount}",
+                "noChange": "stable"
+            },
+            "empty": {
+                "title": "No measurements yet",
+                "hint": "Add 2+ measurements to see a trend."
+            },
+            "insight": {
+                "title": "Insight",
+                "text": "Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..",
+                "noDataText": "No measurements yet. Add your first weight or body measurement, and I will start building a useful progress insight from the next check-ins."
+            },
+            "metric": {
+                "weight": "Weight",
+                "waist": "Waist",
+                "chest": "Chest",
+                "hips": "Hips",
+                "thigh": "Thigh",
+                "calf": "Calf",
+                "biceps": "Biceps"
+            }
+        }
     },
-    "conversations": {
-      "bodyMeasurements": {
-        "initialMessage": "📏 Send your body measurements.\n\nYou can write everything in one message in any format — I’ll figure it out.\n\nFor example:\nweight 78.4, waist 84, chest 101, hips 97, thigh 56",
-        "confirmation": "✅ Here’s what I understood from your message.\n\nPlease check if everything looks right:\n\n{measurements}",
-        "editPrompt": "✏️ Send the corrected body measurements in one message — I’ll parse them.",
-        "saveSuccess": "✅ Done, body measurements saved.",
-        "tooSoon": "⏳ Body measurements can be saved once every 30 days.\n\nYour previous measurements are still too recent, so I didn’t save this update.",
-        "invalidInput": "❌ I couldn’t recognize the body measurements.\n\nSend them again in one message in any format — I’ll figure it out.",
-        "cancel": "👌 Body measurement entry cancelled.",
-        "buttonSave": "✅ Save",
-        "buttonEdit": "✏️ Edit",
-        "buttonCancel": "❌ Cancel",
-        "unavailable": "🚧 Body measurements are still getting ready for launch.\n\nFor now, keep tracking your numbers — we’ll connect them here soon."
-      },
-      "cancelled": "👌 OK, body measurements were not saved.\n\nWe can come back to them when it’s convenient.",
-      "safeError": "Something didn’t go as planned.\n\nTry sending your body measurements again.",
-      "unsupportedAction": "This action is not available for body measurements yet.",
-      "unsupportedInput": "I can’t use this message for body measurements yet."
-    },
-    "progress": {
-      "caption": {
-        "title": "📊 Metrics dynamics"
-      },
-      "header": {
-        "label": "KA4 TODAY · Body progress",
-        "title": "Last {days} days",
-        "emptyTitle": "Last year"
-      },
-      "dateRange": {
-        "empty": "No measurements yet"
-      },
-      "delta": {
-        "down": "↓ {amount}",
-        "up": "↑ {amount}",
-        "noChange": "stable"
-      },
-      "empty": {
-        "title": "No measurements yet",
-        "hint": "Add 2+ measurements to see a trend."
-      },
-      "insight": {
-        "title": "Insight",
-        "text": "Талія зменшується, поки вага залишається контрольованою. Схоже на рекомпозицію тіла, а не просто схуднення..",
-        "noDataText": "No measurements yet. Add your first weight or body measurement, and I will start building a useful progress insight from the next check-ins."
-      },
-      "metric": {
-        "weight": "Weight",
-        "waist": "Waist",
-        "chest": "Chest",
-        "hips": "Hips",
-        "thigh": "Thigh",
-        "calf": "Calf",
-        "biceps": "Biceps"
-      }
+    "date": {
+        "monthShort": {
+            "0": "Jan",
+            "1": "Feb",
+            "2": "Mar",
+            "3": "Apr",
+            "4": "May",
+            "5": "Jun",
+            "6": "Jul",
+            "7": "Aug",
+            "8": "Sep",
+            "9": "Oct",
+            "10": "Nov",
+            "11": "Dec"
+        }
     }
-  },
-  "date": {
-    "monthShort": {
-      "0": "Jan",
-      "1": "Feb",
-      "2": "Mar",
-      "3": "Apr",
-      "4": "May",
-      "5": "Jun",
-      "6": "Jul",
-      "7": "Aug",
-      "8": "Sep",
-      "9": "Oct",
-      "10": "Nov",
-      "11": "Dec"
-    }
-  }
 }

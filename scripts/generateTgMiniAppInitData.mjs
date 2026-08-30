@@ -49,13 +49,9 @@ function createHash(fields) {
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([key, value]) => `${key}=${value}`)
         .join('\n');
-    const secretKey = createHmac('sha256', TELEGRAM_WEB_APP_DATA_PUBLIC_KEY)
-        .update(botToken)
-        .digest();
+    const secretKey = createHmac('sha256', TELEGRAM_WEB_APP_DATA_PUBLIC_KEY).update(botToken).digest();
 
-    return createHmac('sha256', secretKey)
-        .update(dataCheckString)
-        .digest('hex');
+    return createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 }
 
 function parsePositiveInteger(value, name) {

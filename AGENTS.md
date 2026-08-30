@@ -23,11 +23,14 @@ Deployment is defined in `template.yaml` and `stack/`. Local helper scripts live
 Install dependencies with `npm install`.
 
 - `npm run typecheck` validates the TypeScript codebase with `tsc --noEmit`.
+- `npm run lint` runs ESLint (`eslint.config.mjs`) over the repo; `npm run lint:fix` applies autofixes.
 - `npm test` runs the automated Node.js test suite with `node --test "test/**/*.test.mjs"`.
 - Do not run script interpreters or ad-hoc scripting languages such as `ruby`, `python`, or similar for repository tasks. Prefer standard shell utilities and the documented `npm` commands instead.
 
 ## Coding Style & Naming Conventions
 This repository uses TypeScript with ESM (`"type": "module"`). Follow the existing style: 4-space indentation, semicolons, single quotes, and named exports for shared modules. Keep handlers thin and push orchestration into module `application/` code or repositories as appropriate. Put generic helpers in `shared`, low-level external integration code in `infrastructure`, and product behavior in the owning module under `modules`.
+
+In TypeScript, always prefer an enum over raw string literals or a string-union type when values represent a closed set of named states, outcomes, or policies. Reference enum members throughout the implementation instead of repeating their serialized string values.
 
 For the shared logging module, prefer the shortened import path without `/index.js`, for example `import {log, logError} from '../shared/logging';`.
 Prefer keeping imports on one line when they fit within 120 symbols; wrap import lists only when needed for readability or line length.
@@ -40,6 +43,8 @@ Inside module `application/` folders, prefer focused use-case files such as `lis
 
 For coach REST APIs, keep the REST model, domain model, and persistence row shape separated. Request and response payloads should stay camelCase, PostgreSQL rows and schema definitions should stay snake_case, and translation between them should happen through dedicated mappers in `src/infrastructure/persistence/postgres/mappers/`. Handlers should parse and validate REST payloads, application code should work with domain or REST-facing models, and repositories should be the boundary where mapped persistence rows are read or written.
 
+Use Drizzle's query builder (`.select()/.insert()/.update()` against a `pgTable(...)` schema) as the default way to talk to Postgres; avoid raw `sql` tagged-template queries. Reason: `bigint`/`bigserial` columns are declared with Drizzle's `{mode: 'number'}`, but that coercion is only applied by Drizzle's own query builder — a raw `sql` template executed via `.execute()` bypasses it, and `node-postgres` returns `bigint`/`bigserial` values as strings by default. This caused a real bug: `workoutLogRepository.startSession` read a session id via raw `sql`, got back a string, and that string was later stored and failed a strict `typeof value === 'number'` check downstream. Raw `sql` is only acceptable when a query genuinely cannot be expressed with the builder (e.g. calling a custom Postgres function such as `search_dict_exercises`) — and even then, every `bigint`/`bigserial`/`numeric` field read from the raw result must be explicitly coerced (e.g. `Number(row.id)`) in that table's mapper, since the row type at that boundary is a string, not a number.
+
 For small service modules, prefer placing exported service objects such as `export const telegramMessagingService = { ... }` near the top of the file, right after imports, so the public API is visible immediately when the file is opened. Treat this as a strong default, not a hard rule: if a different placement makes the file substantially easier to read top-to-bottom, prefer readability.
 
 Prefer KISS-oriented service code: small focused methods, with a soft maximum of 20 lines per method. If a method has branching or loop-heavy logic, keep each branch or loop body around 5 lines and extract helper methods early when readability starts to drop.
@@ -51,7 +56,7 @@ When changing progress view-model behavior or template rendering, keep the root 
 ## Testing Guidelines
 There is a small automated test suite using Node.js built-in `node:test`. Run it with `npm test`, which executes every `test/**/*.test.mjs` file. The current automated test lives at `test/modules/telegram/features/conversations/conversationEngine.multiStep.test.mjs` and verifies the Telegram conversation engine multi-step flow with bundled TypeScript source through `esbuild`.
 
-Treat `npm run typecheck` as the minimum gate for code changes, and run `npm test` when changing tested behavior or adding tests. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation plus targeted tests.
+Treat `npm run typecheck` and `npm run lint` as the minimum gate for code changes, and run `npm test` when changing tested behavior or adding tests. If runtime verification is explicitly requested, run the relevant local command and verify the response payloads manually; otherwise, prefer compilation plus targeted tests.
 
 When adding tests, use Node.js built-in `node:test` unless the repo adopts a broader test framework. Place tests under `test/` using the owning module path, and name them after the target module or use case, for example `listClients.test.mjs`, `searchExercises.test.mjs`, or `conversationEngine.multiStep.test.mjs`.
 

@@ -40,9 +40,7 @@ function assertValidHash(params: URLSearchParams, receivedHash: string): void {
     const secretKey = createHmac('sha256', TELEGRAM_WEB_APP_DATA_PUBLIC_KEY)
         .update(TELEGRAM_BOT_TOKEN ?? '')
         .digest();
-    const calculatedHash = createHmac('sha256', secretKey)
-        .update(dataCheckString)
-        .digest('hex');
+    const calculatedHash = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
     if (!isEqualHash(calculatedHash, receivedHash)) {
         throwInvalidInitData('Telegram Mini App initData hash is invalid');

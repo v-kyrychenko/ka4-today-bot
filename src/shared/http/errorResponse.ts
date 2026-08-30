@@ -8,7 +8,7 @@ type ErrorWithStatusCode = Error & {
 };
 
 export function toErrorResponse(error: unknown): LambdaResponse {
-    const err = error instanceof Error ? error as ErrorWithStatusCode : undefined;
+    const err = error instanceof Error ? (error as ErrorWithStatusCode) : undefined;
     const statusCode = err?.statusCode ?? 500;
     if (statusCode >= 500 || isPostgresError(error)) {
         return jsonResponse(500, {message: 'Internal Server Error'});

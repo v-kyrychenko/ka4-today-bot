@@ -1,11 +1,8 @@
 import {withAppInitialization} from '../../../app/withAppInitialization.js';
 import {log} from '../../../shared/logging';
-import {
-    buildScheduledJobFifoMessageMetadata,
-    QueueRequestEnvelope,
-} from '../features/sqs/sqsFifoMessageMetadata.js';
+import {buildScheduledJobFifoMessageMetadata, QueueRequestEnvelope} from '../features/sqs/sqsFifoMessageMetadata.js';
 import {DAILY_GREETING_ROUTE} from '../routes/constants.js';
-import {WorkoutSchedule} from '../features/workouts/workout.js';
+import type {WorkoutSchedule} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {sendTelegramQueueRequest} from '../features/sqs/telegramQueueSender.js';
 
@@ -16,7 +13,10 @@ export const handler = withAppInitialization(async (): Promise<void> => {
 
     try {
         const scheduledUsers = await tgUserRepository.getUsersScheduledForDay();
-        log('Daily cron found scheduled users', scheduledUsers.map((item) => item.client.chatId));
+        log(
+            'Daily cron found scheduled users',
+            scheduledUsers.map((item) => item.client.chatId),
+        );
 
         await Promise.all(
             scheduledUsers.map(async (item) => {
@@ -25,7 +25,7 @@ export const handler = withAppInitialization(async (): Promise<void> => {
                     payload,
                     buildScheduledJobFifoMessageMetadata(payload, getDailyMessageJobName(payload)),
                 );
-            })
+            }),
         );
     } catch (error) {
         log('Daily cron failed', error);

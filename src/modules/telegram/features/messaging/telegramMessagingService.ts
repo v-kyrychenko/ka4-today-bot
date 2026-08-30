@@ -4,9 +4,7 @@ import {tgUserRepository} from '../../repository/tgUserRepository.js';
 import {TelegramError} from '../../../../shared/errors';
 import {log, logError} from '../../../../shared/logging';
 import type {ProcessorContext} from '../../model/context.js';
-import type {
-    TelegramSentMessageLogInput
-} from '../../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
+import type {TelegramSentMessageLogInput} from '../../../../infrastructure/persistence/postgres/mappers/telegramSentMessageLogMapper.js';
 
 type TelegramContext = Pick<ProcessorContext, 'chatId' | 'message'>;
 
@@ -71,10 +69,12 @@ export async function sendMessage(context: TelegramContext, message: string, rep
     }
 }
 
+export type MediaEntry = string | {url: string; caption?: string};
+
 export async function sendWithMedia(
     context: Pick<ProcessorContext, 'chatId'>,
-    media: string[] | { buffer: Buffer; filename?: string },
-    caption = ''
+    media: MediaEntry[] | {buffer: Buffer; filename?: string},
+    caption = '',
 ): Promise<void> {
     const chatId = context.chatId;
     if (chatId == null) {
@@ -88,7 +88,10 @@ export async function sendWithMedia(
             }
 
             if (media.length === 1) {
-                await telegramClient.sendPhoto(chatId, media[0], caption);
+                const [entry] = media;
+                const url = typeof entry === 'string' ? entry : entry.url;
+                const entryCaption = typeof entry === 'string' ? caption : (entry.caption ?? caption);
+                await telegramClient.sendPhoto(chatId, url, entryCaption);
                 return;
             }
 
@@ -96,10 +99,14 @@ export async function sendWithMedia(
             return;
         }
 
-        await telegramClient.sendPhoto(chatId, {
-            data: media.buffer,
-            filename: media.filename ?? 'image.png',
-        }, caption);
+        await telegramClient.sendPhoto(
+            chatId,
+            {
+                data: media.buffer,
+                filename: media.filename ?? 'image.png',
+            },
+            caption,
+        );
     } catch (error) {
         logError(`Failed to send media to ${chatId}`, error);
     }

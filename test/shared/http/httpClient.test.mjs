@@ -36,7 +36,7 @@ test('httpRequest uses logUrl for logs and error messages', async () => {
             assert.match(error.message, /https:\/\/example\.com\/\*\*\*\*/);
             assert.doesNotMatch(error.message, /https:\/\/example\.com\/secret/);
             return true;
-        }
+        },
     );
 
     assert.match(logs[0], /https:\/\/example\.com\/\*\*\*\*/);

@@ -19,9 +19,9 @@ export async function renderPng(viewModel: ViewModel): Promise<Buffer> {
                 name: FONT_FAMILY,
                 data: font,
                 weight: 400,
-                style: 'normal'
-            }
-        ]
+                style: 'normal',
+            },
+        ],
     });
 
     return Buffer.from(new Resvg(svg).render().asPng());
@@ -42,7 +42,7 @@ function resolveAssetPath(fileName: string): string {
         path.resolve(process.cwd(), 'assets', fileName),
         path.resolve('/var/task', 'assets', fileName),
         path.resolve('/opt', 'assets', fileName),
-        path.resolve('/opt', 'nodejs', 'assets', fileName)
+        path.resolve('/opt', 'nodejs', 'assets', fileName),
     ];
 
     const foundPath = candidates.find(fs.existsSync);

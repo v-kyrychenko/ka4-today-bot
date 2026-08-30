@@ -1,11 +1,13 @@
 import {conversationEngine} from '../features/conversations/engine.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {CONVERSATION_TYPE_BODY_MEASUREMENTS} from '../features/measurements/bodyMeasurementsModel.js';
-import {BaseRoute} from './BaseRoute.js';
+import {ActiveConversationPolicy, BaseRoute} from './BaseRoute.js';
 import {MEASUREMENTS_ROUTE} from './constants.js';
 import type {ProcessorContext} from '../model/context.js';
 
 export class MeasurementsRoute extends BaseRoute {
+    activeConversationPolicy = ActiveConversationPolicy.Preempt;
+
     canHandle(text: string | null): boolean {
         return text === MEASUREMENTS_ROUTE;
     }

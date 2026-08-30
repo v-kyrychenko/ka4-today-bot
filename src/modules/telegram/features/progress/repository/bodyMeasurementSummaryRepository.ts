@@ -1,11 +1,7 @@
 import {eq} from 'drizzle-orm';
-import {
-    bodyMeasurementSummaryMapper,
-} from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementSummaryMapper.js';
+import {bodyMeasurementSummaryMapper} from '../../../../../infrastructure/persistence/postgres/mappers/bodyMeasurementSummaryMapper.js';
 import {getPostgresDb} from '../../../../../infrastructure/persistence/postgres/postgresDb.js';
-import {
-    bodyMeasurementSummary,
-} from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementSummary.js';
+import {bodyMeasurementSummary} from '../../../../../infrastructure/persistence/postgres/schema/bodyMeasurementSummary.js';
 import type {
     BodyMeasurementSummary,
     BodyMeasurementSummaryCreateInput,

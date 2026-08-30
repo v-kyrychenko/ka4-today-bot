@@ -4,4 +4,6 @@ export const DAILY_GREETING_ROUTE = '/daily_greeting';
 export const DAILY_WORKOUT_ROUTE = '/generate_daily_workout';
 export const PROGRESS_ROUTE = '/progress';
 export const MEASUREMENTS_ROUTE = '/measurements';
+export const WORKOUT_LOGGING_START_ROUTE = '/log_workout';
+export const WORKOUT_LOGGING_END_ROUTE = '/end_workout';
 export const CANCEL_COMMANDS = new Set(['/cancel', '/stop']);

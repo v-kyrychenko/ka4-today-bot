@@ -13,7 +13,7 @@ try {
     runCommand(
         'sam',
         ['local', 'invoke', functionName, '--event', eventPath, '--skip-pull-image', '--env-vars', 'env.tmp.json'],
-        `Running sam local invoke ${functionName}...`
+        `Running sam local invoke ${functionName}...`,
     );
 } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));

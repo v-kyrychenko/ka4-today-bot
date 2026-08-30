@@ -1,5 +1,6 @@
 import {DEFAULT_LANG} from '../../../../app/config/constants.js';
-import {TelegramUserAccount, TelegramUserProfile} from '../../../../modules/telegram/model/telegram.js';
+import type { TelegramUserProfile} from '../../../../modules/telegram/model/telegram.js';
+import {TelegramUserAccount} from '../../../../modules/telegram/model/telegram.js';
 import type {TgUserRow} from '../models/tgUserRow.js';
 
 export interface TgUserCreateRow {

@@ -1,16 +1,26 @@
 import type {TgConversationStateRow} from '../../repository/tgConversationStateRepository.js';
 import type {TelegramUserAccount} from '../../model/telegram.js';
-import type {ConversationType} from '../measurements/bodyMeasurementsModel.js';
+import type {MediaEntry} from '../messaging/telegramMessagingService.js';
+
+export type ConversationType = string;
 
 export const CONVERSATION_STEP_COMPLETED = 'COMPLETED';
 export const CONVERSATION_STEP_CANCELLED = 'CANCELLED';
 export const CONVERSATION_STEP_EXPIRED = 'EXPIRED';
 export const CONVERSATION_STEP_FAILED = 'FAILED';
+export const CONVERSATION_STEP_PREEMPTED = 'PREEMPTED';
+
+export enum ConversationLifecycleHook {
+    Cancel = 'onCancel',
+    Expire = 'onExpire',
+    Preempt = 'onPreempt',
+}
 
 export interface ConversationResponse {
     text: string;
     replyMarkup?: unknown;
     removeReplyMarkup?: boolean;
+    media?: MediaEntry[];
 }
 
 export interface ConversationTextInput {
@@ -25,9 +35,22 @@ export interface ConversationCallbackInput {
 }
 
 export interface ConversationStartInput {
-    type: ConversationType | string;
+    type: ConversationType;
     user: TelegramUserAccount;
 }
+
+export enum ConversationStartOutcome {
+    Started = 'started',
+    Aborted = 'aborted',
+}
+
+export type ConversationStartResult =
+    | {
+    outcome: ConversationStartOutcome.Started;
+    data?: unknown;
+    response: ConversationResponse;
+}
+    | { outcome: ConversationStartOutcome.Aborted; response: ConversationResponse };
 
 export interface ConversationTextContext extends ConversationTextInput {
     state: TgConversationStateRow;
@@ -47,5 +70,12 @@ export interface ConversationDefinition {
     initialStep: string;
     ttlMinutes?: number;
     steps: Record<string, ConversationStep>;
-    getInitialMessage: (user: TelegramUserAccount) => ConversationResponse;
+    /** Called by the generic engine to seed or veto a new conversation. */
+    onStart: (user: TelegramUserAccount) => Promise<ConversationStartResult>;
+    /** Called by the generic engine when this conversation's TTL lapses before the client's next check. */
+    onExpire?: (state: TgConversationStateRow) => Promise<void>;
+    /** Called by the generic engine when the client cancels this active conversation. */
+    onCancel?: (state: TgConversationStateRow) => Promise<void>;
+    /** Called by the generic engine when another interaction pre-empts this still-active conversation. */
+    onPreempt?: (state: TgConversationStateRow) => Promise<void>;
 }

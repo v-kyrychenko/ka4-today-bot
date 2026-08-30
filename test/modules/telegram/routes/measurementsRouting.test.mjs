@@ -8,6 +8,7 @@ import {build} from 'esbuild';
 
 const chatId = 42;
 const user = {chatId, clientId: 777, lang: 'en'};
+const ActiveConversationPolicy = Object.freeze({Preserve: 'preserve', Preempt: 'preempt'});
 
 test('/measurements route starts the body measurements conversation', async () => {
     const calls = [];
@@ -23,6 +24,7 @@ test('/measurements route starts the body measurements conversation', async () =
 
     const route = new MeasurementsRoute();
     assert.equal(route.canHandle('/measurements'), true);
+    assert.equal(route.activeConversationPolicy, ActiveConversationPolicy.Preempt);
 
     await route.execute({chatId, text: '/measurements', user, message: {}});
 
@@ -37,6 +39,7 @@ test('active conversation receives next text before normal routes', async () => 
     const processor = await loadRoutesProcessor({
         calls,
         textResponse: {text: 'conversation reply'},
+        routeRegistry: [],
     });
 
     await processor.routesProcessor.execute(messageRequest('next measurements'));
@@ -46,6 +49,37 @@ test('active conversation receives next text before normal routes', async () => 
         ['handleText', chatId, 'next measurements'],
         ['send', chatId, 'conversation reply', undefined],
     ]);
+});
+
+test('a conversation response with media sends the media group before the text message', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        textResponse: {text: 'confirm', media: ['https://img/1', 'https://img/2']},
+        routeRegistry: [],
+    });
+
+    await processor.routesProcessor.execute(messageRequest('next measurements'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, 'next measurements'],
+        ['sendWithMedia', chatId, ['https://img/1', 'https://img/2']],
+        ['send', chatId, 'confirm', undefined],
+    ]);
+});
+
+test('a conversation response without media never calls sendWithMedia', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        textResponse: {text: 'conversation reply'},
+        routeRegistry: [],
+    });
+
+    await processor.routesProcessor.execute(messageRequest('next measurements'));
+
+    assert.ok(!calls.some((call) => call[0] === 'sendWithMedia'), 'expected sendWithMedia never to be called');
 });
 
 test('/cancel and /stop cancel active conversations', async () => {
@@ -101,17 +135,62 @@ test('terminal measurement callback removes old inline buttons', async () => {
     ]);
 });
 
-test('matched route sends processing notice before execution by default', async () => {
+test('non-interrupting command executes without reaching or pre-empting the active conversation', async () => {
     const calls = [];
-    const processor = await loadRoutesProcessor({calls});
+    const processor = await loadRoutesProcessor({
+        calls,
+        route: {
+            activeConversationPolicy: ActiveConversationPolicy.Preserve,
+            canHandle(text) {
+                return text === '/progress';
+            },
+            shouldSendProcessingNotice() {
+                return true;
+            },
+            async execute() {
+                calls.push(['routeExecute']);
+            },
+        },
+    });
 
     await processor.routesProcessor.execute(messageRequest('/progress'));
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
-        ['handleText', chatId, '/progress'],
         ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
         ['routeExecute'],
+    ]);
+});
+
+test('normal text continues the active conversation after a non-interrupting command', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        textResponse: {text: 'workout reply'},
+        route: {
+            activeConversationPolicy: ActiveConversationPolicy.Preserve,
+            canHandle(text) {
+                return text === '/progress';
+            },
+            shouldSendProcessingNotice() {
+                return true;
+            },
+            async execute() {
+                calls.push(['routeExecute']);
+            },
+        },
+    });
+
+    await processor.routesProcessor.execute(messageRequest('/progress'));
+    await processor.routesProcessor.execute(messageRequest('bench press 3x10 80kg'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
+        ['routeExecute'],
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, 'bench press 3x10 80kg'],
+        ['send', chatId, 'workout reply', undefined],
     ]);
 });
 
@@ -120,6 +199,7 @@ test('matched route can opt out of processing notice', async () => {
     const processor = await loadRoutesProcessor({
         calls,
         route: {
+            activeConversationPolicy: ActiveConversationPolicy.Preempt,
             canHandle() {
                 return true;
             },
@@ -136,7 +216,7 @@ test('matched route can opt out of processing notice', async () => {
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
-        ['handleText', chatId, '/measurements'],
+        ['preemptActiveConversation', chatId],
         ['routeExecute'],
     ]);
 });
@@ -172,6 +252,9 @@ async function loadRoutesProcessor(options) {
                 options.calls.push(['cancel', inputChatId]);
                 return options.cancelResponse ?? null;
             },
+            async preemptActiveConversation(inputChatId) {
+                options.calls.push(['preemptActiveConversation', inputChatId]);
+            },
         },
         userRepository: {
             async getOrCreateUser(inputChatId) {
@@ -180,17 +263,19 @@ async function loadRoutesProcessor(options) {
             },
         },
         messagingService: createMessagingService(options.calls),
-        routeRegistry: options.routeRegistry ?? [options.route ?? {
-            canHandle() {
-                return true;
+        routeRegistry: options.routeRegistry ?? [
+            options.route ?? {
+                canHandle() {
+                    return true;
+                },
+                shouldSendProcessingNotice() {
+                    return true;
+                },
+                async execute() {
+                    options.calls.push(['routeExecute']);
+                },
             },
-            shouldSendProcessingNotice() {
-                return true;
-            },
-            async execute() {
-                options.calls.push(['routeExecute']);
-            },
-        }],
+        ],
     });
 }
 
@@ -252,6 +337,9 @@ function createMessagingService(calls) {
         },
         async sendMessage(context, text, replyMarkup) {
             calls.push(['send', context.chatId, text, replyMarkup]);
+        },
+        async sendWithMedia(context, media) {
+            calls.push(['sendWithMedia', context.chatId, media]);
         },
         async sendErrorMessage(chatId, text) {
             calls.push(['error', chatId, text]);

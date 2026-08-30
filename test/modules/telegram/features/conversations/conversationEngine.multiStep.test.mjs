@@ -129,7 +129,7 @@ function createConversationDefinitions(repository) {
                     },
                 },
             },
-            getInitialMessage: () => ({text: 'What is your name?'}),
+            onStart: async () => ({outcome: 'started', response: {text: 'What is your name?'}}),
         },
     };
 }
@@ -165,8 +165,11 @@ function createConversationRepository() {
             states.push(state);
             return state;
         },
-        async findActiveByChatId(inputChatId) {
+        async findRawActiveByChatId(inputChatId) {
             return states.find((item) => item.chat_id === inputChatId && item.is_active) ?? null;
+        },
+        isConversationExpired(state) {
+            return new Date(state.expires_at).getTime() <= Date.now();
         },
         async updateConversation(input) {
             const state = states.find((item) => item.id === input.id && item.is_active);
@@ -177,6 +180,9 @@ function createConversationRepository() {
             state.current_step = input.currentStep ?? state.current_step;
             state.data = input.data ?? state.data;
             state.last_bot_msg_id = input.lastBotMsgId ?? state.last_bot_msg_id;
+            if (input.ttlMinutes != null) {
+                state.expires_at = new Date(Date.now() + input.ttlMinutes * 60 * 1000).toISOString();
+            }
             state.updated_at = new Date().toISOString();
 
             return state;

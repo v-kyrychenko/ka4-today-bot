@@ -1,10 +1,6 @@
 import {log} from '../logging';
 
-export async function pollUntil(
-    checkFn: () => Promise<boolean>,
-    delayMs: number,
-    maxTries: number
-): Promise<boolean> {
+export async function pollUntil(checkFn: () => Promise<boolean>, delayMs: number, maxTries: number): Promise<boolean> {
     for (let attempt = 0; attempt < maxTries; attempt += 1) {
         const result = await checkFn();
         log(`Poll attempt ${attempt + 1}/${maxTries}: ${result ? 'OK' : 'waiting...'}`);

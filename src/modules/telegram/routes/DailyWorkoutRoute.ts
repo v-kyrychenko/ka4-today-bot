@@ -1,17 +1,14 @@
 import {DAILY_WORKOUT_ROUTE} from './constants.js';
 import {BaseRoute} from './BaseRoute.js';
-import {GetObjectCommand, S3Client} from '@aws-sdk/client-s3';
-import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import {OpenAIError} from '../../../shared/errors';
 import {log} from '../../../shared/logging';
 import {promptReplyService} from '../features/prompts/promptReplyService.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
-import {ProcessorContext} from '../model/context.js';
+import type {ProcessorContext} from '../model/context.js';
+import {exerciseImageSigning} from '../features/workouts/exerciseImageSigning.js';
 import {Exercise, ExerciseWithSignedImages} from '../features/workouts/workout.js';
 import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {parseJsonArrayFromText} from '../../../shared/utils/json.js';
-
-const s3 = new S3Client();
 
 const PROMPT_REF = 'daily_workout';
 const PROMPT_REF_NOT_TODAY = 'no_training_for_today';
@@ -72,21 +69,13 @@ export class DailyWorkoutRoute extends BaseRoute {
 async function generateSignedUrls(exercises: Exercise[]): Promise<ExerciseWithSignedImages[]> {
     return Promise.all(
         exercises.map(async (exercise) => {
-            const signedImages = await Promise.all(
-                exercise.images.map(async (key) => {
-                    const command = new GetObjectCommand({
-                        Bucket: 'ka4-today-exercises',
-                        Key: `exercises/${key}`,
-                    });
-                    return getSignedUrl(s3, command, {expiresIn: 3600});
-                })
-            );
+            const signedImages = await exerciseImageSigning.signExerciseImageUrls(exercise.images);
 
             return new ExerciseWithSignedImages({
                 ...exercise,
                 signedImages,
             });
-        })
+        }),
     );
 }
 
@@ -96,16 +85,14 @@ function parseSafeJsonExercises(text: string): Exercise[] {
 
         if (!parsed) return [];
 
-        return parsed
-            .filter(isExerciseCandidate)
-            .map(
-                (item) =>
-                    new Exercise({
-                        name: item.name.trim(),
-                        instructions: item.instructions.trim(),
-                        images: item.images.map((image) => image.trim()),
-                    })
-            );
+        return parsed.filter(isExerciseCandidate).map(
+            (item) =>
+                new Exercise({
+                    name: item.name.trim(),
+                    instructions: item.instructions.trim(),
+                    images: item.images.map((image) => image.trim()),
+                }),
+        );
     } catch {
         throw new OpenAIError(`Corrupted json returned by openai:${text}`);
     }
@@ -130,7 +117,5 @@ export function toEmojiNumber(value: number): string {
     const vs16 = 0xfe0f;
     const keycap = 0x20e3;
 
-    return [...value.toString()]
-        .map((digit) => String.fromCodePoint(base + Number(digit), vs16, keycap))
-        .join('');
+    return [...value.toString()].map((digit) => String.fromCodePoint(base + Number(digit), vs16, keycap)).join('');
 }

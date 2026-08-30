@@ -3,7 +3,9 @@ import {tgUser} from './tgUser.js';
 
 export const tgConversationState = pgTable('tg_conversation_state', {
     id: bigserial('id', {mode: 'number'}).primaryKey(),
-    chat_id: bigint('chat_id', {mode: 'number'}).notNull().references(() => tgUser.chat_id),
+    chat_id: bigint('chat_id', {mode: 'number'})
+        .notNull()
+        .references(() => tgUser.chat_id),
     type: varchar('type', {length: 60}).notNull(),
     current_step: varchar('current_step', {length: 60}).notNull(),
     data: jsonb('data').notNull(),

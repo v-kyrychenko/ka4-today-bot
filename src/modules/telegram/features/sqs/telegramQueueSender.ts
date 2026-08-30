@@ -7,7 +7,7 @@ const sqsClient = new SQSClient();
 
 export async function sendTelegramQueueRequest(
     payload: QueueRequestEnvelope,
-    metadata: SqsFifoMessageMetadata
+    metadata: SqsFifoMessageMetadata,
 ): Promise<void> {
     const message = JSON.stringify(payload);
     log(`Sending to queue:${MAIN_MESSAGE_QUEUE_URL} payload:${message}`);

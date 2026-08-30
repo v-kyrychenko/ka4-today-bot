@@ -7,10 +7,7 @@ import {
     type BodyMeasurementReminderCandidate,
 } from '../features/measurements/repository/bodyMeasurementRepository.js';
 import {MEASUREMENTS_ROUTE} from '../routes/constants.js';
-import {
-    buildScheduledJobFifoMessageMetadata,
-    QueueRequestEnvelope,
-} from '../features/sqs/sqsFifoMessageMetadata.js';
+import {buildScheduledJobFifoMessageMetadata, QueueRequestEnvelope} from '../features/sqs/sqsFifoMessageMetadata.js';
 import {sendTelegramQueueRequest} from '../features/sqs/telegramQueueSender.js';
 
 const MEASUREMENTS_REMINDER_JOB_NAME = 'measurements-reminder';

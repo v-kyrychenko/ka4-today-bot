@@ -6,8 +6,9 @@ import {log} from '../../../shared/logging';
 import {
     OpenAiResponseDetails,
     type OpenAiCreateResponseInput,
+    type OpenAiReasoningConfig,
+    type OpenAiTextFormat,
     DEFAULT_MODEL,
-    DEFAULT_TEMPERATURE
 } from '../../../shared/types/openai.js';
 import {pollUntil} from '../../../shared/utils/poller.js';
 
@@ -29,10 +30,11 @@ interface OpenAiResponseCreatePayload {
     model: string;
     store: boolean;
     background: boolean;
-    temperature: number;
-    input: Array<{ role: 'system' | 'user'; content: string }>;
-    text: OpenAiCreateResponseInput['textFormat'] | null;
-    tools?: Array<{ type: 'file_search'; vector_store_ids: string[] }>;
+    temperature?: number;
+    input: Array<{role: 'system' | 'user'; content: string}>;
+    text: OpenAiTextFormat | null;
+    reasoning?: OpenAiReasoningConfig;
+    tools?: Array<{type: 'file_search'; vector_store_ids: string[]}>;
 }
 
 export async function createResponse(request: OpenAiCreateResponseInput): Promise<OpenAiResponseDetails> {
@@ -43,17 +45,24 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
         model: request.model ?? DEFAULT_MODEL,
         store,
         background,
-        temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         input: [
             {role: 'system', content: request.systemPrompt},
             {role: 'user', content: request.userPrompt},
         ],
-        text: request.textFormat ?? null,
+        text: request.config?.textFormat ?? null,
     };
 
     const vectorStoreIds = request.vectorStoreIds ?? [];
     if (vectorStoreIds.length > 0) {
         body.tools = [{type: 'file_search', vector_store_ids: vectorStoreIds}];
+    }
+
+    if (request.temperature) {
+        body.temperature = request.temperature;
+    }
+
+    if (request.config?.reasoning) {
+        body.reasoning = request.config.reasoning;
     }
 
     const response = await httpRequest<OpenAiResponseDetails, OpenAiResponseCreatePayload>({
@@ -70,20 +79,24 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
 }
 
 export async function waitForResponse(responseId: string): Promise<boolean> {
-    return pollUntil(async () => {
-        const response = await getResponse(responseId);
-        log(`Run status: ${response.status}, incomplete_details: ${JSON.stringify(response.incomplete_details)}`);
+    return pollUntil(
+        async () => {
+            const response = await getResponse(responseId);
+            log(`Run status: ${response.status}, incomplete_details: ${JSON.stringify(response.incomplete_details)}`);
 
-        if (response.status === 'completed') {
-            return true;
-        }
+            if (response.status === 'completed') {
+                return true;
+            }
 
-        if (response.status === 'requires_action' && response.required_action?.type === 'submit_tool_outputs') {
-            throw new OpenAIError('submit_tool_outputs is not implemented');
-        }
+            if (response.status === 'requires_action' && response.required_action?.type === 'submit_tool_outputs') {
+                throw new OpenAIError('submit_tool_outputs is not implemented');
+            }
 
-        return false;
-    }, POLLING.DELAY_MS, POLLING.MAX_RETRIES);
+            return false;
+        },
+        POLLING.DELAY_MS,
+        POLLING.MAX_RETRIES,
+    );
 }
 
 export async function getResponse(responseId: string): Promise<OpenAiResponseDetails> {
