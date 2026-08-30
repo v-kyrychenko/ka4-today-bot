@@ -101,6 +101,7 @@ No frontend/UI code exists in this repository. This is a backend-only project: a
 ## Constraints & known tech-debt
 
 - No migration tooling exists for the Postgres schema (no `drizzle.config.*`, no migrations dir) — schema changes today happen by hand-editing Drizzle schema files with no generated/reversible migration. A feature that changes the schema should flag this gap explicitly rather than assume a migration workflow exists.
+- Dictionary exercises are not localized in the current application and search flow: exercise names and instructions are returned without selecting content for the user's language. Future work should define locale-aware `dict_exercise` storage, mapping, search, and fallback behavior so Telegram and coach API responses can use the requested language consistently.
 - The coach admin API (`src/modules/coach/*/api/index.ts`) is defined but disabled in `template.yaml` (e.g. line 344) — treat it as not-yet-live; changes there don't affect a running endpoint until it's re-enabled.
 - AGENTS.md reserves `src/infrastructure/persistence/dynamodb/legacy/` for legacy DynamoDB compatibility code and says it should not be expanded; that path does not currently exist in `src/`, so there is nothing to preserve, but new persistence work should still go through Postgres/Drizzle, not DynamoDB.
 - `tsconfig.json` targets `commonjs` module output while `package.json` declares `"type": "module"` — build correctness currently depends on esbuild's CJS bundling in `template.yaml`, not on `tsc` output; be careful with any change to build tooling.

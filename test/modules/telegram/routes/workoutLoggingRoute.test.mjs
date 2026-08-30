@@ -7,6 +7,7 @@ import {pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
 const chatId = 42;
+const ActiveConversationPolicy = Object.freeze({Preempt: 'preempt'});
 
 test('WorkoutLoggingRoute.canHandle only matches /log_workout', async () => {
     const {route} = await loadRoute();
@@ -14,6 +15,7 @@ test('WorkoutLoggingRoute.canHandle only matches /log_workout', async () => {
     assert.equal(route.canHandle('/log_workout'), true);
     assert.equal(route.canHandle('/log_workout extra'), false);
     assert.equal(route.canHandle('bench press 4x10'), false);
+    assert.equal(route.activeConversationPolicy, ActiveConversationPolicy.Preempt);
 });
 
 // The route is a thin pass-through: eligibility/duplicate checks and session creation now live in

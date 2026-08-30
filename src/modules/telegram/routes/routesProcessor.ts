@@ -12,7 +12,7 @@ import {tgUserRepository} from '../repository/tgUserRepository.js';
 import {ProcessorContext} from '../model/context.js';
 import type {TelegramMessage} from '../model/telegram.js';
 import { TelegramWebhookUpdate} from '../model/telegram.js';
-import type {BaseRoute} from './BaseRoute.js';
+import {ActiveConversationPolicy, type BaseRoute} from './BaseRoute.js';
 import {CANCEL_COMMANDS, routeRegistry} from './registry.js';
 
 export const routesProcessor = {
@@ -27,12 +27,16 @@ export const routesProcessor = {
 
             const matchedRoute = findRoute(context);
             if (matchedRoute) {
-                await conversationEngine.preemptActiveConversation(request.chatId);
+                if (matchedRoute.activeConversationPolicy === ActiveConversationPolicy.Preempt) {
+                    await conversationEngine.preemptActiveConversation(request.chatId);
+                }
+                await executeRoute(context, matchedRoute);
+                return;
             }
 
             if (await continueConversation(request, context)) return;
 
-            await executeRoute(context, matchedRoute);
+            await executeRoute(context, null);
         } catch (error) {
             await sendRouteError(request.chatId, error);
             throw error as BadRequestError | OpenAIError;

@@ -8,6 +8,7 @@ import {build} from 'esbuild';
 
 const chatId = 42;
 const user = {chatId, clientId: 777, lang: 'en'};
+const ActiveConversationPolicy = Object.freeze({Preserve: 'preserve', Preempt: 'preempt'});
 
 test('/measurements route starts the body measurements conversation', async () => {
     const calls = [];
@@ -23,6 +24,7 @@ test('/measurements route starts the body measurements conversation', async () =
 
     const route = new MeasurementsRoute();
     assert.equal(route.canHandle('/measurements'), true);
+    assert.equal(route.activeConversationPolicy, ActiveConversationPolicy.Preempt);
 
     await route.execute({chatId, text: '/measurements', user, message: {}});
 
@@ -133,18 +135,62 @@ test('terminal measurement callback removes old inline buttons', async () => {
     ]);
 });
 
-test('matched route sends processing notice before execution by default', async () => {
+test('non-interrupting command executes without reaching or pre-empting the active conversation', async () => {
     const calls = [];
-    const processor = await loadRoutesProcessor({calls});
+    const processor = await loadRoutesProcessor({
+        calls,
+        route: {
+            activeConversationPolicy: ActiveConversationPolicy.Preserve,
+            canHandle(text) {
+                return text === '/progress';
+            },
+            shouldSendProcessingNotice() {
+                return true;
+            },
+            async execute() {
+                calls.push(['routeExecute']);
+            },
+        },
+    });
 
     await processor.routesProcessor.execute(messageRequest('/progress'));
 
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
-        ['preemptActiveConversation', chatId],
-        ['handleText', chatId, '/progress'],
         ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
         ['routeExecute'],
+    ]);
+});
+
+test('normal text continues the active conversation after a non-interrupting command', async () => {
+    const calls = [];
+    const processor = await loadRoutesProcessor({
+        calls,
+        textResponse: {text: 'workout reply'},
+        route: {
+            activeConversationPolicy: ActiveConversationPolicy.Preserve,
+            canHandle(text) {
+                return text === '/progress';
+            },
+            shouldSendProcessingNotice() {
+                return true;
+            },
+            async execute() {
+                calls.push(['routeExecute']);
+            },
+        },
+    });
+
+    await processor.routesProcessor.execute(messageRequest('/progress'));
+    await processor.routesProcessor.execute(messageRequest('bench press 3x10 80kg'));
+
+    assert.deepEqual(calls, [
+        ['getOrCreateUser', chatId],
+        ['send', chatId, '⏳ Got your message, I’ll be back with an answer.', undefined],
+        ['routeExecute'],
+        ['getOrCreateUser', chatId],
+        ['handleText', chatId, 'bench press 3x10 80kg'],
+        ['send', chatId, 'workout reply', undefined],
     ]);
 });
 
@@ -153,6 +199,7 @@ test('matched route can opt out of processing notice', async () => {
     const processor = await loadRoutesProcessor({
         calls,
         route: {
+            activeConversationPolicy: ActiveConversationPolicy.Preempt,
             canHandle() {
                 return true;
             },
@@ -170,7 +217,6 @@ test('matched route can opt out of processing notice', async () => {
     assert.deepEqual(calls, [
         ['getOrCreateUser', chatId],
         ['preemptActiveConversation', chatId],
-        ['handleText', chatId, '/measurements'],
         ['routeExecute'],
     ]);
 });

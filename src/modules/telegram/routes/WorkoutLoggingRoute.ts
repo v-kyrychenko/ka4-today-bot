@@ -2,10 +2,12 @@ import {conversationEngine} from '../features/conversations/engine.js';
 import {telegramMessagingService} from '../features/messaging/telegramMessagingService.js';
 import {CONVERSATION_TYPE_WORKOUT_LOGGING} from '../features/workoutLogging/workoutLoggingConversation.js';
 import type {ProcessorContext} from '../model/context.js';
-import {BaseRoute} from './BaseRoute.js';
+import {ActiveConversationPolicy, BaseRoute} from './BaseRoute.js';
 import {WORKOUT_LOGGING_START_ROUTE} from './constants.js';
 
 export class WorkoutLoggingRoute extends BaseRoute {
+    activeConversationPolicy = ActiveConversationPolicy.Preempt;
+
     canHandle(text: string | null): boolean {
         return text === WORKOUT_LOGGING_START_ROUTE;
     }
