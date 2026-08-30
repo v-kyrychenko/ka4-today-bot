@@ -111,9 +111,9 @@ export async function cancel(chatId: number): Promise<ConversationResponse | nul
 /**
  * Ends a still-active conversation, of any type, in favor of another interaction for the same chat
  */
-export async function preemptActiveConversation(chatId: number, exceptType?: string): Promise<void> {
+export async function preemptActiveConversation(chatId: number): Promise<void> {
     const state = await resolveActiveConversation(chatId);
-    if (!state || state.type === exceptType) {
+    if (!state) {
         return;
     }
 

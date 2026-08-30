@@ -78,12 +78,9 @@ test('QG-3: lazy expiry always leaves at most one active conversation for the ch
     assert.equal(activeCount(repository, chatId), 0, 'expected zero active conversations once the TTL lapsed -- never two');
 });
 
-// QG-3's "second startConversation of the same type is blocked" guarantee is enforced at the
-// workoutLoggingService/Route layer (AC-12), verified end to end in workoutLoggingRoute.test.mjs
-// and workoutLoggingService.test.mjs -- restated here as the cardinality invariant those tests
-// exist to protect: this repo's generic tg_conversation_state mechanism replaces (not stacks) any
-// previous active row on a new start, so even a same-type restart that reached the engine could
-// never produce two simultaneously active rows for one chat_id.
+// QG-3's cardinality invariant also holds at the generic engine boundary: startConversation
+// replaces rather than stacks any previous active row, so a replacement start cannot produce two
+// simultaneously active rows for one chat_id.
 test('QG-3: the generic engine never allows two simultaneously active conversations for one chat_id', async () => {
     const engine = await loadEngine();
     const repository = engine.repository;

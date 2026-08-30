@@ -6,8 +6,6 @@ import {BaseRoute} from './BaseRoute.js';
 import {WORKOUT_LOGGING_START_ROUTE} from './constants.js';
 
 export class WorkoutLoggingRoute extends BaseRoute {
-    conversationType = CONVERSATION_TYPE_WORKOUT_LOGGING;
-
     canHandle(text: string | null): boolean {
         return text === WORKOUT_LOGGING_START_ROUTE;
     }

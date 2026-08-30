@@ -27,7 +27,7 @@ export const routesProcessor = {
 
             const matchedRoute = findRoute(context);
             if (matchedRoute) {
-                await conversationEngine.preemptActiveConversation(request.chatId, matchedRoute.conversationType ?? undefined);
+                await conversationEngine.preemptActiveConversation(request.chatId);
             }
 
             if (await continueConversation(request, context)) return;

@@ -18,10 +18,10 @@ status: "todo"
 
 ## What
 
-Add integration tests under `test/modules/telegram/features/workoutLogging/`: (QG-1) assert no `workout_log_entry` row exists before a confirmation action for the confirm/keep-own/reject branches, and that AC-08's fallback is the only path saving without a confirmation; (QG-3) assert a second `startConversation` of type workout-logging is blocked while one is active, and that pre-emption/expiry always leaves at most one active row per `chat_id`.
+Add integration tests under `test/modules/telegram/features/workoutLogging/`: (QG-1) assert no `workout_log_entry` row exists before a confirmation action for the confirm/keep-own/reject branches, and that AC-08's fallback is the only path saving without a confirmation; (QG-3) assert matched-route pre-emption, replacement start, and expiry always leave at most one active row per `chat_id`.
 
 ## Definition of Done
 
 - [ ] QG-1 test suite passes: no premature writes across confirm/keep-own/reject, AC-08 exception verified explicitly
-- [ ] QG-3 test suite passes: double-start blocked, at most one active row per `chat_id` after pre-emption/expiry
+- [ ] QG-3 test suite passes: at most one active row per `chat_id` after matched-route pre-emption, replacement start, or expiry
 - [ ] `npm test` and `npm run typecheck` clean

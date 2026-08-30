@@ -16,12 +16,6 @@ test('WorkoutLoggingRoute.canHandle only matches /log_workout', async () => {
     assert.equal(route.canHandle('bench press 4x10'), false);
 });
 
-test('WorkoutLoggingRoute declares its conversationType for cross-context pre-emption', async () => {
-    const {route} = await loadRoute();
-
-    assert.equal(route.conversationType, 'WORKOUT_LOGGING');
-});
-
 // The route is a thin pass-through: eligibility/duplicate checks and session creation now live in
 // workoutLoggingConversation's onStart, exercised in workoutLoggingConversation.test.mjs.
 test('execute() delegates to the conversation engine and sends its response', async () => {

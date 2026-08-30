@@ -21,9 +21,9 @@ test('startSession() denies a non-client and does not open a session (AC-02)', a
     assert.equal(harness.calls.startSession.length, 0, 'expected startSession() to never be called for a non-client');
 });
 
-// AC-12: starting again while a session is already open must be rejected and must not
-// touch (close/pre-empt) the existing session.
-test('startSession() rejects a repeat start while one session is already open, leaving it untouched (AC-12)', async () => {
+// Defensive service-level guard: route processing normally pre-empts an open session before start,
+// but a direct or concurrent call must not create a second open row.
+test('startSession() rejects a start while one session is already open, leaving it untouched', async () => {
     const activeSession = {
         id: 5,
         clientId: 777,

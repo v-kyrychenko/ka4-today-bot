@@ -49,7 +49,7 @@ See [tracker.md](./tracker.md) for status. Machine contract: [tasks.json](../tas
 | T9 | Handle exercise confirmation response | app | T8 | unit test, confirm/keep-own/reject/retry-fail branches |
 | T10 | Implement session start/end lifecycle | app | T4 | unit test, start/end/empty-session/day-attribution |
 | T11 | Wire workoutLoggingConversation into the conversation engine | ports | T9, T10 | integration test, full conversation round trip |
-| T12 | Wire cross-context pre-emption and lazy auto-expiry | wiring | T10 | integration test, pre-emption + 2h auto-close |
+| T12 | Wire route pre-emption and lazy auto-expiry | wiring | T10 | integration test, pre-emption + replacement start + 2h auto-close |
 | T13 | Add QG-1/QG-3 integration test coverage | tests | T11, T12 | QG-1 no-write-before-confirm, QG-3 single active session |
 
 ## Risks / Hard rules

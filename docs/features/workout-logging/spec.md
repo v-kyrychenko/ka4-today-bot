@@ -2,7 +2,7 @@
 status: Draft
 owner: "vitalii.kyrychenko"
 reviewers: ["Tech Lead", "Security Lead"]
-updated_at: "2026-08-22"
+updated_at: "2026-08-30"
 feature_size: "M"
 ---
 
@@ -147,7 +147,7 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 ### AC-12 (US-01) — domain invariant
 **Given** a client already has an open logging session
 **When** the client tries to start another logging session
-**Then** the system tells the client a session is already open and that they need to end it first, and does not open a second one or pre-empt the existing session (AC-10's pre-emption does not apply to a repeat start attempt)
+**Then** the system pre-empts the existing session, discards any not-yet-confirmed exercise entry, and opens a new logging session, leaving at most one session open
 
 ### AC-13 (US-06) — domain invariant
 **Given** a client's logging session started before midnight and is still open, or was auto-closed, after midnight
@@ -190,5 +190,5 @@ Traceability: decisions fixed during this interview — one rephrase attempt bef
 - [ ] Exactly how free text is turned into structured fields (model/approach) and where candidate-match images are served from? Default now: forwarded as design-stage notes (AI-based parse, existing object storage), not committed here. — owner: Tech Lead, due: before `sdd:design`
 - [ ] Whether unmatched free-text entries should ever feed back into the exercise catalog (e.g. a future coach-side review queue)? Default now: out of scope (§3). — owner: PM, due: before a future workout-history feature is specified
 - [ ] What confidence/similarity threshold distinguishes a direct catalog link, a shown candidate list (AC-05), and a retry-triggering unclear message (AC-07)? Default now: left entirely to `design`'s matching-algorithm choice, no plain-language bar added to the spec. — owner: Tech Lead, due: before `sdd:design`
-- [ ] AC-12 (re-issuing `/log_workout` while a session is open) is not actually reachable in the current implementation: the active conversation intercepts the text before the route's "already open" reply can fire (review finding #1, `_review/review-2026-08-24.md`). Default now: shipping with this gap; needs a fix task (route/engine ordering) before AC-12 is genuinely met. — owner: Tech Lead, due: before next release
+- [x] AC-12 resolution (2026-08-30): re-issuing `/log_workout` is intentionally handled like any other matched route. It pre-empts the active workout-logging conversation and durable session before starting a new one; no same-type route exception is maintained.
 - [ ] AC-11 says the system "actively closes" an expired session "without waiting for the client's next message," but the shipped behavior discovers expiry lazily on the next interaction (accepted debt per sad.md §11 / ADR-0003 / ADR-0005; review finding #13, `_review/review-2026-08-24.md`). Default now: either reword AC-11 to match lazy-discovery, or implement an active sweep. — owner: Tech Lead, due: before next release

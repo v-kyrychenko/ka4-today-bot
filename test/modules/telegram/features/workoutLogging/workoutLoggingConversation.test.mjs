@@ -24,8 +24,8 @@ test('onStart denies a non-client without starting the conversation (AC-02)', as
     assert.match(result.response.text, /isn.t available for you yet/);
 });
 
-// AC-12: a repeat start while already open is rejected, no new session/conversation data seeded.
-test('onStart rejects a repeat start while a session is already open (AC-12)', async () => {
+// Defensive fallback when onStart is invoked without the normal matched-route pre-emption.
+test('onStart rejects a start while a workout session row is already open', async () => {
     const {definition} = await loadConversation({startSessionResult: {outcome: 'already-open'}});
 
     const result = await definition.onStart(user);

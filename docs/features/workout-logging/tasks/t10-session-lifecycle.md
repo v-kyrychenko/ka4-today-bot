@@ -3,7 +3,7 @@ id: T10
 title: "Implement session start/end lifecycle"
 layer: "app"
 deps: ["T4"]
-acs: ["AC-01", "AC-02", "AC-09", "AC-09b", "AC-12", "AC-13"]
+acs: ["AC-01", "AC-02", "AC-09", "AC-09b", "AC-13"]
 files_hint: ["src/modules/telegram/features/workoutLogging/workoutLoggingService.ts"]
 owner: "<TBD lead>"
 estimate: "M"
@@ -18,12 +18,12 @@ status: "todo"
 
 ## What
 
-Add the session-lifecycle branch of `workoutLoggingService.ts`: `startSession` checks registration (AC-02) and any existing active session (AC-12, no pre-emption on repeat start) before calling `workoutLogRepository.startSession` with `sessionDay` set from the client's local start time (AC-13); `endSession` calls `countEntries` then `closeSession` with `end_reason: 'client-ended'`, replying differently for zero vs. ≥1 recorded entries (AC-09/AC-09b).
+Add the session-lifecycle branch of `workoutLoggingService.ts`: `startSession` checks registration (AC-02) and defensively rejects a start if an open row still exists before calling `workoutLogRepository.startSession` with `sessionDay` set from the client's local start time (AC-13); `endSession` calls `countEntries` then `closeSession` with `end_reason: 'client-ended'`, replying differently for zero vs. ≥1 recorded entries (AC-09/AC-09b). The Telegram repeat-start behavior is owned by route pre-emption in T12.
 
 ## Definition of Done
 
 - [ ] unit test: starting a session for a non-client is denied without opening a row (AC-02)
-- [ ] unit test: starting a session while one is already open is rejected, existing session untouched (AC-12)
+- [ ] unit test: the defensive service guard rejects a start while an open session row still exists
 - [ ] unit test: `sessionDay` is derived from the client's local start time, not UTC (AC-13)
 - [ ] unit test: ending an empty session closes it with `end_reason='client-ended'` and no workout-record confirmation; ending one with entries confirms completion (AC-09/AC-09b)
 - [ ] lint + vet clean

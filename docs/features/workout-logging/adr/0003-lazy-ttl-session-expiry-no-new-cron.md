@@ -2,14 +2,14 @@
 status: "Superseded by 0005"
 owner: "vitalii.kyrychenko"
 reviewers: []
-updated_at: "2026-08-24"
+updated_at: "2026-08-30"
 feature_size: "M"
 ticket: ""
 ---
 
 # 0003 — Reuse lazy TTL-based expiry for session auto-close, no new cron
 
-- **Status:** Superseded by [[0005-generic-conversation-lifecycle-hooks]] — the pre-emption/expiry *call-site* mechanism (direct `routesProcessor` → `workoutLoggingService` import, unconditional call) is replaced by generic `ConversationDefinition` hooks. This ADR's other decisions (lazy TTL over a new cron, TTL reuse for the 2h window) still stand.
+- **Status:** Superseded by [[0005-generic-conversation-lifecycle-hooks]] — the pre-emption/expiry *call-site* mechanism is replaced by generic `ConversationDefinition` hooks. The lazy-TTL/no-cron and TTL-reuse decisions still stand; the same-type guard described below does not.
 - **Date:** 2026-08-22
 - **Deciders:** Architect + user (Socratic walk)
 

@@ -2,7 +2,7 @@
 status: Accepted
 owner: "vitalii.kyrychenko"
 reviewers: []
-updated_at: "2026-08-24"
+updated_at: "2026-08-30"
 feature_size: "M"
 ticket: ""
 ---
@@ -43,6 +43,7 @@ Separately, ADR-0003's own "Negative consequences" section had already flagged t
 - `engine.ts`'s internal `resolveActiveConversation(chatId)` is the *only* place that reads the active row, and it lazily deactivates + fires `onExpire` when the TTL lapsed — used by `handleText`, `handleCallback`, and the new `preemptActiveConversation`. This means AC-11's "on the next check" applies to *any* check, not just an explicit pre-emption call.
 - `engine.ts` exports a new `preemptActiveConversation(chatId)`: resolves the active conversation (lazily expiring it first, if applicable — in which case `onExpire` already fired and there is nothing left to pre-empt), then deactivates it with a new `CONVERSATION_STEP_PREEMPTED` step and fires `onPreempt`.
 - `routesProcessor.execute()` calls `conversationEngine.preemptActiveConversation(chatId)` **only when the incoming text matches a registered route** (`routeRegistry.some(canHandle)`), checked before `continueConversation` — the fix for the correctness bug. A plain continuation message never matches a route, so it is never pre-empted; cron-enqueued reminders and explicit commands (e.g. `/progress`, `/measurements`) do match, which is exactly ADR-0003's "any other route... arrives" trigger.
+- `/log_workout` follows the same matched-route rule. If workout logging is already active, the engine pre-empts it and invokes `onPreempt` before the route starts a replacement session. Routes do not declare conversation-type metadata or receive a same-type exception.
 - `workoutLoggingConversation.ts` implements `onPreempt`/`onExpire` by calling `workoutLoggingService.preemptActiveSession`/`closeExpiredSession` — both now unconditional "close whatever's open" primitives (see below), since the *decision* that the session is expired or pre-empted has already been made by the generic engine before the hook runs.
 - `workoutLoggingService.closeExpiredSession` no longer recomputes an idle window (dropped `workoutLogRepository.findLastEntryAt` and the local `SESSION_TTL_MS` constant) — it trusts the engine's TTL decision and just closes the session as `auto-closed`. The 2h idle window is enforced entirely by `tg_conversation_state.expires_at`, set to 120 minutes on session start (`ConversationDefinition.ttlMinutes`) and refreshed to +120 minutes by `workoutLoggingConversation`'s confirmation-response step calling `tgConversationStateRepository.updateConversation({id, ttlMinutes: 120})` after every recorded exercise — the extension ADR-0003 flagged as still needed, now actually wired.
 
@@ -57,6 +58,7 @@ Separately, ADR-0003's own "Negative consequences" section had already flagged t
 **Negative**
 - One more indirection to trace (`routesProcessor` → generic `preemptActiveConversation` → registry lookup → type's hook) versus the original single direct call — judged worth it for the isolation and the bug fix.
 - `updateConversation` must now be called by every step that should keep a session alive (the confirmation-response step); a future step that records progress without bumping the TTL would silently under-extend the session. No structural guard against that beyond code review — same class of risk ADR-0003 already accepted for the overall lazy-expiry approach.
+- Repeating `/log_workout` replaces the active workout instead of returning the service-level `AlreadyOpen` response; any pending unconfirmed entry is discarded by pre-emption.
 
 **Neutral**
 - AC-11's already-accepted gap (lazy discovery, not a proactive push notifying the client) is unchanged by this ADR.
@@ -65,5 +67,5 @@ Separately, ADR-0003's own "Negative consequences" section had already flagged t
 
 - Spec: [[../spec.md]]
 - SAD: [[../sad.md]] §4
-- Supersedes: [[0003-lazy-ttl-session-expiry-no-new-cron]] (its "no new cron" and "same-type guard via `startConversation`" decisions still stand — only the pre-emption/expiry *call-site* mechanism changes)
+- Supersedes: [[0003-lazy-ttl-session-expiry-no-new-cron]] (its "no new cron" and TTL-reuse decisions still stand; its proposed same-type guard is not part of the implemented routing contract)
 - Related ADR: [[0004-session-record-plus-entries-persistence]]

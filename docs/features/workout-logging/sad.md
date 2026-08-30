@@ -2,7 +2,7 @@
 status: Draft
 owner: "vitalii.kyrychenko"
 reviewers: ["Tech Lead", "Security Lead"]
-updated_at: "2026-08-23"
+updated_at: "2026-08-30"
 feature_size: "M"
 target_surfaces: [backend-service]  # subset of: backend-service | web-frontend | mobile-app | desktop-app | cli | worker | library-sdk. Read (never re-derived) by api/sequences/tasks/plan-tests/review → _shared/surfaces.md
 ---
@@ -99,7 +99,7 @@ C4Context
 
 1. **OpenAI structured-output parse** (ADR-0001) — one OpenAI call per exercise message, using the existing client's JSON-mode support, extracts exercise name/reps/sets/weight regardless of language (AC-14). Chosen over a deterministic regex/keyword parser, which cannot satisfy the any-language requirement.
 2. **Reuse `search_dict_exercises` for catalog matching** (ADR-0002) — the OpenAI-normalized exercise name is matched via `search_dict_exercises(query, 0, 3)`; 3 is a pagination limit, not a required count — 0 rows is a no-match outcome (AC-05b), 1–3 rows are always shown to the client for confirmation (AC-05), since the spec never has the system auto-accept a match without confirmation. Chosen over introducing a new embedding/pgvector search, which would add new infrastructure this repo has no migration tooling to manage safely.
-3. **Lazy TTL-based session expiry, no new cron** (ADR-0003) — session-state invariants (no double-start AC-12, cross-context pre-emption AC-10, 2h auto-close AC-11) are enforced by extending the conversation engine's existing `expires_at` lazy-check mechanism and wiring pre-emption into `routesProcessor` (a single call site — cron-triggered reminders already reach it as synthetic webhook messages), rather than adding a dedicated scheduled sweep. Accepted trade-off: auto-close is discovered on next check, not proactively pushed to the client — flagged in §11.
+3. **Lazy TTL-based session expiry, no new cron** (ADR-0003, amended by ADR-0005) — session-state invariants (repeat-start replacement AC-12, cross-context pre-emption AC-10, 2h auto-close AC-11) are enforced by extending the conversation engine's existing `expires_at` lazy-check mechanism and wiring pre-emption into `routesProcessor` (a single call site — cron-triggered reminders already reach it as synthetic webhook messages), rather than adding a dedicated scheduled sweep. Accepted trade-off: auto-close is discovered on next check, not proactively pushed to the client — flagged in §11.
 4. **Session record + entries persistence** (ADR-0004) — a new `workout_log_session` (with `end_reason`) plus `workout_log_entry` table, so §7's completion-rate KPI and AC-09b's empty-session exclusion have a durable row to read, rather than deriving session boundaries from the transient conversation-state row.
 
 Each tactical decision in later sections traces to one of these four seeds.
@@ -194,10 +194,13 @@ sequenceDiagram
     participant AsyncProcessor
     participant Postgres
     Client->>AsyncProcessor: starts a logging session
-    AsyncProcessor->>Postgres: findActiveByChatId (lazy expiry check)
+    AsyncProcessor->>Postgres: resolve active conversation (lazy expiry check)
     alt already has an active workout-logging session
         Postgres-->>AsyncProcessor: active row, not expired
-        AsyncProcessor-->>Client: a session is already open, end it first
+        AsyncProcessor->>Postgres: mark existing conversation PREEMPTED
+        AsyncProcessor->>Postgres: close existing workout_log_session (end_reason=pre-empted)
+        AsyncProcessor->>Postgres: start new conversation and workout_log_session (TTL 120min)
+        AsyncProcessor-->>Client: new session ready to receive exercises
     else no active session (or one just lazily expired)
         Postgres-->>AsyncProcessor: none active
         opt a previous session had just lazily expired
@@ -260,7 +263,7 @@ sequenceDiagram
 | AC-09b | Flow 3 | empty session, closes without a workout record (both explicit-end and auto-close per the cross-reference note) |
 | AC-10 | Flow 2 | cross-context pre-emption, discards unconfirmed entry |
 | AC-11 | Flow 2 | lazy auto-expiry after 2h inactivity |
-| AC-12 | Flow 2 | repeat start attempt, told to end first, no pre-emption |
+| AC-12 | Flow 2 | repeat start pre-empts the existing session and opens a replacement |
 | AC-13 | N/A | day attribution to the session's local start date is a computed attribute at persist/read time (see `data-model`), not a distinct runtime branch |
 | AC-14 | N/A | any-language parsing happens inside Flow 1's parse step regardless of language; the reply language is a stored per-client preference read at reply time, not a distinct branch |
 
@@ -293,8 +296,9 @@ No new deployment unit (ADR-0003) — `workout-logging` runs entirely inside the
 |---|---|---|---|
 | 0001 | Use OpenAI structured-output parse for exercise messages | Accepted | §4 |
 | 0002 | Reuse search_dict_exercises for catalog matching | Accepted | §4 |
-| 0003 | Reuse lazy TTL-based expiry for session auto-close, no new cron | Accepted | §4 |
+| 0003 | Reuse lazy TTL-based expiry for session auto-close, no new cron | Superseded by 0005 | §4 |
 | 0004 | Persist a first-class workout-log session record plus entries | Accepted | §4 |
+| 0005 | Generic conversation-lifecycle hooks for pre-emption and expiry | Accepted | §4 |
 
 ADR files live under `docs/features/workout-logging/adr/`.
 
@@ -313,7 +317,7 @@ ADR files live under `docs/features/workout-logging/adr/`.
 **QG-3. Session-state consistency**
 - **When:** a client with an already-open logging session attempts to start another, or any other route/scheduled reminder fires for them.
 - **Then:** a client never has more than one open logging session at a time (AC-01/AC-04/AC-10/AC-11/AC-12).
-- **How verify:** a unit test (mocked `tgConversationStateRepository`, no real DB) asserting a second `startConversation` of the same type is blocked while one is active, and that a pre-emption/expiry check always leaves at most one active session per `chat_id`.
+- **How verify:** unit tests (mocked repositories, no real DB) assert that route pre-emption closes the active conversation before a replacement starts, and that pre-emption/expiry always leaves at most one active session per `chat_id`.
 
 ## 11. Risks and technical debt
 

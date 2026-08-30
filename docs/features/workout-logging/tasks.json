@@ -101,8 +101,8 @@
       "title": "Implement session start/end lifecycle",
       "layer": "app",
       "deps": ["T4"],
-      "acs": ["AC-01", "AC-02", "AC-09", "AC-09b", "AC-12", "AC-13"],
-      "dod": "Unit test covers: starting a session for a registered client opens one and sets session_day from local start time (AC-01/AC-13), a non-client is denied (AC-02), a repeat start is rejected without pre-empting the existing session (AC-12), and ending closes the session with end_reason=client-ended, distinguishing an empty session (AC-09b) from one with recorded entries (AC-09).",
+      "acs": ["AC-01", "AC-02", "AC-09", "AC-09b", "AC-13"],
+      "dod": "Unit test covers: starting a session for a registered client opens one and sets session_day from local start time (AC-01/AC-13), a non-client is denied (AC-02), the service defensively rejects a start if an open row still exists, and ending closes the session with end_reason=client-ended, distinguishing an empty session (AC-09b) from one with recorded entries (AC-09).",
       "files_hint": ["src/modules/telegram/features/workoutLogging/workoutLoggingService.ts"]
     },
     {
@@ -119,11 +119,11 @@
     },
     {
       "id": "T12",
-      "title": "Wire cross-context pre-emption and lazy auto-expiry",
+      "title": "Wire route pre-emption and lazy auto-expiry",
       "layer": "wiring",
       "deps": ["T10"],
-      "acs": ["AC-10", "AC-11"],
-      "dod": "Integration test confirms an open workout-logging session is pre-empted (end_reason=pre-empted, unconfirmed entry discarded) when another route or a cron-enqueued reminder arrives for the same client (AC-10), and a session idle for more than 2h from its start or last entry is lazily closed (end_reason=auto-closed) on the next check (AC-11), per ADR-0003's existing expires_at mechanism.",
+      "acs": ["AC-10", "AC-11", "AC-12"],
+      "dod": "Integration test confirms an open workout-logging session is pre-empted (end_reason=pre-empted, unconfirmed entry discarded) when another route, a cron-enqueued reminder, or a repeated /log_workout route arrives for the same client (AC-10/AC-12), and a session idle for more than 2h from its start or last entry is lazily closed (end_reason=auto-closed) on the next check (AC-11), per ADR-0003's existing expires_at mechanism.",
       "files_hint": [
         "src/modules/telegram/routes/routesProcessor.ts",
         "src/modules/telegram/features/conversations/engine.ts"
@@ -138,7 +138,7 @@
         "AC-01", "AC-03", "AC-05", "AC-05b", "AC-06", "AC-07", "AC-07b", "AC-08",
         "AC-09", "AC-09b", "AC-10", "AC-11", "AC-12"
       ],
-      "dod": "Unit test suite (mocked repositories, no real DB) asserts the entry-persist call is never made before a confirmation action is processed for confirm/keep-own/reject branches (QG-1), and that a second startConversation of type workout-logging is blocked while one is active and pre-emption/expiry always leaves at most one active session per chat_id (QG-3).",
+      "dod": "Unit test suite (mocked repositories, no real DB) asserts the entry-persist call is never made before a confirmation action is processed for confirm/keep-own/reject branches (QG-1), and that matched-route pre-emption, replacement start, and expiry always leave at most one active session per chat_id (QG-3).",
       "files_hint": ["test/modules/telegram/features/workoutLogging/"]
     }
   ]
