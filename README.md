@@ -1,7 +1,9 @@
 # ka4-today-bot
 
-A lightweight, serverless Telegram bot built with AWS Lambda, OpenAI Responses API, and Node.js.  
-It processes a simple webhook message, interacts with OpenAI to generate a response, and sends it back via Telegram.
+KA4 Today — AI-Powered Fitness Telegram Bot
+
+Designed and developed an AWS-based fitness assistant that helps users receive personalized workouts, 
+record completed exercises through conversational Telegram flows, track body measurements, and visualize progress.
 
 ## 📐 Architecture
 
