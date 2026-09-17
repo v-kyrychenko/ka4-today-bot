@@ -52,6 +52,10 @@ Parameters:
     Type: String
     Description: Export name prefix used by the standalone network-postgres-nat stack
     Default: ka4-today
+  BedrockMcpStackExportPrefix:
+    Type: String
+    Description: Export name prefix used by the standalone Bedrock MCP stack
+    Default: ka4-today
 Resources:
   #####################################################################
   ##                         Function                                ##
@@ -64,6 +68,11 @@ Resources:
       CodeUri: .
       Layers:
         - !Ref ResvgLayer
+      Environment:
+        Variables:
+          # TODO move to DB
+          BEDROCK_AGENTCORE_GATEWAY_ARN: !ImportValue
+            'Fn::Sub': '${BedrockMcpStackExportPrefix}-McpGatewayArn'
       VpcConfig:
         SecurityGroupIds:
           - !ImportValue
@@ -97,6 +106,19 @@ Resources:
               - s3:GetObject
               - s3:HeadObject
             Resource: arn:aws:s3:::ka4-today-exercises/exercises/*
+        - Statement:
+            Sid: InvokeBedrockResponses
+            Effect: Allow
+            Action:
+              - bedrock-mantle:CreateInference
+            Resource: !Sub arn:${AWS::Partition}:bedrock-mantle:${AWS::Region}:${AWS::AccountId}:project/default
+        - Statement:
+            Sid: InvokeKa4TodayMcpGateway
+            Effect: Allow
+            Action:
+              - bedrock-agentcore:InvokeGateway
+            Resource: !ImportValue
+              'Fn::Sub': '${BedrockMcpStackExportPrefix}-McpGatewayArn'
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

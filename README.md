@@ -177,39 +177,67 @@ update that alias mapping as well so `sam local start-api` receives env vars for
 ### Validation
 
 ```
-sam validate --lint -t stack/main.yaml
-aws cloudformation validate-template --template-body file://stack/main.yaml
+sam validate --lint --template-file template.yaml
+sam validate --lint --template-file stack/bedrock-mcp.yaml
 ```
 
 > Requires [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) and configured AWS credentials.
 
-### One-time setup:
+### Deployment order
+
+Deploy the network/PostgreSQL stack first, the Bedrock MCP stack second, and the bot stack last.
+The bot stack imports the Gateway ARN exported by the Bedrock MCP stack.
+
+### Deployment commands
+
+Deploy the network/PostgreSQL stack first:
+
+```bash
+aws cloudformation deploy \
+  --template-file stack/network-postgres-nat.yaml \
+  --stack-name ka4-today \
+  --region eu-central-1 \
+  --capabilities CAPABILITY_IAM \
+  --parameter-overrides \
+    EnableInstanceSchedule=false \
+    NamePrefix=ka4-today
+```
+
+Build and deploy the Bedrock AgentCore MCP stack next. It exports
+`ka4-today-McpGatewayArn`, which is consumed by the bot stack. For the first deployment, use a separate
+`bedrock-mcp` configuration environment in the existing `samconfig.toml`:
+
+```bash
+sam build --template-file stack/bedrock-mcp.yaml
+```
+
+For the first deployment, run:
+
+```bash
+sam deploy --guided --config-env bedrock-mcp
+```
+
+Use `ka4-today-bedrock-mcp` as the stack name, `eu-central-1` as the Region, and `ka4-today` for both
+export-prefix parameters. Allow IAM role creation and save the guided values. Subsequent deployments use:
+
+```bash
+sam deploy --config-env bedrock-mcp
+```
+
+Run the build command above before each deployment after changing the MCP Lambda code.
+
+Finally, deploy the bot stack:
 
 ```bash
 sam build
-sam deploy
-```
 
-You will be prompted to enter your environment variables. These are saved to `samconfig.toml`.
-
-### Or deploy manually:
-
-```bash
 sam deploy \
   --stack-name ka4-today-bot \
   --region eu-central-1 \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides \
-    NetworkStackExportPrefix=ka4-today
-    
-    
-aws cloudformation deploy \
-  --template-file stack/network-postgres-nat.yaml \
-  --stack-name ka4-today \
-  --capabilities CAPABILITY_IAM \
-  --parameter-overrides \
-    EnableInstanceSchedule=false \
-    NamePrefix=ka4-today    
+    NetworkStackExportPrefix=ka4-today \
+    BedrockMcpStackExportPrefix=ka4-today
 ```
 
 ## ☁️ Delete all from AWS

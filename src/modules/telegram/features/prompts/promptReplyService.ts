@@ -1,55 +1,24 @@
-import {DEFAULT_LANG} from '../../../../app/config/constants.js';
 import {openAiClient} from '../../../../infrastructure/integrations/openai/openAiClient.js';
-import {BadRequestError, OpenAIError} from '../../../../shared/errors';
+import {OpenAIError} from '../../../../shared/errors';
 import type {OpenAiCreateResponseInput, OpenAiResponseDetails} from '../../../../shared/types/openai.js';
-import {dictPromptRepository} from '../../repository/dictPromptRepository.js';
 import {log} from '../../../../shared/logging';
 import type {PromptDict} from './prompt.js';
-
-type TemplateVariableValue = unknown;
+import {promptTemplateService} from './promptTemplateService.js';
 
 export interface FetchOpenAiReplyRequest {
     lang?: string | null;
     promptRef: string;
-    variables?: Record<string, TemplateVariableValue>;
+    variables?: Record<string, unknown>;
     background?: boolean;
 }
 
-interface PromptTemplates {
-    systemPrompt: string;
-    userPrompt: string;
-}
-
 export async function fetchOpenAiReply(request: FetchOpenAiReplyRequest): Promise<string> {
-    const promptLang = normalizeLang(request.lang ?? DEFAULT_LANG);
-    const prompt = await dictPromptRepository.getPromptByKey(request.promptRef);
-    const templates = resolvePromptTemplates(prompt, promptLang);
+    const resolved = await promptTemplateService.resolve(request);
+    const {prompt, systemPrompt, userPrompt} = resolved;
 
     log(`Fetched prompt: ${prompt.key}, system prompt: ${prompt.systemPrompt?.key}`);
 
-    const systemPrompt = renderPromptTemplate(templates.systemPrompt, request.variables);
-    const userPrompt = renderPromptTemplate(templates.userPrompt, request.variables);
-
     return runOpenAiReply(systemPrompt, userPrompt, prompt, request.background);
-}
-
-function resolvePromptTemplates(prompt: PromptDict, lang: string): PromptTemplates {
-    const systemPromptDict = prompt.systemPrompt;
-    if (!systemPromptDict) {
-        throw new BadRequestError(`Prompt '${prompt.key}' has no systemPromptRef configuration`);
-    }
-
-    const systemPrompt = systemPromptDict.prompts[lang];
-    const userPrompt = prompt.prompts[lang];
-
-    if (systemPrompt == null) {
-        throw new BadRequestError(`Prompt '${systemPromptDict.key}' has no translation for language '${lang}'.`);
-    }
-    if (userPrompt == null) {
-        throw new BadRequestError(`Prompt '${prompt.key}' has no translation for language '${lang}'.`);
-    }
-
-    return {systemPrompt, userPrompt};
 }
 
 async function runOpenAiReply(
@@ -138,53 +107,6 @@ function extractAssistantReply(messages: OpenAiResponseDetails): string {
     return textPart.text;
 }
 
-function renderPromptTemplate(template: string, variables: Record<string, TemplateVariableValue> = {}): string {
-    if (!template) return template;
-
-    return Object.entries(variables).reduce((output, [key, value]) => {
-        const stringValue = formatValue(value);
-        return output.split(`\${${key}}`).join(stringValue);
-    }, template);
-}
-
-function formatValue(value: TemplateVariableValue): string {
-    if (value == null) return '';
-    if (Array.isArray(value)) return value.map((item) => String(item ?? '')).join(', ');
-    if (isPlainObject(value)) {
-        return Object.entries(value)
-            .map(([key, nested]) => `${key}: ${formatNested(nested)}`)
-            .join(', ');
-    }
-    if (typeof value === 'object') return JSON.stringify(value);
-    // Only string/number/boolean/bigint/symbol/function remain here, all with safe custom toString.
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    return String(value);
-}
-
-function formatNested(value: unknown): string {
-    if (value == null) return '';
-    if (Array.isArray(value)) return value.map((item) => String(item ?? '')).join(', ');
-    if (isPlainObject(value)) return JSON.stringify(value);
-    if (typeof value === 'object') return JSON.stringify(value);
-    // Only string/number/boolean/bigint/symbol/function remain here, all with safe custom toString.
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    return String(value);
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-//FIXME consider migrate prompts in db to uk instead of ua
-function normalizeLang(lang: string | null | undefined): string {
-    const normalized = (lang || DEFAULT_LANG).trim().toLowerCase();
-
-    if (normalized === 'uk') {
-        return 'ua';
-    } else {
-        return normalized;
-    }
-}
 
 export const promptReplyService = {
     fetchOpenAiReply,

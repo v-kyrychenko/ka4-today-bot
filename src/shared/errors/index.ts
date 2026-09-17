@@ -38,6 +38,48 @@ export class OpenAIError extends Error {
     }
 }
 
+export class BedrockResponsesError extends Error {
+    constructor(message = 'Bedrock Responses API failure') {
+        super(message);
+        this.name = 'BedrockResponsesError';
+    }
+}
+
+export class McpConnectionError extends Error {
+    constructor(message = 'MCP connection failure') {
+        super(message);
+        this.name = 'McpConnectionError';
+    }
+}
+
+export class McpToolError extends Error {
+    constructor(message = 'MCP tool failure') {
+        super(message);
+        this.name = 'McpToolError';
+    }
+}
+
+export class RepositorySearchError extends Error {
+    constructor(message = 'Exercise repository search failure') {
+        super(message);
+        this.name = 'RepositorySearchError';
+    }
+}
+
+export class MalformedAiResponseError extends Error {
+    constructor(message = 'Malformed or mismatched structured response') {
+        super(message);
+        this.name = 'MalformedAiResponseError';
+    }
+}
+
+export class ExerciseImageSigningError extends Error {
+    constructor(message = 'Exercise image signing failure') {
+        super(message);
+        this.name = 'ExerciseImageSigningError';
+    }
+}
+
 export class TelegramError extends Error {
     statusCode: number;
 

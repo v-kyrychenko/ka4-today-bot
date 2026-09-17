@@ -14,10 +14,13 @@ import {
 import {localizedResponse} from '../conversations/conversationResponses.js';
 import type {TelegramUserAccount} from '../../model/telegram.js';
 import {WORKOUT_LOGGING_END_ROUTE} from '../../routes/constants.js';
-import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
 import {workoutCommandMenuService} from './workoutCommandMenuService.js';
 import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
-import type {ConfirmationAction, HandleConfirmationResponseResult} from './workoutLoggingService.js';
+import type {
+    ConfirmationAction,
+    HandleConfirmationResponseResult,
+    WorkoutCandidate,
+} from './workoutLoggingService.js';
 import {
     EndSessionOutcome,
     HandleConfirmationResponseOutcome,

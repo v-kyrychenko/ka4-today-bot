@@ -1,9 +1,9 @@
 import {toIsoDateInTimeZone} from '../../../../shared/utils/dateUtils.js';
+import {ExerciseImageSigningError} from '../../../../shared/errors';
+import type {ExerciseSearchCandidate} from '../../../mcp/exerciseSearch/domain/exerciseSearchCandidate.js';
+import {exerciseImageSigning} from '../workouts/exerciseImageSigning.js';
 import {workoutLogRepository} from './repository/workoutLogRepository.js';
-import {matchCandidates} from './workoutCandidateMatcher.js';
-import type {WorkoutCandidate} from './workoutCandidateMatcher.js';
-import {parseExerciseMessage} from './workoutExerciseParser.js';
-import type {ParsedWorkoutExercise} from './workoutExerciseParser.js';
+import {parseExerciseMessage, type ParsedWorkoutExercise} from './workoutExerciseParser.js';
 
 export interface StartSessionRequest {
     clientId: number | null;
@@ -65,6 +65,15 @@ export interface EndSessionResult {
 export interface HandleExerciseMessageResult {
     parsedExercise: ParsedWorkoutExercise;
     candidates: WorkoutCandidate[];
+}
+
+export interface WorkoutCandidate {
+    exerciseId: number;
+    name: string;
+    reps: number;
+    sets: number;
+    weight: number | null;
+    imageUrl: string | null;
 }
 
 export type ConfirmationAction = 'confirm-candidate' | 'confirm-own' | 'reject';
@@ -152,14 +161,42 @@ export async function closeExpiredSession(request: CloseExpiredSessionRequest): 
 export async function handleExerciseMessage(
     request: HandleExerciseMessageRequest,
 ): Promise<HandleExerciseMessageResult | null> {
-    const parsedExercise = await parseExerciseMessage({message: request.message, lang: request.lang});
-    if (!parsedExercise) {
+    const result = await parseExerciseMessage({message: request.message, lang: request.lang});
+    if (!result) {
         return null;
     }
 
-    const candidates = (await matchCandidates({parsedExercise})) ?? [];
+    const candidates = await Promise.all(
+        result.candidates.map((candidate) =>
+            toWorkoutCandidate(candidate, result.parsedExercise)),
+    );
+    return {parsedExercise: result.parsedExercise, candidates};
+}
 
-    return {parsedExercise, candidates};
+async function toWorkoutCandidate(
+    candidate: ExerciseSearchCandidate,
+    parsedExercise: ParsedWorkoutExercise,
+): Promise<WorkoutCandidate> {
+    let imageUrl: string | null = null;
+    if (candidate.imageKey) {
+        try {
+            imageUrl = await exerciseImageSigning.signExerciseImageUrl(candidate.imageKey);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new ExerciseImageSigningError(
+                `Failed to sign image for exercise ${candidate.exerciseId}: ${message}`,
+            );
+        }
+    }
+
+    return {
+        exerciseId: candidate.exerciseId,
+        name: candidate.name,
+        reps: parsedExercise.reps,
+        sets: parsedExercise.sets,
+        weight: parsedExercise.weight,
+        imageUrl,
+    };
 }
 
 export async function handleConfirmationResponse(

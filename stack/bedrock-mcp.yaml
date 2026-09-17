@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Bedrock AgentCore MCP gateway and tools for ka4-today
+
+Parameters:
+  NetworkStackExportPrefix:
+    Type: String
+    Description: Export name prefix used by the standalone network-postgres-nat stack
+    Default: ka4-today
+  StackExportPrefix:
+    Type: String
+    Description: Export name prefix for resources exposed by this stack
+    Default: ka4-today
+  PostgresPassword:
+    Type: String
+    NoEcho: true
+
+Resources:
+  ExerciseSearchMcpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ka4today-mcp-exercise-search
+      Handler: src/modules/mcp/exerciseSearch/api/index.handler
+      CodeUri: ..
+      Runtime: nodejs22.x
+      Architectures:
+        - arm64
+      Timeout: 120
+      MemorySize: 512
+      Environment:
+        Variables:
+          POSTGRES_HOST: !ImportValue
+            'Fn::Sub': '${NetworkStackExportPrefix}-PostgresHost'
+          POSTGRES_PORT: !ImportValue
+            'Fn::Sub': '${NetworkStackExportPrefix}-PostgresPort'
+          POSTGRES_DB: !ImportValue
+            'Fn::Sub': '${NetworkStackExportPrefix}-PostgresDb'
+          POSTGRES_USER: !ImportValue
+            'Fn::Sub': '${NetworkStackExportPrefix}-PostgresUser'
+          POSTGRES_PASSWORD: !Ref PostgresPassword
+          POSTGRES_SSL: 'false'
+      VpcConfig:
+        SecurityGroupIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-LambdaSecurityGroupId'
+        SubnetIds:
+          - !ImportValue
+              'Fn::Sub': '${NetworkStackExportPrefix}-PrivateSubnetId'
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/modules/mcp/exerciseSearch/api/index.ts
+        Format: cjs
+        Minify: true
+        Sourcemap: false
+        Target: es2022
+      BuildArchitecture: arm64
+
+  Ka4TodayMcpGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock-agentcore.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeExerciseSearchMcpFunction
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt ExerciseSearchMcpFunction.Arn
+
+  Ka4TodayMcpGateway:
+    Type: AWS::BedrockAgentCore::Gateway
+    Properties:
+      Name: ka4today-mcp
+      Description: MCP tools for ka4-today
+      AuthorizerType: AWS_IAM
+      RoleArn: !GetAtt Ka4TodayMcpGatewayRole.Arn
+      ProtocolType: MCP
+      ProtocolConfiguration:
+        Mcp:
+          Instructions: Use search_exercises to retrieve authoritative ranked exercise candidates.
+
+  ExerciseSearchMcpGatewayTarget:
+    Type: AWS::BedrockAgentCore::GatewayTarget
+    Properties:
+      Name: exercise-search
+      Description: VPC-backed exercise catalog search
+      GatewayIdentifier: !Ref Ka4TodayMcpGateway
+      CredentialProviderConfigurations:
+        - CredentialProviderType: GATEWAY_IAM_ROLE
+      TargetConfiguration:
+        Mcp:
+          Lambda:
+            LambdaArn: !GetAtt ExerciseSearchMcpFunction.Arn
+            ToolSchema:
+              InlinePayload:
+                - Name: search_exercises
+                  Description: Search ranked exercise candidates by a parsed exercise name.
+                  InputSchema:
+                    Type: object
+                    Properties:
+                      query:
+                        Type: string
+                        Description: Parsed exercise name to search for.
+                      limit:
+                        Type: integer
+                        Description: Optional maximum candidate count from 1 to 10.
+                    Required:
+                      - query
+
+Outputs:
+  McpGatewayArn:
+    Description: ARN of the ka4-today AgentCore MCP gateway
+    Value: !GetAtt Ka4TodayMcpGateway.GatewayArn
+    Export:
+      Name: !Sub '${StackExportPrefix}-McpGatewayArn'

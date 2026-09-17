@@ -10,6 +10,11 @@ export const DEFAULT_LANG = 'ua';
 export const EMPTY_VIEW_VALUE = '--';
 
 export const APP_TIMEZONE = 'Europe/Kyiv';
+export const DEFAULT_BEDROCK_MODEL_ID = 'openai.gpt-5.6-luna';
+
+export enum McpToolName {
+    SearchExercises = 'search_exercises',
+}
 
 export const POSTGRES_TIMEOUT_MS = 5000;
 export const TELEGRAM_MINI_APP_INIT_DATA_MAX_LENGTH = 4096;

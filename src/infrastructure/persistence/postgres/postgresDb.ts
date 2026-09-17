@@ -7,7 +7,7 @@ import {
     POSTGRES_PORT,
     POSTGRES_SSL,
     POSTGRES_USER,
-} from '../../../app/config/env.js';
+} from '../../../app/config/postgresEnv.js';
 import {POSTGRES_TIMEOUT_MS} from '../../../app/config/constants.js';
 import {log, logError} from '../../../shared/logging';
 

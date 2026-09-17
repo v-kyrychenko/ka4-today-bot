@@ -15,11 +15,15 @@
         "format:check": "prettier --check ."
     },
     "dependencies": {
+        "@aws-crypto/sha256-js": "5.2.0",
         "@aws-sdk/client-lambda": "^3.848.0",
         "@aws-sdk/client-s3": "^3.848.0",
         "@aws-sdk/client-sqs": "^3.848.0",
+        "@aws-sdk/credential-provider-node": "3.972.35",
         "@aws-sdk/s3-request-presigner": "^3.848.0",
         "@resvg/resvg-js": "^2.6.2",
+        "@smithy/protocol-http": "5.3.14",
+        "@smithy/signature-v4": "5.3.14",
         "axios": "1.15.2",
         "dotenv": "^16.5.0",
         "drizzle-orm": "^0.45.2",
