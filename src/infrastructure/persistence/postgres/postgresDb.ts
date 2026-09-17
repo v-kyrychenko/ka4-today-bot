@@ -18,14 +18,6 @@ async function createPool(): Promise<Pool> {
         throw new Error('PostgreSQL configuration is incomplete');
     }
 
-    log('[postgres.init] Creating PostgreSQL pool', {
-        host: POSTGRES_HOST,
-        port: POSTGRES_PORT,
-        database: POSTGRES_DB,
-        user: POSTGRES_USER,
-        ssl: shouldUseSsl,
-    });
-
     return new Pool({
         host: POSTGRES_HOST,
         port: Number(POSTGRES_PORT),
