@@ -12,7 +12,7 @@ import {
     McpToolError,
 } from '../../../../shared/errors';
 import type {ExerciseSearchCandidate} from '../../../mcp/exerciseSearch/domain/exerciseSearchCandidate.js';
-import {promptTemplateService} from '../prompts/promptTemplateService.js';
+// import {promptTemplateService} from '../prompts/promptTemplateService.js';
 
 export interface WorkoutExerciseParseResult {
     parsedExercise: ParsedWorkoutExercise;
@@ -41,27 +41,28 @@ interface StructuredWorkoutReply {
     candidates: ExerciseSearchCandidate[];
 }
 
-const WORKOUT_EXERCISE_PARSER_PROMPT_REF = 'workout_exercise_parser';
-const WORKOUT_EXERCISE_MCP_INSTRUCTIONS = [
-    'MCP tool-use requirements:',
-    '- If the input contains exactly one valid exercise, you must call the exercise catalog search tool provided by ' +
-        'the exercise_search MCP server before producing the final response.',
-    '- Pass the parsed exercise name as query. Omit limit so the tool applies its default.',
-    '- Copy the candidates from the tool result items into the final response exactly as returned.',
-    '- Never create, alter, reorder, or omit candidate fields.',
-    '- If the input is invalid or contains multiple exercises, do not call the tool and return no candidates.',
-].join('\n');
+// const WORKOUT_EXERCISE_PARSER_PROMPT_REF = 'workout_exercise_parser';
+// const WORKOUT_EXERCISE_MCP_INSTRUCTIONS = [
+//     'MCP tool-use requirements:',
+//     '- If the input contains exactly one valid exercise, you must call the exercise catalog search tool provided by ' +
+//         'the exercise_search MCP server before producing the final response.',
+//     '- Pass the parsed exercise name as query. Omit limit so the tool applies its default.',
+//     '- Copy the candidates from the tool result items into the final response exactly as returned.',
+//     '- Never create, alter, reorder, or omit candidate fields.',
+//     '- If the input is invalid or contains multiple exercises, do not call the tool and return no candidates.',
+// ].join('\n');
 
 export async function parseExerciseMessage(
-    request: ParseExerciseMessageRequest,
+    _request: ParseExerciseMessageRequest,
 ): Promise<WorkoutExerciseParseResult | null> {
-    const template = await promptTemplateService.resolve({
-        lang: request.lang,
-        promptRef: WORKOUT_EXERCISE_PARSER_PROMPT_REF,
-        variables: {USER_INPUT: request.message},
-    });
-    const bedrockRequest = buildRequest(template.systemPrompt, template.userPrompt);
-    const response = await bedrockResponsesClient.createResponse(bedrockRequest);
+    // const template = await promptTemplateService.resolve({
+    //     lang: request.lang,
+    //     promptRef: WORKOUT_EXERCISE_PARSER_PROMPT_REF,
+    //     variables: {USER_INPUT: request.message},
+    // });
+    // const bedrockRequest = buildRequest(template.systemPrompt, template.userPrompt);
+    // const response = await bedrockResponsesClient.createResponse(bedrockRequest);
+    const response = await bedrockResponsesClient.createResponse(buildRequest());
     const reply = extractStructuredReply(response);
     const parsedExercise = toParsedExercise(reply);
 
@@ -77,8 +78,7 @@ export async function parseExerciseMessage(
     return {parsedExercise, candidates: authoritativeCandidates};
 }
 
-//TODO should be fetched and configured dynamiclaly from db Bedrock Prompt Management
-function buildRequest(systemPrompt: string, userPrompt: string): Record<string, unknown> {
+function buildRequest(): Record<string, unknown> {
     if (!BEDROCK_AGENTCORE_GATEWAY_ARN) {
         throw new BedrockResponsesError('Bedrock workout parser configuration is incomplete');
     }
@@ -87,60 +87,60 @@ function buildRequest(systemPrompt: string, userPrompt: string): Record<string, 
         model: BEDROCK_DEFAULT_MODEL_ID,
         store: false,
         background: false,
-        reasoning: {effort: 'low'},
-        tool_choice: 'required',
-        input: [
-            {
-                role: 'system',
-                content: `${systemPrompt}\n\n${WORKOUT_EXERCISE_MCP_INSTRUCTIONS}`,
-            },
-            {role: 'user', content: userPrompt},
-        ],
-        text: {
-            format: {
-                type: 'json_schema',
-                name: 'workout_exercise_parse',
-                strict: true,
-                schema: WORKOUT_RESPONSE_SCHEMA,
-            },
-        },
+        // reasoning: {effort: 'low'},
+        // tool_choice: 'required',
+        // input: [
+        //     {
+        //         role: 'system',
+        //         content: `${systemPrompt}\n\n${WORKOUT_EXERCISE_MCP_INSTRUCTIONS}`,
+        //     },
+        //     {role: 'user', content: userPrompt},
+        // ],
+        // text: {
+        //     format: {
+        //         type: 'json_schema',
+        //         name: 'workout_exercise_parse',
+        //         strict: true,
+        //         schema: WORKOUT_RESPONSE_SCHEMA,
+        //     },
+        // },
         tools: [{
             type: 'mcp',
             server_label: 'exercise_search',
             connector_id: BEDROCK_AGENTCORE_GATEWAY_ARN, //TODO move to DB
-            server_description: 'Provides authoritative exercise catalog tools. Use its search tool for one exercise.',
             require_approval: 'never',
         }],
+        input: 'Use the exercise search tool to search for Bench Press.',
     };
 }
 
-const CANDIDATE_SCHEMA = {
-    type: 'object',
-    properties: {
-        exerciseId: {type: 'integer'},
-        id: {type: 'string'},
-        name: {type: 'string'},
-        score: {type: 'number'},
-        imageKey: {anyOf: [{type: 'string'}, {type: 'null'}]},
-    },
-    required: ['exerciseId', 'id', 'name', 'score', 'imageKey'],
-    additionalProperties: false,
-};
+// const CANDIDATE_SCHEMA = {
+//     type: 'object',
+//     properties: {
+//         exerciseId: {type: 'integer'},
+//         id: {type: 'string'},
+//         name: {type: 'string'},
+//         score: {type: 'number'},
+//         imageKey: {anyOf: [{type: 'string'}, {type: 'null'}]},
+//     },
+//     required: ['exerciseId', 'id', 'name', 'score', 'imageKey'],
+//     additionalProperties: false,
+// };
 
-const WORKOUT_RESPONSE_SCHEMA = {
-    type: 'object',
-    properties: {
-        exerciseName: {type: 'string'},
-        reps: {anyOf: [{type: 'number'}, {type: 'null'}]},
-        sets: {anyOf: [{type: 'number'}, {type: 'null'}]},
-        weight: {anyOf: [{type: 'number'}, {type: 'null'}]},
-        weightRequired: {type: 'boolean'},
-        multipleExercises: {type: 'boolean'},
-        candidates: {type: 'array', items: CANDIDATE_SCHEMA},
-    },
-    required: ['exerciseName', 'reps', 'sets', 'weight', 'weightRequired', 'multipleExercises', 'candidates'],
-    additionalProperties: false,
-};
+// const WORKOUT_RESPONSE_SCHEMA = {
+//     type: 'object',
+//     properties: {
+//         exerciseName: {type: 'string'},
+//         reps: {anyOf: [{type: 'number'}, {type: 'null'}]},
+//         sets: {anyOf: [{type: 'number'}, {type: 'null'}]},
+//         weight: {anyOf: [{type: 'number'}, {type: 'null'}]},
+//         weightRequired: {type: 'boolean'},
+//         multipleExercises: {type: 'boolean'},
+//         candidates: {type: 'array', items: CANDIDATE_SCHEMA},
+//     },
+//     required: ['exerciseName', 'reps', 'sets', 'weight', 'weightRequired', 'multipleExercises', 'candidates'],
+//     additionalProperties: false,
+// };
 
 function extractStructuredReply(response: BedrockResponse): StructuredWorkoutReply {
     if (response.status !== 'completed' || !Array.isArray(response.output)) {
