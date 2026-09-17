@@ -8,6 +8,7 @@ const TELEGRAM_HEADERS = {
     'Content-Type': 'application/json',
 };
 const REDACTED_TELEGRAM_TOKEN = '****';
+const TELEGRAM_SHOW_RESPONSE = false;
 
 export const telegramClient = {
     answerCallbackQuery,
@@ -58,6 +59,7 @@ export async function answerCallbackQuery(callbackQueryId: string): Promise<void
         body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 
@@ -82,6 +84,7 @@ export async function editMessageReplyMarkup(
         body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 
@@ -100,6 +103,7 @@ export async function getMyCommands(
         body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 
     return response.result ?? [];
@@ -122,6 +126,7 @@ export async function setMyCommands(
         body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 
@@ -138,6 +143,7 @@ export async function deleteMyCommands(scope: TelegramBotCommandScope, languageC
         body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 
@@ -161,6 +167,7 @@ export async function sendMessage(chatId: number, message: string, replyMarkup?:
         body,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 
@@ -181,6 +188,7 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
             },
             label: TELEGRAM_API_LABEL,
             errorClass: TelegramError,
+            showResponse: TELEGRAM_SHOW_RESPONSE,
         });
         return;
     }
@@ -198,6 +206,7 @@ export async function sendPhoto(chatId: number, photo: string | TelegramPhotoInp
         body: formData,
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 
@@ -230,6 +239,7 @@ export async function sendMediaGroup(
         },
         label: TELEGRAM_API_LABEL,
         errorClass: TelegramError,
+        showResponse: TELEGRAM_SHOW_RESPONSE,
     });
 }
 

@@ -1,9 +1,10 @@
-import {DEFAULT_BEDROCK_MODEL_ID, McpToolName} from '../../../../app/config/constants.js';
+import {McpToolName} from '../../../../app/config/constants.js';
 import {BEDROCK_AGENTCORE_GATEWAY_ARN} from '../../../../app/config/env.js';
 import {
     bedrockResponsesClient,
     type BedrockResponse,
 } from '../../../../infrastructure/integrations/bedrock/bedrockResponsesClient.js';
+import {BEDROCK_DEFAULT_MODEL_ID} from '../../../../infrastructure/integrations/bedrock/constants.js';
 import {extractMcpToolOutput} from '../../../../infrastructure/integrations/bedrock/bedrockMcpResponse.js';
 import {
     BedrockResponsesError,
@@ -41,6 +42,16 @@ interface StructuredWorkoutReply {
 }
 
 const WORKOUT_EXERCISE_PARSER_PROMPT_REF = 'workout_exercise_parser';
+const WORKOUT_EXERCISE_MCP_INSTRUCTIONS = [
+    'MCP tool-use requirements:',
+    '- If the input contains exactly one valid exercise, you must call the exercise catalog search tool provided by ' +
+        'the exercise_search MCP server before producing the final response.',
+    '- Pass the parsed exercise name as query. Omit limit so the tool applies its default.',
+    '- Copy the candidates from the tool result items into the final response exactly as returned.',
+    '- Never create, alter, reorder, or omit candidate fields.',
+    '- If the input is invalid or contains multiple exercises, do not call the tool and return no candidates.',
+].join('\n');
+
 export async function parseExerciseMessage(
     request: ParseExerciseMessageRequest,
 ): Promise<WorkoutExerciseParseResult | null> {
@@ -73,18 +84,15 @@ function buildRequest(systemPrompt: string, userPrompt: string): Record<string, 
     }
 
     return {
-        model: DEFAULT_BEDROCK_MODEL_ID,
+        model: BEDROCK_DEFAULT_MODEL_ID,
         store: false,
         background: false,
-        reasoning: {effort: 'minimal'},
+        reasoning: {effort: 'low'},
+        tool_choice: 'required',
         input: [
             {
                 role: 'system',
-                content: `${systemPrompt}\n\nAfter parsing one valid exercise, call the ` +
-                    `${McpToolName.SearchExercises} MCP tool ` +
-                    'with the parsed exercise name as `query`. Return exactly the candidates produced by that tool. ' +
-                    'Never alter, invent, reorder, or omit candidate fields. For invalid or multiple exercises, ' +
-                    'return no candidates.',
+                content: `${systemPrompt}\n\n${WORKOUT_EXERCISE_MCP_INSTRUCTIONS}`,
             },
             {role: 'user', content: userPrompt},
         ],
@@ -100,7 +108,7 @@ function buildRequest(systemPrompt: string, userPrompt: string): Record<string, 
             type: 'mcp',
             server_label: 'exercise_search',
             connector_id: BEDROCK_AGENTCORE_GATEWAY_ARN, //TODO move to DB
-            server_description: 'Searches the authoritative exercise catalog while preserving PostgreSQL ranking.',
+            server_description: 'Provides authoritative exercise catalog tools. Use its search tool for one exercise.',
             require_approval: 'never',
         }],
     };

@@ -1,11 +1,15 @@
-import {log, logError} from '../logging';
+import {
+    ApiRequestFailureLevel,
+    type ApiRequestLog,
+    type ApiRequestLogMethod,
+    startApiRequestLog,
+} from './apiRequestLogger.js';
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type ErrorWithStatus = Error & {status?: number; statusCode?: number};
 type ErrorClassConstructor = new (message?: string, statusCode?: number) => ErrorWithStatus;
 
 export interface HttpRequestParams<TBody = unknown> {
-    method?: HttpMethod;
+    method?: ApiRequestLogMethod;
     path: string;
     endpointUrl?: string;
     logUrl?: string;
@@ -13,20 +17,16 @@ export interface HttpRequestParams<TBody = unknown> {
     body?: TBody | null;
     label?: string;
     errorClass?: ErrorClassConstructor;
-    hideResponse?: boolean;
+    showResponse?: boolean;
 }
 
 interface HandleFetchParams {
     fullUrl: string;
-    logUrl: string;
     requestInit: RequestInit;
-    method: HttpMethod;
-    label: string;
-    hideResponse: boolean;
     errorClass: ErrorClassConstructor;
-    start: number;
-    path: string;
     errorTarget: string;
+    label: string;
+    requestLog: ApiRequestLog;
 }
 
 export async function httpRequest<TResponse, TBody = unknown>({
@@ -38,80 +38,67 @@ export async function httpRequest<TResponse, TBody = unknown>({
     body = null,
     label = 'HTTP',
     errorClass = Error,
-    hideResponse = true,
+    showResponse = true,
 }: HttpRequestParams<TBody>): Promise<TResponse> {
     const fullUrl = endpointUrl ? `${endpointUrl}${path}` : path;
     const safeLogUrl = logUrl ?? fullUrl;
     const errorTarget = logUrl ?? path;
     const {requestInit, printableBody} = buildRequest(method, headers, body);
-
-    log(`### ${label}:start: ${method} request to url = ${safeLogUrl}, body = ${printableBody}`);
-    const start = Date.now();
+    const requestLog = startApiRequestLog({
+        label,
+        method,
+        url: safeLogUrl,
+        body: printableBody,
+        showResponse,
+    });
 
     try {
         return await handleFetch<TResponse>({
             fullUrl,
-            logUrl: safeLogUrl,
             requestInit,
-            method,
-            label,
-            hideResponse,
             errorClass,
-            start,
-            path,
             errorTarget,
+            label,
+            requestLog,
         });
     } catch (error) {
         if (error instanceof errorClass) {
             throw error;
         }
 
-        const duration = Date.now() - start;
         const errorMessage = error instanceof Error ? error.message : String(error);
         const normalized = errorMessage.replace(/\s+/g, ' ').trim();
-        logError(`### ${label}:stop: low-level error: ${method} response from url = ${safeLogUrl},
-         status = n/a, time = ${duration} ms, response = ${normalized}`);
+        requestLog.failure({level: ApiRequestFailureLevel.LowLevel, response: normalized});
         throw new errorClass(`Failed ${label} request to ${errorTarget}: ${normalized}`);
     }
 }
 
 async function handleFetch<TResponse>({
     fullUrl,
-    logUrl,
     requestInit,
-    method,
-    label,
-    hideResponse,
     errorClass,
-    start,
     errorTarget,
+    label,
+    requestLog,
 }: HandleFetchParams): Promise<TResponse> {
     const response = await fetch(fullUrl, requestInit);
-    const duration = Date.now() - start;
 
     const responseBody = (await response.json()) as TResponse;
     const rawText = JSON.stringify(responseBody).replace(/\s+/g, ' ');
-    const logResponse = hideResponse ? '#hidden' : truncate(rawText);
 
     if (!response.ok) {
-        logError(`### ${label}:stop: api-level error: ${method} response from url = ${logUrl},
-        status = ${response.status}, time = ${duration} ms, response = ${rawText}`);
+        requestLog.failure({level: ApiRequestFailureLevel.Api, status: response.status, response: rawText});
         const err = new errorClass(`Failed ${label} request to ${errorTarget}: ${rawText}`);
         err.status = response.status;
         throw err;
     }
 
-    log(`### ${label}:stop: ${method} response from url = ${logUrl},
-    status = ${response.status}, time = ${duration} ms, response = ${logResponse}`);
+    requestLog.success({status: response.status, response: rawText});
     return responseBody;
 }
 
-function truncate(text: string, maxLength = 1000): string {
-    return text.length > maxLength ? `${text.slice(0, maxLength)}...[truncated]` : text;
-}
-
 export function buildRequest<TBody = unknown>(
-    method: HttpMethod,
+    method: ApiRequestLogMethod,
     headers: Record<string, string> = {},
     body: TBody | null = null,
 ): {requestInit: RequestInit; printableBody: string} {

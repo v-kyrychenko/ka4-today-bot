@@ -14,6 +14,7 @@ import {pollUntil} from '../../../shared/utils/poller.js';
 
 const OPEN_AI_API_LABEL = 'OPEN-AI';
 const OPEN_AI_BASE_URL = 'https://api.openai.com/v1';
+const OPEN_AI_SHOW_RESPONSE = false;
 const OPEN_AI_API_HEADERS: Record<string, string> = {
     authorization: `Bearer ${OPENAI_API_KEY}`,
     'Content-Type': 'application/json',
@@ -73,6 +74,7 @@ export async function createResponse(request: OpenAiCreateResponseInput): Promis
         body,
         label: `${OPEN_AI_API_LABEL}:responses`,
         errorClass: OpenAIError,
+        showResponse: OPEN_AI_SHOW_RESPONSE,
     });
 
     return new OpenAiResponseDetails(response);
@@ -107,6 +109,7 @@ export async function getResponse(responseId: string): Promise<OpenAiResponseDet
         headers: OPEN_AI_API_HEADERS,
         label: OPEN_AI_API_LABEL,
         errorClass: OpenAIError,
+        showResponse: OPEN_AI_SHOW_RESPONSE,
     });
 
     return new OpenAiResponseDetails(response);
